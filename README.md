@@ -197,9 +197,9 @@ This is a tiny, single-file project so contributing is easy:
 
 ```bash
 git clone https://github.com/w3bcooki3/ghostchat.git
-cd ghost-chat
+cd ghostchat
 
-# Edit ghostchat.html
+# Edit index.html
 # Open in browser, test it
 # Send a PR!
 ```
