@@ -54,7 +54,7 @@ html,body{width:100%;height:100%;overflow:hidden;-webkit-font-smoothing:antialia
 [data-accent="amber"]{--ac:#ffaa00;--ac2:#dd8800;--aca:rgba(255,170,0,.06);--acline:rgba(255,170,0,.18);--ac-glow:rgba(255,170,0,.25)}
 [data-accent="cyan"]{--ac:#00ffee;--ac2:#00ccbb;--aca:rgba(0,255,238,.06);--acline:rgba(0,255,238,.18);--ac-glow:rgba(0,255,238,.25)}
 
-body{background:var(--bg);color:var(--t1);font-family:var(--f);font-size:14px;line-height:1.5;transition:background .3s,color .3s}
+body{background:var(--bg);color:var(--t1);font-family:var(--f);font-size:16px;line-height:1.55;transition:background .3s,color .3s}
 
 /* ═══ WATERMARK ═══ */
 #watermark{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
@@ -241,7 +241,7 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .peer-av.online::after{content:'';position:absolute;bottom:0;right:0;width:9px;height:9px;border-radius:50%;background:var(--ac);border:2px solid var(--bg);box-shadow:0 0 6px var(--ac)}
 .peer-count{width:30px;height:30px;border-radius:50%;background:var(--bg3);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:10px;color:var(--t2);margin-left:-8px}
 .ct-info{min-width:0}
-.ct-name{font-weight:800;font-size:14px;color:var(--t0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct-name{font-weight:800;font-size:15px;color:var(--t0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ct-status{font-family:var(--fm);font-size:10px;color:var(--ac);letter-spacing:.5px}
 .ct-right{display:flex;align-items:center;gap:5px;flex-shrink:0}
 .enc-badge{display:flex;align-items:center;gap:5px;padding:4px 10px;background:var(--aca);border:1px solid var(--acline);border-radius:20px;font-family:var(--fm);font-size:9px;color:var(--ac);letter-spacing:.5px}
@@ -265,12 +265,15 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .pr-av{font-size:22px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--bg3);flex-shrink:0;position:relative}
 .pr-av .pr-online{position:absolute;bottom:0;right:0;width:8px;height:8px;border-radius:50%;background:var(--ac);border:1.5px solid var(--bg2)}
 .pr-info{flex:1;min-width:0}
-.pr-name{font-weight:700;font-size:12px;color:var(--t0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-name{font-weight:700;font-size:14px;color:var(--t0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pr-badge{font-family:var(--fm);font-size:8px;color:var(--ac);letter-spacing:1px}
 .pr-badge.guest{color:var(--t3)}
 .pr-kick{background:none;border:1px solid rgba(255,59,59,.2);border-radius:7px;padding:4px 8px;font-family:var(--fm);font-size:9px;color:var(--red);cursor:pointer;transition:all .15s;flex-shrink:0}
 .pr-kick:hover{background:var(--reda);border-color:rgba(255,59,59,.4)}
 .pp-lock-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:10px;background:var(--bg2);border:1px solid var(--border)}
+.pp-invite-row{padding:4px 0}
+.pp-invite-btn{width:100%;padding:10px;border-radius:10px;border:1px solid var(--acline);background:var(--aca);font-family:var(--f);font-size:13px;font-weight:700;color:var(--ac);cursor:pointer;transition:all .18s;letter-spacing:.3px}
+.pp-invite-btn:hover{background:var(--acline);color:#000}
 .pp-lock-label{font-family:var(--fm);font-size:9px;color:var(--t2);letter-spacing:.5px}
 
 /* ═══ INFO PANEL ═══ */
@@ -279,8 +282,8 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .info-panel.open{max-height:800px;opacity:1;pointer-events:all}
 .ip-divider{height:1px;background:var(--border)}
 .ip-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.ip-k{font-family:var(--fm);font-size:9px;color:var(--t3);letter-spacing:1.5px;flex-shrink:0}
-.ip-v{font-family:var(--fm);font-size:9px;color:var(--t1);letter-spacing:.5px;text-align:right}
+.ip-k{font-family:var(--fm);font-size:11px;color:var(--t3);letter-spacing:1.5px;flex-shrink:0}
+.ip-v{font-family:var(--fm);font-size:11px;color:var(--t1);letter-spacing:.5px;text-align:right}
 .ip-v.ok{color:var(--ac)}
 .sn-lbl,.burn-lbl{font-family:var(--fm);font-size:8px;color:var(--t3);letter-spacing:1.5px;margin-bottom:4px;text-transform:uppercase}
 .burn-sub{font-family:var(--fm);font-size:8px;color:rgba(255,170,0,.5);letter-spacing:.5px;margin-bottom:8px;line-height:1.5}
@@ -313,21 +316,21 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .mg.them.anim-in .bub{animation:bubFromLeft .3s cubic-bezier(.16,1,.3,1) both}
 @keyframes bubFromLeft{from{transform:translateX(-12px)}to{transform:none}}
 .mg-meta{display:flex;align-items:center;gap:6px;margin-bottom:2px}
-.mg-av{font-size:13px}.mg-name{font-size:11px;font-weight:700;color:var(--t2);letter-spacing:.3px}
+.mg-av{font-size:15px}.mg-name{font-size:13px;font-weight:700;color:var(--t2);letter-spacing:.3px}
 .vdot,.uvdot{display:inline-block;width:5px;height:5px;border-radius:50%;margin-left:4px;vertical-align:middle}
 .vdot{background:var(--ac)}.uvdot{background:var(--amber)}
 .mg-time{font-family:var(--fm);font-size:9px;color:var(--t3)}
-.bub{max-width:70%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.58;position:relative;word-break:break-word;white-space:pre-wrap}
+.bub{max-width:70%;padding:12px 16px;border-radius:16px;font-size:16px;line-height:1.62;position:relative;word-break:break-word;white-space:pre-wrap}
 .mg.me .bub{background:linear-gradient(145deg,var(--aca),rgba(var(--ac-rgb),.03));border:1px solid var(--acline);color:var(--t0);border-radius:16px 16px 4px 16px}
 .mg.them .bub{background:var(--bg3);border:1px solid var(--border2);color:var(--t0);border-radius:16px 16px 16px 4px}
 [data-theme="light"] .mg.me .bub{background:linear-gradient(145deg,var(--aca),transparent)}
 [data-theme="light"] .mg.them .bub{background:var(--bg2)}
 .bub.sending{opacity:.6}
 .bub-foot{display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:5px}
-.bub-time{font-family:var(--fm);font-size:9px;color:var(--t3)}
+.bub-time{font-family:var(--fm);font-size:11px;color:var(--t3)}
 .tick{font-family:var(--fm);font-size:10px;color:var(--t3);transition:color .3s}
 .tick.seen{color:var(--ac)}
-.sys-msg{font-family:var(--fm);font-size:9px;color:var(--t3);background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:5px 14px;letter-spacing:.5px;text-align:center}
+.sys-msg{font-family:var(--fm);font-size:11px;color:var(--t3);background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:5px 14px;letter-spacing:.5px;text-align:center}
 .sys-msg.ok{color:var(--ac);border-color:var(--acline);background:var(--aca)}
 .sys-msg.warn{color:var(--amber);border-color:rgba(255,170,0,.2);background:rgba(255,170,0,.04)}
 .sys-msg.err{color:var(--red);border-color:rgba(255,59,59,.2);background:rgba(255,59,59,.04)}
@@ -344,7 +347,7 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .reply-bar{display:none;align-items:center;gap:10px;padding:8px 14px;background:var(--bg2);border-top:1px solid var(--border);border-left:3px solid var(--ac);flex-shrink:0}
 .reply-bar.on{display:flex}
 .rp-name{font-family:var(--fm);font-size:9px;color:var(--ac);flex-shrink:0}
-.rp-text{flex:1;font-size:12px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-text{flex:1;font-size:14px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rp-close{background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px;padding:0 4px;line-height:1;transition:color .15s;flex-shrink:0}
 .rp-close:hover{color:var(--red)}
 .react-zone{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
@@ -375,7 +378,7 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .input-row:focus-within{border-color:var(--acline);box-shadow:0 0 0 3px var(--aca)}
 .tool-btn{background:none;border:none;cursor:pointer;font-size:18px;color:var(--t2);padding:5px;border-radius:9px;transition:all .15s;flex-shrink:0;line-height:1}
 .tool-btn:hover{color:var(--t0);background:var(--bg3);transform:scale(1.1)}
-.msg-in{flex:1;background:transparent;border:none;color:var(--t0);font-family:var(--f);font-size:14px;line-height:1.55;resize:none;outline:none;min-height:22px;max-height:110px;overflow-y:auto;padding:2px 0}
+.msg-in{flex:1;background:transparent;border:none;color:var(--t0);font-family:var(--f);font-size:16px;line-height:1.55;resize:none;outline:none;min-height:22px;max-height:110px;overflow-y:auto;padding:2px 0}
 .msg-in::placeholder{color:var(--t3)}
 .char-count{font-family:var(--fm);font-size:9px;color:var(--t3);padding:0 2px;flex-shrink:0;align-self:center;transition:color .2s}
 .char-count.warn{color:var(--amber)}.char-count.over{color:var(--red)}
@@ -438,7 +441,7 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 
 @media(max-width:480px){
   .code-big{font-size:22px;letter-spacing:5px}
-  .bub{max-width:88%}
+  .bub{max-width:92%}
   .enc-badge,.room-badge{display:none}
   .code-inp{font-size:15px;letter-spacing:3px}
 }
@@ -560,6 +563,13 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       <button class="btn-share" onclick="copyLink()">🔗 Copy Link</button>
     </div>
   </div>
+  <div id="braveWarn" style="display:none;background:rgba(255,100,0,.08);border:1px solid rgba(255,100,0,.25);border-radius:14px;padding:14px 16px;width:100%;flex-direction:column;gap:8px;font-family:var(--fm);font-size:10px;color:#ff8040;letter-spacing:.5px;line-height:1.8">
+    <b style="font-size:12px">⚠ Brave Browser Detected</b><br>
+    Brave blocks WebRTC by default. To fix:<br>
+    1. Click the <b>Brave Shield</b> (lion icon) in the address bar<br>
+    2. Set <b>"Block fingerprinting"</b> to <b>Standard</b> (not Aggressive)<br>
+    Or: Go to <b>brave://settings/privacy</b> → WebRTC IP handling → Default
+  </div>
   <button class="btn-back" onclick="cancelConn()">← Back to Lobby</button>
 </div>
 </div>
@@ -604,6 +614,9 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
     <div class="peers-panel" id="peersPanel">
       <div class="pp-head">Room Members</div>
       <div id="peersList"></div>
+      <div class="pp-invite-row" id="inviteRow">
+        <button class="pp-invite-btn" onclick="showInviteCode()">📨 Invite someone</button>
+      </div>
       <div class="pp-lock-row" id="lockRow" style="display:none">
         <span class="pp-lock-label">🔒 Lock Room (no new joins)</span>
         <div class="toggle-track" id="lockTrack" onclick="toggleRoomLock()"><div class="toggle-thumb"></div></div>
@@ -781,6 +794,11 @@ let me={avatar:'👻',name:'',status:'🟢 Online',id:uid()};
 /* ─── MULTI-PEER MESH STATE ─ */
 // peers: Map<peerId, {conn, aes, signPub, ecdh, name, avatar, status, isHost, latency, rl}>
 const peers=new Map();
+// Identity cache: peerId -> {name, avatar} — populated from ALL sources
+// so relayed messages can show the right sender name even without direct conn
+const peerNames=new Map();
+function cachePeer(id,name,avatar){if(id&&name&&name!=='?')peerNames.set(id,{name:san(String(name)).slice(0,24),avatar:san(String(avatar||'👤')).slice(0,8)});}
+function getPeerDisplay(id){return peers.get(id)||peerNames.get(id)||null;}
 let myPeer=null;      // PeerJS Peer instance
 let code=null;        // room code (= host's PeerJS ID)
 let amHost=false;
@@ -952,6 +970,12 @@ function goLobby(){
 /* ═══════════════════════════════
    CRYPTO
 ═══════════════════════════════ */
+function ensureName(){
+  if(!me.name||!me.name.trim()){
+    me.name='Ghost_'+(crypto.getRandomValues(new Uint32Array(1))[0]%9999);
+  }
+}
+
 async function initCrypto(){
   _myECDH=await crypto.subtle.generateKey({name:'ECDH',namedCurve:'P-256'},true,['deriveBits']);
   _mySign=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
@@ -1027,17 +1051,75 @@ async function confirmRoomSetup(){
 /* ═══════════════════════════════
    PEERJS / CONNECTION
 ═══════════════════════════════ */
+/* ─── ICE / STUN / TURN config ────────────────────────────────────
+   STUN: discovers your public IP so WebRTC can punch through NAT.
+   TURN: relay fallback for Brave (WebRTC leak protection), mobile
+         carrier CGNAT, strict firewalls, etc.
+   Using a mix of Google, Cloudflare, and open-relay TURN servers.
+─────────────────────────────────────────────────────────────── */
+const ICE_SERVERS=[
+  // STUN — multiple for redundancy
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'stun:stun2.l.google.com:19302'},
+  {urls:'stun:stun3.l.google.com:19302'},
+  {urls:'stun:stun4.l.google.com:19302'},
+  {urls:'stun:stun.cloudflare.com:3478'},
+  {urls:'stun:stun.relay.metered.ca:80'},
+  // TURN UDP — carrier NAT + mobile fallback
+  {urls:'turn:global.relay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:global.relay.metered.ca:80?transport=tcp',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:global.relay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:global.relay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'},
+  // Cloudflare TURN (no credential needed for STUN tier)
+  {urls:'stun:stun.cloudflare.com:3478'},
+];
+
 function makePeer(id){
-  const opts={debug:0};
+  const opts={
+    debug:0,
+    config:{
+      iceServers:ICE_SERVERS,
+      iceTransportPolicy:'all',   // try direct first, fall back to TURN
+      sdpSemantics:'unified-plan',
+      iceCandidatePoolSize:10,    // pre-gather candidates for faster connect
+    }
+  };
   const p=id?new Peer(id,opts):new Peer(opts);
   p.on('error',err=>{
-    const msg=err.type==='peer-unavailable'?'Room not found':err.type==='network'?'Network error':err.type==='unavailable-id'?'Room code taken':'Error: '+err.type;
+    const errMap={
+      'peer-unavailable':'Room not found — check the code',
+      'network':'Network error — check your connection',
+      'unavailable-id':'Room code taken — try again',
+      'browser-incompatible':'Browser not supported (try Chrome/Firefox)',
+      'ssl-unavailable':'HTTPS required for WebRTC',
+      'server-error':'Signaling server error — try again',
+      'socket-error':'Socket error — check firewall/VPN',
+      'socket-closed':'Connection dropped',
+    };
+    const msg=errMap[err.type]||('Connection error: '+err.type);
     setConnStatus(msg,'err');toast(msg,'err');
+    console.warn('[Ghost peer error]',err.type,err);
   });
-  p.on('disconnected',()=>{try{p.reconnect();}catch(e){}});
+  p.on('disconnected',()=>{
+    console.log('[Ghost] peer disconnected from signaling, reconnecting...');
+    try{p.reconnect();}catch(e){}
+  });
   return p;
 }
 function setConnStatus(msg,cls=''){const el=$('connStatus');if(el){el.textContent=msg;el.className='conn-status'+(cls?' '+cls:'');}}
+
+function detectBraveWarning(){
+  // Brave blocks WebRTC by default — show a helper tip
+  if(navigator.brave){
+    navigator.brave.isBrave().then(isBrave=>{
+      if(isBrave){
+        const warn=document.getElementById('braveWarn');
+        if(warn)warn.style.display='flex';
+      }
+    }).catch(()=>{});
+  }
+}
 
 /* ─── HOST: Create room ─── */
 async function startCreate(){
@@ -1046,7 +1128,7 @@ async function startCreate(){
   $('connHint').textContent='Creating room…';$('shareRow').style.display='none';
   $('expiryBadge').style.display='none';
   setConnStatus('Connecting to relay…');
-  try{await initCrypto();}catch(e){toast('Crypto init failed','err');return;}
+  ensureName();try{await initCrypto();}catch(e){toast('Crypto init failed','err');return;}
   const ch='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   code='GH-'+Array.from(crypto.getRandomValues(new Uint32Array(4)),r=>ch[r%ch.length]).join('');
   fullWipePeer();
@@ -1092,7 +1174,7 @@ async function hostHandleIncoming(c){
   // Check single use
   if(roomSingleUse&&codeUsed){rawSendTo(c,{type:'code_used'});setTimeout(()=>c.close(),500);return;}
   // Check max peers
-  if(peers.size>=roomMaxPeers-1){rawSendTo(c,{type:'room_full'});setTimeout(()=>c.close(),500);return;}
+  if(peers.size>=roomMaxPeers){rawSendTo(c,{type:'room_full'});setTimeout(()=>c.close(),500);return;}
 
   // Mark single-use consumed
   if(roomSingleUse)codeUsed=true;
@@ -1150,6 +1232,7 @@ async function hostOnData(ref,c,raw){
       ref.id=realId;           // update ref so close/error/data handlers stay correct
       peers.set(realId,peerEntry);
       peerEntry.realId=realId;
+      cachePeer(realId,peerEntry.name,peerEntry.avatar);
       enterChatIfNeeded();
       addSys('👋 '+peerEntry.name+' joined the room','ok');
       updatePeerUI();
@@ -1176,25 +1259,28 @@ async function startJoin(){
   show('sConnect');
   $('connIcon').textContent='🔑';$('connCode').textContent=raw.slice(0,8);
   $('connHint').textContent='Connecting…';$('shareRow').style.display='none';
-  setConnStatus('Connecting…');
-  try{await initCrypto();}catch(e){toast('Crypto init failed','err');return;}
+  setConnStatus('Connecting…');detectBraveWarning();
+  ensureName();try{await initCrypto();}catch(e){toast('Crypto init failed','err');return;}
   fullWipePeer();
   amHost=false;
   myPeer=makePeer();
   myPeer.on('open',()=>{
     setConnStatus('Found room — opening tunnel…');
-    const c=myPeer.connect(knockCode,{reliable:true,serialization:'json'});
+    const c=myPeer.connect(knockCode,{reliable:true,serialization:'json',config:{iceServers:ICE_SERVERS,iceTransportPolicy:'all'}});
     guestSetupHostConn(c);
   });
+  // Guests must accept incoming direct connections from other peers in the mesh
+  myPeer.on('connection',c=>meshHandleIncoming(c));
 }
 
 function guestSetupHostConn(c){
   const hostId=knockCode;
   const peerEntry={conn:c,aes:null,signPub:null,ecdhPub:null,name:'Host',avatar:'👤',status:'',outN:0,inN:-1,rl:[],isHost:true,realId:hostId};
 
-  const _tmr=setTimeout(()=>{if(!c.open){setConnStatus('Timed out','err');toast('Connection timed out','err');}},14000);
+  const _tmr=setTimeout(()=>{if(!c.open){setConnStatus('Connection timed out — the room may be on a different network. Try sharing the link directly.','err');toast('Connection timed out','err');}},28000);
 
-  const onGuestOpen=()=>{clearTimeout(_tmr);setConnStatus('Connected — awaiting room info…');};
+  let _iceTimer=setTimeout(()=>setConnStatus('Negotiating connection (this can take ~10s on mobile or Brave)…'),4000);
+  const onGuestOpen=()=>{clearTimeout(_tmr);clearTimeout(_iceTimer);setConnStatus('Connected — awaiting room info…');};
   if(c.open){onGuestOpen();}else{c.on('open',onGuestOpen);}
   c.on('data',async raw=>{
     const env=typeof raw==='object'?raw:sjp(raw);if(!env)return;
@@ -1235,6 +1321,7 @@ function guestSetupHostConn(c){
         peerEntry.name=san(String(env.name||'Host')).slice(0,24);
         peerEntry.avatar=san(String(env.avatar||'👤')).slice(0,8);
         peerEntry.isHost=env.isHost||false;
+        cachePeer(hostId,peerEntry.name,peerEntry.avatar);
         enterChatIfNeeded();
         addSys('🔒 Connected to room — keys exchanged','ok');
         updatePeerUI();
@@ -1242,18 +1329,29 @@ function guestSetupHostConn(c){
       return;
     }
     if(env.type==='peer_list'){
-      // Connect to other existing peers in room
+      // Cache all identities first, then connect
       for(const p of (env.peers||[])){
-        if(!peers.has(p.id)){connectToPeer(p.id,p);}
+        const pid=san(String(p.id||''));
+        if(!pid)continue;
+        cachePeer(pid,p.name,p.avatar); // cache so relayed msgs show name immediately
+        if(peers.has(pid))continue;
+        if((myPeer?.id||'') < pid){
+          connectToPeer(pid,p); // we initiate
+        }
+        // else: existing peer will see peer_joined and initiate toward us
       }
       return;
     }
     if(env.type==='peer_joined'){
-      // New peer arrived — host will introduce; we wait for direct connection
+      const newId=san(String(env.id||''));
+      if(newId){cachePeer(newId,env.name,env.avatar);} // cache before connection
       addSys('👋 '+san(String(env.name||'?'))+' joined','ok');
       updatePeerUI();
-      // connect to them directly
-      if(!peers.has(env.id)){connectToPeer(env.id,env);}
+      if(newId&&!peers.has(newId)){
+        if((myPeer?.id||'') < newId){
+          connectToPeer(newId,env);
+        }
+      }
       return;
     }
     if(env.type==='peer_left'){
@@ -1289,15 +1387,18 @@ async function submitKnock(){
 /* ─── Peer-to-peer direct connection (mesh) ─── */
 function connectToPeer(peerId,meta){
   if(peers.has(peerId)||!myPeer)return;
-  const c=myPeer.connect(peerId,{reliable:true,serialization:'json'});
+  const c=myPeer.connect(peerId,{reliable:true,serialization:'json',config:{iceServers:ICE_SERVERS,iceTransportPolicy:'all'}});
   const peerEntry={conn:c,aes:null,signPub:null,ecdhPub:null,name:san(String(meta?.name||'?')).slice(0,24),avatar:san(String(meta?.avatar||'👤')).slice(0,8),status:'',outN:0,inN:-1,rl:[],isHost:false,realId:peerId};
   peers.set(peerId,peerEntry);
 
-  c.on('open',async()=>{
+  // Outbound side: send our keys first as soon as connection opens
+  const sendMyKeys=async()=>{
     const ep=await exportPub(_myECDH.publicKey);
     const sp=await exportPub(_mySign.publicKey);
     rawSendTo(c,{type:'keys',ep,sp,avatar:me.avatar,name:me.name,status:me.status});
-  });
+  };
+  if(c.open){sendMyKeys();}else{c.on('open',sendMyKeys);}
+
   c.on('data',async raw=>{
     const env=typeof raw==='object'?raw:sjp(raw);if(!env)return;
     if(env.type==='keys'){
@@ -1307,6 +1408,8 @@ function connectToPeer(peerId,meta){
         peerEntry.aes=await deriveAES(peerEntry.ecdhPub);
         peerEntry.name=san(String(env.name||'?')).slice(0,24);
         peerEntry.avatar=san(String(env.avatar||'👤')).slice(0,8);
+        cachePeer(peerId,peerEntry.name,peerEntry.avatar);
+        addSys('🔗 '+peerEntry.name+' is in the room','ok');
         updatePeerUI();
       }catch(e){console.error('[Mesh keys]',e);}
       return;
@@ -1315,11 +1418,43 @@ function connectToPeer(peerId,meta){
   });
   c.on('close',()=>peerDisconnected(peerId));
   c.on('error',()=>peerDisconnected(peerId));
-  if(c.open){c.emit('open');}
+}
+
+/* ─── Any peer: handle inbound mesh connections from other non-host peers ─── */
+function meshHandleIncoming(c){
+  const peerId=c.peer;
+  if(peers.has(peerId))return; // already connected
+  const peerEntry={conn:c,aes:null,signPub:null,ecdhPub:null,name:'?',avatar:'👤',status:'',outN:0,inN:-1,rl:[],isHost:false,realId:peerId};
+  peers.set(peerId,peerEntry);
+  // Inbound side: wait for keys from the connector, then reply with our own keys
+  // (avoids both sides sending simultaneously before either has the other's pub key)
+  c.on('data',async raw=>{
+    const env=typeof raw==='object'?raw:sjp(raw);if(!env)return;
+    if(env.type==='keys'){
+      try{
+        peerEntry.ecdhPub=await importECDHPub(env.ep);
+        peerEntry.signPub=await importSignPub(env.sp);
+        peerEntry.aes=await deriveAES(peerEntry.ecdhPub);
+        peerEntry.name=san(String(env.name||'?')).slice(0,24);
+        peerEntry.avatar=san(String(env.avatar||'👤')).slice(0,8);
+        // Now send our keys back
+        const ep=await exportPub(_myECDH.publicKey);
+        const sp=await exportPub(_mySign.publicKey);
+        rawSendTo(c,{type:'keys',ep,sp,avatar:me.avatar,name:me.name,status:me.status});
+        cachePeer(peerId,peerEntry.name,peerEntry.avatar);
+        addSys('🔗 '+peerEntry.name+' connected directly','ok');
+        updatePeerUI();
+      }catch(e){console.error('[Mesh incoming keys]',e);}
+      return;
+    }
+    if(env.e&&peerEntry.aes)await handleEncEnvelope(env,peerId,peerEntry);
+  });
+  c.on('close',()=>peerDisconnected(peerId));
+  c.on('error',()=>peerDisconnected(peerId));
 }
 
 /* ─── HOST: receives a guest's connection (inbound from existing peer accepting our outbound) ─── */
-// Already handled via myPeer.on('connection') → hostHandleIncoming
+// Handled via myPeer.on('connection') → hostHandleIncoming
 
 /* ─── Encrypted envelope handler (shared) ─── */
 async function handleEncEnvelope(env,peerId,peerEntry){
@@ -1351,14 +1486,26 @@ async function dispatchFrom(d,peerId,peerEntry,verified){
     if(seenMsgIds.size>2000){const it=seenMsgIds.values();for(let i=0;i<500;i++)seenMsgIds.delete(it.next().value);}
     const replyInfo=d.replyTo?{id:san(String(d.replyTo.id||'')),text:san(String(d.replyTo.text||'')),name:san(String(d.replyTo.name||''))}:null;
     const inBurn=typeof d.burn==='number'&&d.burn>=0&&d.burn<=3600?d.burn:0;
-    addMsg(txt,peerId,Date.now(),verified,false,replyInfo,mid,false,inBurn,peerEntry);
+    // If this is a relayed message, use the embedded sender identity
+    // (host relays peer A's message to peer B; peerId = host, but real sender is d.senderId)
+    let displayPeerId=peerId;
+    let displayEntry=peerEntry;
+    if(d.senderId&&d.senderName){
+      // Try to find the real peer entry first
+      const realEntry=peers.get(d.senderId);
+      displayPeerId=d.senderId;
+      const sName=san(String(d.senderName||'')).slice(0,24)||'Peer';
+      const sAv=san(String(d.senderAvatar||'👤')).slice(0,8);
+      displayEntry=realEntry||{name:sName,avatar:sAv};
+    }
+    addMsg(txt,displayPeerId,Date.now(),verified,false,replyInfo,mid,false,inBurn,displayEntry);
     beep(440,.06,.1);
     await encSendTo(peerId,{type:'seen',id:mid});
     // For group: re-broadcast to others (host relays if needed)
     if(amHost&&d.relay!==false){
       for(const [pid,pe] of peers){
         if(pid!==peerId&&pe.aes){
-          const fwd={...d,relay:false,senderName:peerEntry.name,senderAvatar:peerEntry.avatar};
+          const fwd={...d,relay:false,senderId:peerId,senderName:peerEntry.name,senderAvatar:peerEntry.avatar};
           await encSendTo(pid,fwd);
         }
       }
@@ -1448,6 +1595,8 @@ function updatePingUI(){
 /* ─── Enter chat ─── */
 function enterChatIfNeeded(){
   if($('sChat').classList.contains('on'))return;
+  // Cache own identity
+  if(myPeer)cachePeer(myPeer.id,me.name,me.avatar);
   show('sChat');$('msgs').innerHTML='';
   const qb=document.createElement('div');qb.className='queue-badge';qb.id='queueBadge';qb.onclick=scrollBot;
   qb.innerHTML='<div class="q-dot"></div><span id="queueCount">0 queued</span>';
@@ -1464,10 +1613,11 @@ function enterChatIfNeeded(){
 /* ─── Peer disconnected ─── */
 function peerDisconnected(peerId){
   const pe=peers.get(peerId);
-  if(pe)addSys('👋 '+(pe.name||'Peer')+' left the room','warn');
+  // Only announce if handshake was complete (has a real name, not a tmp entry)
+  if(pe&&pe.name&&pe.name!=='?'&&pe.aes)addSys('👋 '+pe.name+' left the room','warn');
   peers.delete(peerId);
   updatePeerUI();
-  if(peers.size===0){
+  if(peers.size===0&&connState==='connected'){
     try{$('ctSub').textContent='Disconnected';$('ctSub').style.color='var(--red)';}catch(e){}
     toast('All peers disconnected','warn');
   }
@@ -1483,7 +1633,7 @@ function fullWipe(){
   stopDummy();stopPing();fullWipePeer();
   clearInterval(expiryCountdown);expiryCountdown=null;
   _myECDH=null;_mySign=null;_keysSentTo.clear();
-  replyTo=null;Object.keys(msgMap).forEach(k=>delete msgMap[k]);
+  replyTo=null;peerNames.clear();Object.keys(msgMap).forEach(k=>delete msgMap[k]);
   msgQueue.length=0;seenMsgIds.clear();
   connState='disconnected';latency=null;myBurnSecs=0;
   amHost=false;roomLocked=false;roomPw='';roomMaxPeers=2;
@@ -1533,7 +1683,7 @@ function updatePeerUI(){
   $('ctRm').textContent='#'+short;
   $('ipRm').textContent=short||'—';
   $('ipPeers').textContent=peers.size;
-  $('statPeers').textContent=peers.size+1;
+  $('statPeers').textContent=peers.size+1;  // +1 for self
 
   // Peer name in header
   if(peers.size===0){
@@ -1569,19 +1719,24 @@ function updatePeerUI(){
 
 function makePeerRow(pid,pe){
   const isMe=pe==='me';
+  const connecting=!isMe&&!pe.aes; // key exchange not yet complete
   const row=document.createElement('div');
   row.className='peer-row'+(isMe||(!isMe&&pe.isHost)?' host-row':'');
+  if(connecting)row.style.opacity='.55';
   const avEl=document.createElement('div');avEl.className='pr-av';
-  avEl.innerHTML=(isMe?me.avatar:pe.avatar)+'<div class="pr-online"></div>';
+  const dispAvatar=isMe?me.avatar:(pe.avatar||'👤');
+  avEl.innerHTML=dispAvatar+'<div class="pr-online"></div>';
   const info=document.createElement('div');info.className='pr-info';
-  const nm=document.createElement('div');nm.className='pr-name';nm.textContent=isMe?me.name+' (you)':san(pe.name);
-  const badge=document.createElement('div');badge.className='pr-badge';
-  if(isMe)badge.textContent=amHost?'HOST':'GUEST';
-  else badge.textContent=pe.isHost?'HOST':'GUEST';
-  badge.className='pr-badge'+((!isMe&&pe.isHost)||isMe&&amHost?'':' guest');
+  const nm=document.createElement('div');nm.className='pr-name';
+  const dispName=isMe?me.name+' (you)':san(pe.name&&pe.name!=='?'?pe.name:'Connecting…');
+  nm.textContent=dispName;
+  const badge=document.createElement('div');
+  if(connecting){badge.className='pr-badge guest';badge.textContent='CONNECTING';}
+  else if(isMe){badge.className='pr-badge'+(amHost?'':' guest');badge.textContent=amHost?'HOST':'YOU';}
+  else{badge.className='pr-badge'+(pe.isHost?'':' guest');badge.textContent=pe.isHost?'HOST':'GUEST';}
   info.appendChild(nm);info.appendChild(badge);
   row.appendChild(avEl);row.appendChild(info);
-  if(!isMe&&amHost){
+  if(!isMe&&amHost&&pe.aes){
     const kick=document.createElement('button');kick.className='pr-kick';kick.textContent='Kick';kick.onclick=()=>kickPeer(pid);row.appendChild(kick);
   }
   return row;
@@ -1682,7 +1837,7 @@ function addMsg(content,peerId,ts,verified,showTick,replyInfo,msgId,isSending,bu
   const id=msgId||uid();
   const g=document.createElement('div');g.className='mg '+side+' anim-in';g.dataset.id=id;g.dataset.peerId=peerId;msgMap[id]=g;
 
-  const pe=peerEntry||(isMe?null:peers.get(peerId));
+  const pe=peerEntry||(isMe?null:getPeerDisplay(peerId));
   const pAvatar=isMe?me.avatar:(pe?.avatar||'👤');
   const pName=isMe?(me.name||'You'):(pe?.name||'them');
 
@@ -1781,6 +1936,21 @@ function confirmBurnCustom(){
    COPY / SHARE
 ═══════════════════════════════ */
 function copyCode(){const short=(code||'').replace('GH-','');if(!short)return;navigator.clipboard.writeText(short).then(()=>toast('Room code copied! 📋','ok'));}
+function showInviteCode(){
+  const short=(code||'').replace('GH-','');
+  if(!short){toast('No active room','err');return;}
+  const link=location.href.split('#')[0]+'#'+short;
+  // Show a mini modal with the code + copy buttons
+  showModal({
+    icon:'📨',
+    title:'INVITE LINK',
+    body:'Share this code with anyone you want to join:<br><br><span style="font-family:var(--fm);font-size:22px;letter-spacing:6px;color:var(--ac);background:var(--aca);padding:8px 16px;border-radius:8px;display:inline-block;margin:4px 0">'+short+'</span><br><br>Or send them the full link to open directly.',
+    confirmLabel:'📋 Copy Link',
+    onConfirm:()=>{navigator.clipboard.writeText(link).then(()=>toast('🔗 Invite link copied!','ok'));}
+  });
+  // Also copy code to clipboard immediately
+  navigator.clipboard.writeText(short).catch(()=>{});
+}
 function copyLink(){const short=(code||'').replace('GH-','');if(!short)return;navigator.clipboard.writeText(location.href.split('#')[0]+'#'+short).then(()=>toast('🔗 Invite link copied!','ok'));}
 
 /* ═══════════════════════════════
