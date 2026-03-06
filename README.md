@@ -86,7 +86,7 @@ Ghost Chat is a **single HTML file**. That's it.
 ### Option 1 — Just open it
 ```bash
 # Download the file
-curl -O https://raw.githubusercontent.com/yourusername/ghost-chat/main/ghostchat.html
+curl -O https://raw.githubusercontent.com/w3bcooki3/ghostchat/main/index.html
 
 # Open in your browser
 open ghostchat.html       # macOS
@@ -105,7 +105,7 @@ python3 -m http.server 8080
 1. Fork this repo
 2. Go to **Settings → Pages**
 3. Set source to `main` branch
-4. Your chat lives at `https://yourusername.github.io/ghost-chat/ghostchat.html`
+4. Your chat lives at `https://w3bcooki3.github.io/ghostchat/`
 
 ### Starting a chat
 1. **Person A** clicks **Create Private Room** → gets a room code like `XQRT7K2F`
