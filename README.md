@@ -1,231 +1,152 @@
 <div align="center">
 
-```
- ██████╗ ██╗  ██╗ ██████╗ ███████╗████████╗     ██████╗██╗  ██╗ █████╗ ████████╗
-██╔════╝ ██║  ██║██╔═══██╗██╔════╝╚══██╔══╝    ██╔════╝██║  ██║██╔══██╗╚══██╔══╝
-██║  ███╗███████║██║   ██║███████╗   ██║       ██║     ███████║███████║   ██║   
-██║   ██║██╔══██║██║   ██║╚════██║   ██║       ██║     ██╔══██║██╔══██║   ██║   
-╚██████╔╝██║  ██║╚██████╔╝███████║   ██║       ╚██████╗██║  ██║██║  ██║   ██║   
- ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝        ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝  
-```
+<img src="icon.svg" width="76" alt="">
 
-**Zero-knowledge · Military-grade · Browser-to-browser encrypted chat**
+# Ghost Chat
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-00ff88.svg?style=for-the-badge&labelColor=0a1018&color=00ff88)](LICENSE)
-[![No Server](https://img.shields.io/badge/No_Server-P2P_Only-00ff88?style=for-the-badge&labelColor=0a1018&color=00ff88)](https://github.com)
-[![No Accounts](https://img.shields.io/badge/No_Accounts-Zero_Logs-00ff88?style=for-the-badge&labelColor=0a1018&color=00ff88)](https://github.com)
-[![Single File](https://img.shields.io/badge/Single_File-Drop_%26_Go-00ff88?style=for-the-badge&labelColor=0a1018&color=00ff88)](https://github.com)
+**Private, end-to-end encrypted chat between two browsers.**
+Post-quantum key exchange. No accounts. Nothing stored. Close the tab and it's gone.
 
-*One HTML file. No install. No accounts. No trace.*
+[![CI](https://github.com/w3bcooki3/ghostchat/actions/workflows/ci.yml/badge.svg)](https://github.com/w3bcooki3/ghostchat/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-62F2B4?labelColor=0C1216)](LICENSE)
 
-[🚀 Try it now](#getting-started) · [🔐 How it works](#how-it-works) · [✨ Features](#features) · [🛡️ Security](#security-model)
+[**Open Ghost Chat**](https://w3bcooki3.github.io/ghostchat/) · [Who can read what](https://w3bcooki3.github.io/ghostchat/security.html) · [Security model](SECURITY.md) · [Review history](docs/AUDIT.md)
+
+![Ghost Chat home screen](docs/screenshots/home.png)
 
 </div>
 
----
+## How it works
 
-## 👻 What is Ghost Chat?
+1. **Start a private chat.** You get a 20-character code like `TZQFM-EQZPL-3JMHC-465QY` and an invite link.
+2. **Share it with one person**, over a channel you trust.
+3. They open the link (or tap **Join with a code** and paste it). Your browsers prove they hold the same code, agree on fresh post-quantum keys, and connect directly. **The room then locks**: the code stops working, even for someone who has all 20 characters.
+4. Optionally **compare the 60-digit safety number** by voice. If both screens match, nobody is in the middle.
 
-Ghost Chat is a **single-file, serverless, end-to-end encrypted** chat app that runs entirely in your browser. Two people can talk privately with military-grade encryption — no sign-up, no data stored anywhere, no middleman.
+![Conversation on desktop](docs/screenshots/chat-desktop.png)
 
-When you close the tab, **everything is gone. Forever.**
+## Features
 
-It's not a product. It's a tool — for people who care about privacy.
+**Security**
+- **Hybrid post-quantum key exchange:** ECDH P-384 + ML-KEM-1024 (FIPS 203). An attacker has to break both.
+- **AES-256-GCM with a new key for every message** (HMAC-SHA-384 ratchet). Tampering, replay and reordering are detected and close the connection.
+- **The room code is the only way in.** The server that introduces your browsers can't join, read, or sit in the middle.
+- **Room lock:** after the first join, only reconnects that prove a secret from this conversation get in.
+- **Safety numbers** that stay stable across reconnects, plus a "verified" mark that survives them.
+- **Maximum privacy:** one tap for relay-only routing (hides your IP from the other person), constant-rate traffic (hides when you type and send), and no typing indicator or read receipts.
+- Messages padded to fixed sizes. Nothing written to disk. Strict Content-Security-Policy. No third-party CDNs. Refuses to run inside frames.
+- **Panic wipe:** press <kbd>Esc</kbd> three times, or tap the button in the session sheet on phones. It destroys everything and leaves the page.
 
----
+**Conversation**
+- Delivered and read receipts; read receipts are optional.
+- Disappearing messages (10 s to 1 h), synced between both people.
+- Replies, reactions, unsend for both, remove for me.
+- Typing indicator (optional).
+- Files up to 100 MB, streamed in encrypted chunks with progress and cancel. Images preview inline; everything else downloads.
+- Drag and drop, or paste images.
+- **Automatic reconnection:** messages you send while offline are queued and delivered when the link returns.
 
-## ✨ Features
+**Phones**
+- An app-style launcher: the brand glows in the fog, with **Start a private chat** and **Join with a code** in thumb reach. Your name and privacy level are chips that open bottom sheets.
+- **Join with a code** opens a dedicated code pad: four boxes that accept a pasted code or a whole invite link, a Paste button, and look-alike warnings (no 0, 1, I or O). Invite links open it already filled in, so joining is one tap. The phone's back button returns home.
+- Bottom sheets for session settings and message actions; swipe a message right to reply, long-press for actions.
+- Native share sheet for invites, a keyboard-aware composer, safe-area insets, and 44-pixel touch targets throughout.
 
-### 🔒 Security First
-- **AES-256-GCM** app-layer encryption on every single message
-- **ECDH P-256** key exchange — keys never leave your device
-- **ECDSA P-256** message signing — every message is cryptographically verified
-- **Ephemeral forward secrecy** — new key pair every session
-- **Safety Numbers** — verify your peer out-of-band (Signal-style)
-- **Replay attack protection** — sequence numbers + message ID deduplication
+![On a phone](docs/screenshots/mobile.png)
 
-### 💬 Chat Features
-- Real-time encrypted messaging with **optimistic delivery** (messages appear instantly)
-- **Message queue** — messages are held locally and auto-delivered when connection restores
-- **Burn After Read** — set messages to self-destruct after 5s / 10s / 30s / custom
-- **Typing indicators** — encrypted so even your metadata is private
-- **Read receipts** (✓ / ✓✓) with seen confirmation
-- **Reply to messages** — quote any message in thread
-- **Emoji reactions** — double-tap to react 👍 ❤️ 😂
-- **Right-click context menu** — reply, copy, or delete locally
+## Who can read what
 
-### 📁 File Sharing
-- Send **any file type** up to 25MB
-- Images render inline with a click-to-expand preview
-- All files are chunked and encrypted before sending
+Ghost Chat protects **content** completely and narrows **metadata** where a web app can. The [interactive page](security.html) lets you pick any observer and see a sample conversation through their eyes. Here is the summary, with **Maximum privacy** on (highlighted cells are what it changes):
 
-### 🌐 Connection & Network
-- **P2P via WebRTC** — traffic goes browser-to-browser, not through a server
-- **Live latency indicator** — ping/pong heartbeats show your connection quality
-- **Auto-reconnect** — peer reconnects automatically on interruption
-- **Cover traffic** — randomized dummy packets make traffic analysis harder
-- One-click **room code** or **invite link** sharing
+![Who can read what, with Maximum privacy](docs/screenshots/security-matrix.png)
 
-### 🚨 Emergency Features
-- **Panic Wipe** 🚨 — one tap destroys everything and redirects to Google
-- **End Session** — purges all keys and messages from memory instantly
+Some things no web app can fix:
+- **A compromised device:** malware sees your screen.
+- **The other person:** they can keep a copy of anything.
+- **Metadata at the signaling server:** it sees your IP address and when you connect, unless you [run your own](#run-your-own-servers) and use a VPN or Tor.
+- **A code that leaks before your peer joins:** whoever has it could get in first. The safety number exposes that.
 
-### 🎨 UX & Design
-- Beautiful dark UI with animated particle network background
-- Subtle `GHOSTCHAT` watermark throughout the interface
-- Smooth message animations (slides in from sender direction)
-- Custom emoji picker, avatar selector, status messages
-- Fully **mobile responsive**
+### Is it "military grade"?
 
----
+Nobody certifies apps as military grade, so the phrase means nothing on its own. Ghost Chat uses the **same algorithms and key sizes as the NSA's CNSA 2.0 suite**: AES-256, ML-KEM-1024 and SHA-384, plus P-384 during the transition period. That's a statement about algorithm choice, not a certification. It isn't FIPS-validated or independently audited, and a website isn't a classified environment. Details are in [SECURITY.md](SECURITY.md).
 
-## 🚀 Getting Started
+## Deploy to GitHub Pages
 
-Ghost Chat is a **single HTML file**. That's it.
+1. Push this repository to GitHub.
+2. Go to **Settings → Pages → Build and deployment**, and set **Source** to **GitHub Actions**.
+3. Push to `main`. The [CI workflow](.github/workflows/ci.yml) runs the unit tests and the real-browser end-to-end suite, and checks that the committed single-file build matches the source. **It deploys only if all of that passes.**
 
-### Option 1 — Just open it
+Your chat is then live at `https://<user>.github.io/<repo>/`, and the single file is at `/ghostchat.html`.
+
+GitHub Pages can't set HTTP headers. The CSP still applies through a `<meta>` tag, and the app refuses to run inside frames. On Netlify or Cloudflare Pages, [`_headers`](_headers) adds the full header set.
+
+## Other ways to run it
+
+**One file.** [`dist/ghostchat.html`](dist/ghostchat.html) has everything inlined: fonts, styles, PeerJS, ML-KEM and the app, with a hash-based CSP. Open it from disk or host it anywhere.
+
+**Verify it first:**
 ```bash
-# Download the file
-curl -O https://raw.githubusercontent.com/w3bcooki3/ghostchat/main/index.html
-
-# Open in your browser
-open ghostchat.html       # macOS
-xdg-open ghostchat.html   # Linux
-start ghostchat.html      # Windows
+sha256sum ghostchat.html     # must match dist/SHA256SUMS from the commit you trust
 ```
+The build is deterministic, so you can also rebuild it yourself and compare: `node tools/build.mjs`.
 
-### Option 2 — Host it yourself (recommended for sharing)
+**Fully offline, on one machine or a LAN** (for development):
 ```bash
-# Any static host works — Python, Netlify, Vercel, GitHub Pages, etc.
-python3 -m http.server 8080
-# Then visit http://localhost:8080/ghostchat.html
+npm install
+npm run serve:local          # signaling on :9000, app on http://127.0.0.1:8090
 ```
 
-### Option 3 — GitHub Pages
-1. Fork this repo
-2. Go to **Settings → Pages**
-3. Set source to `main` branch
-4. Your chat lives at `https://w3bcooki3.github.io/ghostchat/`
-
-### Starting a chat
-1. **Person A** clicks **Create Private Room** → gets a room code like `XQRT7K2F`
-2. **Person A** shares the code (or invite link) with Person B
-3. **Person B** pastes the code → clicks **Join**
-4. Keys exchange automatically → encrypted channel opens 🔒
-
-> 💡 You can also share a direct invite link: `https://yourhost/ghostchat.html#XQRT7K2F` — the joiner lands straight into the room.
-
----
-
-## 🔐 How It Works
-
+### Run your own servers
+The default introduction server is the public `0.peerjs.com`, and the default relay is PeerJS's public TURN server. For real metadata privacy, run your own:
+```bash
+npx peerjs --port 9000       # signaling
+# plus a TURN server such as coturn, for relay-only mode
 ```
-Person A                                    Person B
-   │                                           │
-   │  1. Generate ECDH keypair                 │  1. Generate ECDH keypair
-   │  2. Generate ECDSA keypair                │  2. Generate ECDSA keypair
-   │                                           │
-   │──── public keys (via PeerJS relay) ──────▶│
-   │◀─── public keys (via PeerJS relay) ───────│
-   │                                           │
-   │  3. Derive shared AES-256 key (ECDH)      │  3. Derive shared AES-256 key (ECDH)
-   │     (relay never sees this key)           │     (relay never sees this key)
-   │                                           │
-   │──── encrypted + signed message ──────────▶│  4. Verify ECDSA signature
-   │                                           │  5. Decrypt with AES-256-GCM
-```
+Then edit [`js/config.js`](js/config.js) (`SIGNALING`, `ICE_SERVERS`) and the `connect-src` entry of the CSP in `index.html`.
 
-**The PeerJS relay server only brokers the initial WebRTC connection.** Once the P2P channel is open, all traffic flows directly between browsers. The relay sees encrypted WebRTC packets — it has no access to your messages, keys, or identities.
-
----
-
-## 🛡️ Security Model
-
-| Property | Details |
-|---|---|
-| **Transport** | DTLS 1.3 (WebRTC) |
-| **App layer** | AES-256-GCM, fresh IV per message |
-| **Key exchange** | ECDH P-256 (ephemeral per session) |
-| **Signing** | ECDSA P-256 — every message authenticated |
-| **Key derivation** | HKDF-SHA256 with domain separation |
-| **Forward secrecy** | New keypair every session |
-| **Message padding** | Fixed-size buckets (256 / 1KB / 4KB / 16KB) to resist length analysis |
-| **Cover traffic** | Random-interval dummy packets |
-| **Replay protection** | Sequence numbers + message ID dedup set |
-| **Persistence** | Zero — nothing written to disk, localStorage, or IndexedDB |
-| **Rate limiting** | 80 messages / 60 seconds per peer |
-
-### What Ghost Chat does NOT protect against
-- A compromised browser / device (keylogger, malicious extension)
-- Screen recording or shoulder surfing
-- Your ISP seeing that you're connected to PeerJS (but not the content)
-- A malicious peer (the person you chose to talk to)
-
----
-
-## 🧱 Tech Stack
-
-Ghost Chat is intentionally minimal. Zero dependencies, zero build step.
-
-| Layer | Technology |
-|---|---|
-| P2P signaling | [PeerJS](https://peerjs.com/) (WebRTC) |
-| Encryption | [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) (native browser) |
-| UI | Vanilla JS + CSS (no frameworks) |
-| Fonts | Google Fonts (Syne, JetBrains Mono, Bebas Neue) |
-| Build | None. It's one file. |
-
----
-
-## 🗺️ Roadmap
-
-Things that would be cool to add:
-
-- [ ] Voice messages (encrypted audio blobs)
-- [ ] Multi-peer rooms (3+ people)
-- [ ] Disappearing room codes (time-limited)
-- [ ] PWA / installable app
-- [ ] Custom STUN/TURN server support for restrictive networks
-- [ ] Export encrypted chat log
-- [ ] Theming / light mode
-
----
-
-## 🤝 Contributing
-
-This is a tiny, single-file project so contributing is easy:
+## Development
 
 ```bash
-git clone https://github.com/w3bcooki3/ghostchat.git
-cd ghostchat
-
-# Edit index.html
-# Open in browser, test it
-# Send a PR!
+npm install
+npm test               # 27 protocol unit tests (Node): handshake, hybrid KEM, lock, resume, ratchet, padding
+npm run test:e2e       # 26 end-to-end scenarios in real Chromium over real WebRTC
+npm run build          # → dist/ghostchat.html + dist/SHA256SUMS (commit both)
 ```
 
-A few guidelines:
-- Keep it a single file — that's a core design principle
-- No npm, no build step, no frameworks
-- Security changes should include a clear explanation of the threat model
-- Keep the aesthetic dark, minimal, and cool 👻
+The end-to-end suite covers, among other things:
+- **Security:**
+  - wrong codes and a locked room refusing a correct code;
+  - resume with the safety number kept;
+  - unlock with re-verification;
+  - constant-rate mode, verified on the wire (every frame exactly 4,130 bytes);
+  - script injection, SVG and spoofed-MIME files;
+  - panic wipe and the frame guard.
+- **Delivery:** byte-exact file transfer and 200-message ordering.
+- **Phone layout:** the action sheet, swipe-to-reply, and the bottom sheet.
 
----
+### Project layout
+```
+index.html             app markup + Content-Security-Policy
+security.html          "Who can read your conversation?" (css/security.css, js/security.js)
+css/app.css            styles (desktop + phone layer)
+js/protocol.js         crypto protocol v3: codes, hybrid handshake, lock/resume, ratchet, padding (no DOM)
+js/session.js          transport: PeerJS, reconnection, delivery, constant-rate traffic, files (no DOM)
+js/app.js              interface
+js/fog.js              home-screen WebGL atmosphere
+js/config.js           signaling, ICE servers, limits
+vendor/                PeerJS 1.5.5 and ML-KEM-1024 from noble-post-quantum 0.7.1 (MIT)
+fonts/                 Space Grotesk, JetBrains Mono, Bebas Neue (SIL OFL)
+tests/                 unit tests, end-to-end tests, local servers
+tools/build.mjs        deterministic single-file build
+.github/workflows/     CI + GitHub Pages deployment
+```
 
-## ⚠️ Disclaimer
+## Status
 
-Ghost Chat is built for privacy-conscious people and for fun. It is **not** a replacement for Signal or other production-hardened messengers for high-risk situations. The crypto is solid, but the codebase has not been independently audited.
+Ghost Chat has had two rounds of internal security review, recorded in [docs/AUDIT.md](docs/AUDIT.md), but **no independent audit**. It's a good tool for private conversations with people you trust. For high-risk situations, use Signal.
 
-Use your judgment. Stay safe out there. 👻
+Found a security problem? Please open a **private security advisory** on this repository rather than a public issue.
 
----
+## License
 
-## 📄 License
-
-MIT — do whatever you want with it. A star ⭐ is always appreciated.
-
----
-
-*No accounts. No servers. No logs. Close the tab — it never happened.*
-
-</div>
+MIT. PeerJS and noble-post-quantum are MIT; the fonts are under the SIL Open Font License (see `fonts/`).
