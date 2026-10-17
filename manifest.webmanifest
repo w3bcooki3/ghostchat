@@ -1,7 +1,7 @@
 {
   "name": "Ghost Chat",
   "short_name": "Ghost Chat",
-  "description": "End-to-end encrypted, browser-to-browser chat. Nothing is stored.",
+  "description": "End-to-end encrypted, browser-to-browser chat. No accounts, nothing stored.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#05080A",

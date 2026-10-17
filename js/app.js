@@ -2,9 +2,11 @@
 // All peer-supplied strings reach the DOM through textContent / attribute
 // setters only; nothing from the network is ever parsed as HTML.
 import { generateCode, normalizeCode, roomIdFromCode } from './protocol.js';
-import { Session, uid } from './session.js';
+import { Session, uid, iceServersWith, parseTurn } from './session.js';
+import { checkNetwork, explain } from './netcheck.js';
 import { LIMITS } from './config.js';
 import { initFog } from './fog.js';
+import { scramble, loopScramble, cycleText, followEyes, EtherLine, renderQR, flash, wait, reducedMotion } from './fx.js';
 
 // Refuse to run inside a frame: prevents click-jacking of the panic/end/verify controls
 // and keeps a hostile embedding page from overlaying the UI.
@@ -102,6 +104,13 @@ try {
   fog = initFog({ fog: $('fogCanvas'), mark: $('homeMark'), markCanvas: $('markCanvas'), apparition: $('apparition'), interactive: $('home') });
   fog.setActive($('home').classList.contains('is-on'));
 } catch (e) { console.warn('[ghost] fog unavailable', e); document.documentElement.classList.add('no-fog'); }
+
+// ── home motion: decrypting headline, status line, ghosts whose eyes follow you ──
+const homeOn = () => $('home').classList.contains('is-on');
+loopScramble($('headLine'), 'Say it once.', 9000, homeOn);
+loopScramble($('heroLine'), 'Say it once.', 9000, homeOn);
+cycleText($('statusPill'), ['BROWSER TO BROWSER', 'POST-QUANTUM KEY EXCHANGE', 'NO ACCOUNT · NOTHING STORED', 'THE CODE IS THE ONLY WAY IN'], 3400, homeOn);
+for (const id of ['stageGhost', 'heroGhost']) { const g = $(id); followEyes(g, g.querySelector('.ghost-eyes')); }
 
 // ── identity: avatar + name, shown on the chips of the home and join screens ──
 function renderIdentity() {
@@ -292,17 +301,49 @@ function renderCode() {
   });
   g.setAttribute('aria-label', 'Room code ' + code.split('').join(' '));
 }
-function showConnectError(text, canRetry) {
+function showConnectError(text, canRetry, canCheck = false) {
   $('connectError').hidden = false;
   $('connectErrorText').textContent = text;
   $('retryBtn').hidden = !canRetry;
+  $('netCheckBtn').hidden = !canCheck;
+  $('netResult').hidden = true;
 }
+/** Turns what ICE found on this side into specific advice. */
+function timeoutAdvice(d) {
+  if (!d) return '';
+  if (d.relayOnly && !d.relay) return '"Hide my IP" needs a relay server, and none answered from your network. Add your own relay under Privacy → Customize, or switch to Standard.';
+  if (!d.relay && !d.srflx && !d.host) return 'WebRTC found no network paths at all. A browser setting, an extension or a firewall is blocking it.';
+  if (!d.relay) return 'Your network blocks direct connections (strict NAT, a VPN or a firewall), and no relay server was reachable. Fixes: add a TURN relay under Privacy → Customize; try without the VPN or on another network; or, to test on one computer, open both windows in the same browser profile (two incognito windows work), which connects without the network.';
+  return 'A relay was available but the connection still didn\'t open. The other person\'s network may be blocking it.';
+}
+async function runNetCheck(outEl, btn) {
+  btn.disabled = true; const label = btn.textContent; btn.textContent = 'Checking…';
+  outEl.hidden = false; outEl.className = 'net-result'; outEl.textContent = 'Testing what your network allows. This takes about 5 seconds.';
+  try {
+    const r = await checkNetwork(iceServersWith(customRelay ? [customRelay] : []));
+    const v = explain(r);
+    outEl.replaceChildren();
+    outEl.classList.add(v.ok ? 'is-ok' : 'is-bad');
+    outEl.append(h('p', null, v.text));
+    const dl = h('dl', 'kv');
+    const row = (k, val) => { dl.append(h('dt', null, k), h('dd', null, val)); };
+    row('Local paths', r.host ? (r.mdns ? 'Yes (hidden .local names)' : 'Yes') : 'None');
+    row('Public address', r.srflx ? 'Found' : 'Not found');
+    row('NAT type', r.srflx ? (r.symmetric ? 'Strict (symmetric)' : 'Friendly') : 'Unknown');
+    row('Relay (TURN)', r.relay ? 'Reachable' : r.relayConfigured ? 'Not reachable' : 'None configured');
+    row('Same-page test', r.loopback ? 'Connected' : 'Failed');
+    outEl.append(dl);
+  } catch (e) {
+    outEl.textContent = 'The check couldn\'t run: ' + (e?.message || e);
+  } finally { btn.disabled = false; btn.textContent = label; }
+}
+$('netCheckBtn').onclick = () => runNetCheck($('netResult'), $('netCheckBtn'));
 
 const FAIL_TEXT = {
   'not-found': 'No room with this code is open right now. Check the code, or ask the other person to create the room and keep the page open.',
   'auth-failed': 'A room exists, but it didn\'t accept this code. Check every character. If you\'re certain it\'s right, something may be interfering with the connection — don\'t continue.',
   signaling: 'Couldn\'t reach the introduction server. Check your internet connection, or whether a firewall or content blocker is stopping it.',
-  timeout: 'Found the room but couldn\'t open a connection between your browsers. Some firewalls block this; try another network, or turn off "Hide my IP" if it is on.',
+  timeout: 'Found the room, but your browsers couldn\'t open a connection to each other.',
   unsupported: 'This browser lacks WebRTC or Web Crypto support. Use a current version of Firefox, Chrome, Edge or Safari.',
   'room-taken': 'Couldn\'t reserve a room. Try again.',
   locked: 'This room already has its two people and is locked. A room code can\'t be used again once a conversation has started. Ask for a new invite, or ask the person who created the room to unlock it.',
@@ -319,10 +360,12 @@ function startSession(r, c) {
   $('connectError').hidden = true;
   renderCode();
   setSteps('signal', null);
+  $('qrBox').hidden = true; $('qrBox').replaceChildren(); $('qrBtn').textContent = 'Show QR'; $('qrBtn').setAttribute('aria-expanded', 'false');
+  hsReset();
   show('connect');
   if (role === 'host') $('copyLinkBtn').focus();
 
-  session = new Session({ code, role, relayOnly: $('relayOnly').checked });
+  session = new Session({ code, role, relayOnly: $('relayOnly').checked, extraIce: customRelay ? [customRelay] : [] });
   applyPrivacyPreset();
   wire(session);
   session.start().catch((e) => { console.error(e); showConnectError(FAIL_TEXT.unsupported, false); });
@@ -339,6 +382,65 @@ if (navigator.share && matchMedia('(pointer: coarse)').matches) {
   };
 }
 $('copyCodeBtn').onclick = () => copy(code, 'Room code');
+$('qrBtn').onclick = () => {
+  const box = $('qrBox'), open = box.hidden;
+  if (open) { try { renderQR(box, inviteLink()); } catch (e) { console.warn('[ghost] qr', e); return toast('Couldn\'t draw the QR code', true); } }
+  else box.replaceChildren();
+  box.hidden = !open;
+  $('qrBtn').setAttribute('aria-expanded', String(open));
+  $('qrBtn').textContent = open ? 'Hide QR' : 'Show QR';
+};
+
+// ───────────────────────────── handshake stage ─────────────────────────────
+// Packets are drawn from the REAL handshake frames this browser sends and receives.
+const HS_LABEL = { 'hello-j': 'HELLO · ML-KEM + P-384 keys', 'hello-h': 'HELLO · ciphertext + proof', confirm: 'CONFIRM · proof', locked: 'LOCKED' };
+const hs = { queue: [], running: null, linkedAt: 0 };
+function hsSet(state) {
+  const st = $('hsStage');
+  st.classList.remove('is-waiting', 'is-linking', 'is-sealed', 'is-failed');
+  st.classList.add('is-' + state);
+}
+function hsReset() {
+  hs.queue = []; hs.linkedAt = 0;
+  hsSet('waiting');
+  $('hsThemName').textContent = role === 'host' ? 'Waiting…' : 'The room';
+  $('hsSn').textContent = ''; $('hsSn').classList.remove('is-on');
+  $('keycard').classList.remove('is-spent');
+  $('hsPkt').getAnimations?.().forEach((a) => a.cancel());
+  $('hsPkt').classList.remove('is-on');
+}
+function hsPacket(dir, kind) {
+  if (!HS_LABEL[kind] || hs.queue.length > 6) return;
+  hs.queue.push({ dir, kind });
+  if (!hs.running) hs.running = hsRun();
+}
+async function hsRun() {
+  const pkt = $('hsPkt');
+  while (hs.queue.length) {
+    const { dir, kind } = hs.queue.shift();
+    $('hsPktLabel').textContent = HS_LABEL[kind];
+    if (!reducedMotion() && pkt.animate) {
+      pkt.classList.add('is-on');
+      const from = dir === 'out' ? '0%' : '100%', to = dir === 'out' ? '100%' : '0%';
+      await pkt.animate([{ left: from, opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 1, offset: .85 }, { left: to, opacity: 0 }],
+        { duration: 720, easing: 'cubic-bezier(.45,0,.2,1)' }).finished.catch(() => {});
+      pkt.classList.remove('is-on');
+    }
+  }
+  hs.running = null;
+}
+/** Plays the seal: lock closes, code is spent, safety number decrypts. */
+async function hsSeal(sn) {
+  const minLinked = 1300 - (Date.now() - (hs.linkedAt || Date.now()));
+  if (minLinked > 0) await wait(minLinked);
+  await (hs.running || Promise.resolve());
+  hsSet('sealed');
+  $('keycard').classList.add('is-spent');
+  setSteps(null, 'ready');
+  $('hsSn').classList.add('is-on');
+  await scramble($('hsSn'), (sn || '').split(' ').slice(0, 6).join('  '), { duration: 800 });
+  await wait(700);
+}
 $('cancelBtn').onclick = () => { teardown(); show('home'); };
 $('retryBtn').onclick = () => {
   $('connectError').hidden = true;
@@ -354,13 +456,25 @@ function wire(s) {
     if (state === 'dialing') setSteps('peer', 'signal');
     if (state === 'reconnecting') onReconnecting();
   });
-  s.on('link-open', () => { if (s === session && !s.everReady) setSteps('keys', 'peer'); });
-  s.on('failed', ({ code: f }) => {
+  s.on('link-open', () => {
+    if (s !== session || s.everReady) return;
+    setSteps('keys', 'peer');
+    if (!hs.linkedAt) { hs.linkedAt = Date.now(); hsSet('linking'); $('hsThemName').textContent = role === 'host' ? 'Someone with the code' : 'The room'; }
+  });
+  s.on('hs-frame', ({ dir, kind }) => { if (s === session && !s.everReady && hs.linkedAt) hsPacket(dir, kind); });
+  s.on('wire', ({ dir, bytes }) => { if (s === session) onWire(dir, bytes); });
+  s.on('failed', ({ code: f, diag }) => {
     if (s !== session) return;
     if (f === 'room-taken' && role === 'host' && roomTakenRetries++ < 3) { teardown(); startSession('host', generateCode()); return; }
     const step = f === 'signaling' ? 'signal' : f === 'auth-failed' || f === 'timeout' ? 'keys' : 'peer';
     setSteps(null, { signal: null, peer: 'signal', keys: 'peer' }[step], step);
-    showConnectError(FAIL_TEXT[f] || 'Connection failed.', f !== 'unsupported');
+    hsSet('failed');
+    showConnectError((FAIL_TEXT[f] || 'Connection failed.') + (f === 'timeout' ? ' ' + timeoutAdvice(diag) : ''), f !== 'unsupported', f === 'timeout' || f === 'signaling');
+  });
+  s.on('signaling-down', () => {
+    if (s !== session) return;
+    $('peerStepText').textContent = 'Introduction server unreachable. Only another window of this browser can join right now';
+    setSteps('peer', null, 'signal');
   });
   s.on('rejected', ({ count, locked }) => {
     if (locked) {
@@ -399,10 +513,12 @@ async function onReady({ safetyNumber, resumed, continuity, newPeer }) {
   session.send({ t: 'profile', name: me.name, avatar: me.avatar });
   if (opts.shape) session.send({ t: 'shape', on: true });
   if (!resumed) {
-    setSteps(null, 'ready');
-    await new Promise((r) => setTimeout(r, 450)); // let the last step land before switching
+    $('hsThemName').textContent = them.name !== 'Peer' ? them.name : role === 'host' ? 'Them' : 'The room';
+    await hsSeal(session.safetyNumber);
     if (!session || session.ended) return;
     show('chat');
+    applyDock();
+    etherOut.clear(); etherIn.clear();
     $('kvRoom').textContent = roomIdFromCode(code).replace(/^ghostchat-v\d+-/, '').toUpperCase();
     sys('End-to-end encrypted with post-quantum protection. Only someone holding the room code could have joined, and the room is now locked to the two of you.', 'is-good');
     sysSafety(safetyNumber);
@@ -422,8 +538,12 @@ async function onReady({ safetyNumber, resumed, continuity, newPeer }) {
 
 async function refreshRoute() {
   const route = await session?.getRoute();
-  const label = { direct: 'Direct, peer-to-peer', local: 'Direct, same network', relay: 'Relayed via TURN server' }[route] || 'Unknown';
+  const label = { direct: 'Direct, peer-to-peer', local: 'Direct, same network', relay: 'Relayed via TURN server', device: 'Same browser on this device (no network)' }[route] || 'Unknown';
   $('kvRoute').textContent = label;
+  const chip = $('routeChip');
+  chip.hidden = !route;
+  chip.textContent = { direct: 'P2P', local: 'LAN', relay: 'Relay', device: 'This device' }[route] || '';
+  chip.title = label;
 }
 
 function onReconnecting() {
@@ -525,6 +645,23 @@ function applyVerified() {
   $('markVerified').setAttribute('aria-pressed', String(verified));
   $('markVerified').textContent = verified ? 'Verified' : 'Mark as verified';
   $('safetyNumber').classList.toggle('is-verified', verified);
+  $('trustBadge').classList.toggle('is-verified', verified);
+  $('trustTitle').textContent = verified ? 'Nobody in between' : 'Not verified yet';
+  $('trustSub').textContent = verified ? 'You both confirmed the same safety number.' : 'Compare the safety number by voice to rule out anyone in the middle.';
+  if (verified) flash($('trustBadge'), 'is-pop', 900);
+}
+
+// ───────────────────────────── ether line: live ciphertext ─────────────────────────────
+const etherOut = new EtherLine($('etherOut'), 260, 'prepend');
+const etherIn = new EtherLine($('etherIn'), 260, 'append');
+const wireLast = { in: 0, out: 0 };
+function onWire(dir, bytes) {
+  const now = performance.now();
+  if (now - wireLast[dir] < 90) return;   // file transfers send hundreds of frames a second
+  wireLast[dir] = now;
+  (dir === 'out' ? etherOut : etherIn).push(bytes);
+  const ch = session?.active?.channel;
+  if (ch) $('kvKeys').textContent = String(ch.tx.n + ch.rx.n);
 }
 $('markVerified').onclick = () => {
   verified = !verified; applyVerified();
@@ -619,8 +756,17 @@ function addText(side, { id, text, ts, ttl = 0, reply = null }) {
   fillText(span, text);
   bubble.append(span);
   placeRecord(r, bubble);
+  // Incoming text "decrypts" into place. Skipped for bursts, long text and emoji, so it never
+  // gets in the way of reading.
+  const now = performance.now();
+  if (side === 'them' && !bubble.classList.contains('emoji-only') && text.length <= 280 && now - lastDecryptAt > 500 && !reducedMotion()) {
+    span.replaceChildren();
+    scramble(span, text, { duration: Math.min(650, 220 + text.length * 10) }).then(() => { span.replaceChildren(); fillText(span, text); });
+  }
+  if (side === 'them') lastDecryptAt = now;
   return r;
 }
+let lastDecryptAt = 0;
 
 function quoteFor(mid) {
   const r = msgs.get(mid);
@@ -1066,7 +1212,21 @@ $('viewerClose').onclick = closeViewer;
 $('viewer').addEventListener('click', (e) => { if (e.target === $('viewer')) closeViewer(); });
 
 // ───────────────────────────── panel & settings ─────────────────────────────
+// Wide screens: the session panel is a permanent right-hand column, not a drawer.
+const dockMQ = matchMedia('(min-width: 1280px) and (pointer: fine)');
+const docked = () => dockMQ.matches && $('chat').classList.contains('is-on');
+function applyDock() {
+  document.documentElement.classList.toggle('dock', dockMQ.matches);
+  if (!$('chat').classList.contains('is-on')) return;
+  if (dockMQ.matches) { $('panel').hidden = false; refreshRoute(); }
+  else $('panel').hidden = true;
+  $('panelBtn').setAttribute('aria-expanded', String(!$('panel').hidden));
+  syncScrim();
+}
+dockMQ.addEventListener?.('change', applyDock);
+applyDock();
 function openPanel(force) {
+  if (docked()) { $('panel').hidden = false; return; }
   const open = force ?? $('panel').hidden;
   $('panel').hidden = !open;
   $('panel').style.transform = '';
@@ -1139,6 +1299,24 @@ for (const id of ['relayOnly', 'shapeInit']) $(id).addEventListener('change', ()
   $('privacyNote').textContent = max ? PRIVACY_NOTE.max : custom.length ? 'Custom: ' + custom.join(', ') + '.' : PRIVACY_NOTE.standard;
   renderPrivacyChip();
 });
+// ── custom TURN relay: kept in memory for this tab only, never stored or sent to the peer ──
+let customRelay = null;
+function renderRelay() {
+  $('relayStatus').textContent = customRelay ? 'Using ' + customRelay.urls[0] + ' for this tab.' : 'Not saved anywhere. Closing the tab forgets it.';
+  $('relayStatus').classList.remove('is-error');
+  $('relayClear').hidden = !customRelay;
+}
+$('relaySave').onclick = () => {
+  try {
+    customRelay = parseTurn($('relayUrl').value.trim(), $('relayUser').value, $('relayPass').value);
+    renderRelay();
+    toast('Relay added for this tab');
+  } catch (e) { $('relayStatus').textContent = e.message; $('relayStatus').classList.add('is-error'); }
+};
+$('relayClear').onclick = () => { customRelay = null; $('relayUrl').value = $('relayUser').value = $('relayPass').value = ''; renderRelay(); };
+$('privCheckBtn').onclick = () => runNetCheck($('privNetResult'), $('privCheckBtn'));
+renderRelay();
+
 function applyPrivacyPreset() {
   const max = privacy === 'max';
   opts.receipts = !max; opts.typing = !max; opts.veil = max;
@@ -1230,3 +1408,5 @@ window.addEventListener('pagehide', () => { try { session?.destroy('local'); } c
 
 // Expose a tiny hook for automated tests only when explicitly served in test mode.
 
+
+document.documentElement.classList.add('booted');

@@ -46,6 +46,22 @@ Post-quantum key exchange. No accounts. Nothing stored. Close the tab and it's g
 - Drag and drop, or paste images.
 - **Automatic reconnection:** messages you send while offline are queued and delivered when the link returns.
 
+**Motion that shows what's really happening**
+- The handshake screen draws the **real handshake frames** your browser sends and receives as packets flying between two ghosts, then seals the room and decrypts the safety number into view.
+- The chat header shows a live strip of the **actual ciphertext** passing each way (the first bytes of every sealed frame, exactly what the network sees), plus a count of single-use message keys.
+- Incoming messages decrypt into place; disappearing messages evaporate; the home headline decrypts itself and a ghost's eyes follow your pointer.
+- **QR invite:** "Show QR" on the share screen, so someone next to you can join with their camera.
+- Wide screens get a real workspace: the session panel is docked on the right. Everything honours *reduce motion* and is tested with it on.
+
+**Connectivity**
+- **Same-device link:** two tabs or windows of the same browser profile (for example two incognito windows, which share one incognito session) connect over a `BroadcastChannel`. It needs no network, STUN, relay or even the signaling server. It's only a pipe: the same room-code handshake and per-message encryption run on top, and a wrong code is refused exactly as over WebRTC. Separate browsers, separate profiles, or a normal window plus an incognito window still use WebRTC.
+- **Specific failure diagnosis:** when WebRTC can't connect, the app says why (no relay reachable, strict NAT, WebRTC blocked) instead of a generic timeout, and fails as soon as ICE gives up.
+- **Network check** (Privacy → Customize, or from a failed connection): local paths, public address, NAT type (detects symmetric NAT), relay reachability, and a same-page connection test.
+- **Bring your own TURN relay** (Privacy → Customize): kept in memory for that tab only, never stored or sent to the other person.
+
+### Why two windows on one computer sometimes couldn't connect
+WebRTC between two windows on the same machine relies on mDNS `.local` candidates, NAT hairpinning, or a TURN relay. On many Windows setups, VPNs and symmetric-NAT networks, mDNS doesn't resolve and hairpinning isn't supported. PeerJS's free public TURN relay is also often unreachable, so every path failed and the joiner timed out after 15 seconds. Two windows of one browser profile now use the same-device link. For real conversations across such networks, configure a TURN relay. A self-hosted [coturn](https://github.com/coturn/coturn) works, or any TURN provider; set it in `js/config.js` (`ICE_SERVERS`) or in the app.
+
 **Phones**
 - An app-style launcher: the brand glows in the fog, with **Start a private chat** and **Join with a code** in thumb reach. Your name and privacy level are chips that open bottom sheets.
 - **Join with a code** opens a dedicated code pad: four boxes that accept a pasted code or a whole invite link, a Paste button, and look-alike warnings (no 0, 1, I or O). Invite links open it already filled in, so joining is one tap. The phone's back button returns home.
@@ -65,6 +81,7 @@ Some things no web app can fix:
 - **The other person:** they can keep a copy of anything.
 - **Metadata at the signaling server:** it sees your IP address and when you connect, unless you [run your own](#run-your-own-servers) and use a VPN or Tor.
 - **A code that leaks before your peer joins:** whoever has it could get in first. The safety number exposes that.
+- **Other pages on the same origin, in the same browser profile,** can see the same-device link's *ciphertext* and can drop the link (it then reconnects). They can't read or forge messages. Script running on Ghost Chat's own origin is already a compromise, so this changes nothing in practice.
 
 ### Is it "military grade"?
 
@@ -93,7 +110,7 @@ The build is deterministic, so you can also rebuild it yourself and compare: `no
 **Fully offline, on one machine or a LAN** (for development):
 ```bash
 npm install
-npm run serve:local          # signaling on :9000, app on http://127.0.0.1:8090
+npm run serve                # signaling on :9000, app on http://127.0.0.1:8090
 ```
 
 ### Run your own servers
@@ -108,21 +125,22 @@ Then edit [`js/config.js`](js/config.js) (`SIGNALING`, `ICE_SERVERS`) and the `c
 
 ```bash
 npm install
-npm test               # 27 protocol unit tests (Node): handshake, hybrid KEM, lock, resume, ratchet, padding
-npm run test:e2e       # 26 end-to-end scenarios in real Chromium over real WebRTC
+npm test               # protocol unit tests (Node): codes, handshake, wrong code, lock, resume, ratchet, padding, TURN input
+npm run test:e2e       # end-to-end scenarios in real Chromium over real WebRTC + a local signaling server
 npm run build          # → dist/ghostchat.html + dist/SHA256SUMS (commit both)
+npm run serve          # app on http://127.0.0.1:8090 with its own local signaling server on :9000
 ```
 
-The end-to-end suite covers, among other things:
-- **Security:**
-  - wrong codes and a locked room refusing a correct code;
-  - resume with the safety number kept;
-  - unlock with re-verification;
-  - constant-rate mode, verified on the wire (every frame exactly 4,130 bytes);
-  - script injection, SVG and spoofed-MIME files;
-  - panic wipe and the frame guard.
-- **Delivery:** byte-exact file transfer and 200-message ordering.
-- **Phone layout:** the action sheet, swipe-to-reply, and the bottom sheet.
+The end-to-end suite covers:
+- two separate browsers over WebRTC, with an HTML-injection check;
+- two windows of one profile with **no signaling server** (the same-device link), and with it up;
+- wrong codes refused over both transports, and a locked room refusing a correct code;
+- a dropped link resuming with the safety number kept;
+- relay-only with no relay failing with a specific diagnosis, plus the network check;
+- byte-exact 3 MB file transfer over both transports, and 200-message ordering;
+- `index.html` opened from disk explaining itself, and `dist/ghostchat.html` working from disk.
+
+> **Opening `index.html` by double-clicking it won't work:** browsers block module scripts on `file://`. The page now says so. Use `dist/ghostchat.html` (one self-contained file) or `npm run serve`.
 
 ### Project layout
 ```
@@ -131,10 +149,13 @@ security.html          "Who can read your conversation?" (css/security.css, js/s
 css/app.css            styles (desktop + phone layer)
 js/protocol.js         crypto protocol v3: codes, hybrid handshake, lock/resume, ratchet, padding (no DOM)
 js/session.js          transport: PeerJS, reconnection, delivery, constant-rate traffic, files (no DOM)
+js/local.js            same-device transport over BroadcastChannel (a byte pipe; no crypto of its own)
+js/netcheck.js         network check: candidates, NAT type, relay reachability, loopback
 js/app.js              interface
 js/fog.js              home-screen WebGL atmosphere
+js/fx.js               motion effects (decrypt text, eyes, ciphertext strip) and the QR renderer
 js/config.js           signaling, ICE servers, limits
-vendor/                PeerJS 1.5.5 and ML-KEM-1024 from noble-post-quantum 0.7.1 (MIT)
+vendor/                PeerJS 1.5.5, ML-KEM-1024 from noble-post-quantum 0.7.1, uqr 0.1.2 QR encoder (all MIT)
 fonts/                 Space Grotesk, JetBrains Mono, Bebas Neue (SIL OFL)
 tests/                 unit tests, end-to-end tests, local servers
 tools/build.mjs        deterministic single-file build

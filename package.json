@@ -9,7 +9,6 @@
     "test": "node --test tests/protocol.test.mjs",
     "test:e2e": "node tests/e2e.mjs",
     "serve": "node tests/serve.mjs",
-    "serve:local": "node tests/run-local.mjs",
     "build": "node tools/build.mjs"
   },
   "devDependencies": {

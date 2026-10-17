@@ -27,13 +27,14 @@
   </header>
 
   <section class="home-hero" aria-hidden="true">
-    <svg class="hero-glyph" viewBox="0 0 40 48"><path fill-rule="evenodd" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Zm-7 16a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm14 0a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/></svg>
-    <div class="hero-word">Ghost Chat</div>
-    <p class="hero-tag">Say it once. Then it's gone.</p>
+    <div class="hero-ghost"><svg class="ghost hero-glyph" viewBox="0 0 40 48" aria-hidden="true" id="heroGhost"><path class="ghost-body" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Z"/><g class="ghost-eyes"><g class="ghost-blink"><ellipse cx="13" cy="19.5" rx="3.6" ry="4.2"/><ellipse cx="27" cy="19.5" rx="3.6" ry="4.2"/></g></g></svg><span class="ghost-shadow"></span></div>
+    <div class="hero-word"><span id="heroLine">Say it once.</span><span class="gone">Then it's gone.</span></div>
+    <p class="hero-tag">Encrypted, browser to browser. No account. Close the tab and every message and key is wiped.</p>
   </section>
 
   <section class="home-intro">
-    <h2 class="headline">Say it once.<br>Then it's gone.</h2>
+    <div class="status-pill"><span class="sp-dot"></span><span id="statusPill">BROWSER TO BROWSER</span></div>
+    <h2 class="headline"><span id="headLine" class="hl-1">Say it once.</span><span class="gone hl-2">Then it's gone.</span></h2>
     <p class="lede">An encrypted conversation between two browsers. No accounts, nothing stored, and the room code is the only way in. Close the tab and every message, file and key is wiped.</p>
     <a class="trust-link" href="security.html"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>Who can read what, and what Ghost Chat can't protect</a>
     <div id="apparition" class="apparition" aria-hidden="true"></div>
@@ -49,6 +50,14 @@
     <button id="openJoinBtn" class="btn btn-glass btn-xl" type="button">Join with a code</button>
     <p class="dock-foot"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Encrypted. No account. Nothing stored.</p>
   </section>
+
+  <div class="ghost-stage" aria-hidden="true">
+    <div class="orbit orbit-3"></div>
+    <div class="orbit orbit-2"><i class="peer-dot a"></i><i class="peer-dot b"></i></div>
+    <div class="orbit orbit-1"><span class="orbit-label l">ML-KEM-1024</span><span class="orbit-label r">P-384</span></div>
+    <div class="stage-ghost"><svg class="ghost " viewBox="0 0 40 48" aria-hidden="true" id="stageGhost"><path class="ghost-body" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Z"/><g class="ghost-eyes"><g class="ghost-blink"><ellipse cx="13" cy="19.5" rx="3.6" ry="4.2"/><ellipse cx="27" cy="19.5" rx="3.6" ry="4.2"/></g></g></svg><span class="ghost-shadow"></span></div>
+  </div>
+  <div class="ticker" aria-hidden="true"><div class="ticker-track"><span>ML-KEM-1024 + ECDH P-384</span><i>✦</i><span>AES-256-GCM · a new key for every message</span><i>✦</i><span>The room locks after one join</span><i>✦</i><span>Nothing written to disk</span><i>✦</i><span>60-digit safety number</span><i>✦</i><span>Not independently audited</span><i>✦</i><span>ML-KEM-1024 + ECDH P-384</span><i>✦</i><span>AES-256-GCM · a new key for every message</span><i>✦</i><span>The room locks after one join</span><i>✦</i><span>Nothing written to disk</span><i>✦</i><span>60-digit safety number</span><i>✦</i><span>Not independently audited</span><i>✦</i></div></div>
 
   <div id="homeMark" class="home-mark" aria-hidden="true"><span class="home-mark-text">GHOST CHAT</span><canvas id="markCanvas"></canvas></div>
 </main>
@@ -107,9 +116,19 @@
         <button id="shareBtn" class="btn btn-primary" type="button" hidden>Share invite</button>
         <button id="copyLinkBtn" class="btn btn-primary" type="button">Copy invite link</button>
         <button id="copyCodeBtn" class="btn btn-ghost" type="button">Copy code</button>
+        <button id="qrBtn" class="btn btn-ghost" type="button" aria-expanded="false" aria-controls="qrBox">Show QR</button>
       </div>
+      <div id="qrBox" class="qr-box" hidden></div>
       <p id="shareHint" class="share-hint">Send it over a channel you trust. Whoever has this code can join, so share it with one person only.</p>
     </div>
+
+    <div id="hsStage" class="hs-stage is-waiting" aria-hidden="true">
+      <div class="hs-node hs-me"><svg class="ghost hs-ghost" viewBox="0 0 40 48" aria-hidden="true"><path class="ghost-body" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Z"/><g class="ghost-eyes"><g class="ghost-blink"><ellipse cx="13" cy="19.5" rx="3.6" ry="4.2"/><ellipse cx="27" cy="19.5" rx="3.6" ry="4.2"/></g></g></svg><span class="hs-name">You</span></div>
+      <div class="hs-lane"><span class="hs-wire"></span><span id="hsPkt" class="hs-pkt"><b id="hsPktLabel"></b><i></i></span>
+        <span class="hs-lock"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></div>
+      <div class="hs-node hs-them"><svg class="ghost hs-ghost" viewBox="0 0 40 48" aria-hidden="true"><path class="ghost-body" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Z"/><g class="ghost-eyes"><g class="ghost-blink"><ellipse cx="13" cy="19.5" rx="3.6" ry="4.2"/><ellipse cx="27" cy="19.5" rx="3.6" ry="4.2"/></g></g></svg><span id="hsThemName" class="hs-name">Waiting…</span></div>
+    </div>
+    <div id="hsSn" class="hs-sn" aria-hidden="true"></div>
 
     <ol id="steps" class="steps" aria-live="polite">
       <li data-step="signal"><span class="step-dot"></span><span class="step-text">Reaching the introduction server</span></li>
@@ -120,7 +139,11 @@
 
     <div id="connectError" class="connect-error" role="alert" hidden>
       <p id="connectErrorText"></p>
-      <button id="retryBtn" class="btn btn-secondary" type="button">Try again</button>
+      <div class="error-actions">
+        <button id="retryBtn" class="btn btn-secondary" type="button">Try again</button>
+        <button id="netCheckBtn" class="btn btn-ghost" type="button" hidden>Check my network</button>
+      </div>
+      <div id="netResult" class="net-result" aria-live="polite" hidden></div>
     </div>
 
     <button id="cancelBtn" class="btn btn-text" type="button">Cancel</button>
@@ -134,8 +157,13 @@
       <span id="peerAvatar" class="peer-avatar" aria-hidden="true">👤</span>
       <div class="peer-meta">
         <div id="peerName" class="peer-name">Peer</div>
-        <div id="linkState" class="link-state"><span class="link-dot"></span><span id="linkText">Connecting</span></div>
+        <div id="linkState" class="link-state"><span class="link-dot"></span><span id="linkText">Connecting</span><span id="routeChip" class="route-chip" hidden></span></div>
       </div>
+    </div>
+    <div class="ether" aria-hidden="true" title="Live view of your encrypted traffic">
+      <div class="ether-row out"><span id="etherOut" class="ether-txt"></span></div>
+      <span class="ether-lock"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+      <div class="ether-row in"><span id="etherIn" class="ether-txt"></span></div>
     </div>
     <div class="head-actions">
       <button id="verifyChip" class="verify-chip" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path class="vc-check" d="M9 12l2 2 4-4"/></svg><span id="verifyText">Not verified</span></button>
@@ -186,6 +214,10 @@
       <button id="panelClose" class="icon-btn icon-sm" type="button" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
 
+    <div id="trustBadge" class="trust-badge">
+      <span class="tb-orb"><i></i><i></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
+      <div class="tb-text"><b id="trustTitle">Not verified yet</b><small id="trustSub">Compare the safety number by voice to rule out anyone in the middle.</small></div>
+    </div>
     <section class="panel-sec">
       <h3>Safety number</h3>
       <p class="panel-note">Compare this with the other person by voice or in person. If it matches, nobody is in the middle. It stays the same if the connection drops and comes back, because the reconnecting browser has to prove it's the same one.</p>
@@ -219,6 +251,7 @@
         <dt>Latency</dt><dd id="kvLatency" class="mono">—</dd>
         <dt>Encryption</dt><dd>AES-256-GCM, a new key per message</dd>
         <dt>Access</dt><dd>Locked to the two of you</dd>
+        <dt>Message keys used</dt><dd id="kvKeys" class="mono">0</dd>
         <dt>Live keys</dt><dd id="kvLive" class="mono">—</dd>
         <dt>Key exchange</dt><dd>ECDH P-384 + ML-KEM-1024 (post-quantum), authenticated by the room code</dd>
       </dl>
@@ -274,6 +307,26 @@
       <span class="toggle-ui" aria-hidden="true"></span>
       <span><strong>Constant-rate traffic.</strong> Sends identical encrypted packets four times a second, so nobody watching the network can tell when you type or send. About 60 MB an hour.</span>
     </label>
+    <div class="relay-box">
+      <h3 class="relay-title">Your own relay server (TURN)</h3>
+      <p class="help">Strict networks (VPNs, symmetric NAT, some offices and carriers) can't connect browsers directly and need a relay. The relay only ever sees encrypted data. One of the two people having a relay is usually enough.</p>
+      <label class="field"><span class="field-label">Relay URL</span><input id="relayUrl" class="input" autocomplete="off" spellcheck="false" placeholder="turn:relay.example.org:3478"></label>
+      <div class="relay-creds">
+        <label class="field"><span class="field-label">Username</span><input id="relayUser" class="input" autocomplete="off" spellcheck="false"></label>
+        <label class="field"><span class="field-label">Password</span><input id="relayPass" class="input" type="password" autocomplete="off"></label>
+      </div>
+      <div class="relay-actions">
+        <button id="relaySave" class="btn btn-secondary btn-sm" type="button">Use this relay</button>
+        <button id="relayClear" class="btn btn-ghost btn-sm" type="button" hidden>Remove</button>
+      </div>
+      <p id="relayStatus" class="help" aria-live="polite"></p>
+    </div>
+    <div class="relay-box">
+      <h3 class="relay-title">Network check</h3>
+      <p class="help">See whether your network allows direct connections and whether a relay is reachable.</p>
+      <button id="privCheckBtn" class="btn btn-ghost btn-sm" type="button">Check my network</button>
+      <div id="privNetResult" class="net-result" aria-live="polite" hidden></div>
+    </div>
   </details>
   <button id="privDone" class="btn btn-primary btn-xl" type="button" data-close-sheet>Done</button>
 </section>
@@ -307,6 +360,7 @@
 
 <div id="wipe" class="wipe" hidden></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div class="boot-fail" role="alert"><b>Ghost Chat couldn't start.</b> If you opened <code>index.html</code> straight from a folder on your computer, the browser blocks its scripts. Open <code>dist/ghostchat.html</code> instead (a single file that works offline from disk), or serve the folder with <code>npm run serve</code>.</div>
 <noscript><p class="noscript">Ghost Chat needs JavaScript: all encryption happens in your browser.</p></noscript>
 </body>
 </html>

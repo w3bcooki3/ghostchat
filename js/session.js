@@ -2,12 +2,39 @@
 // reconnection, heartbeats and file streaming. No DOM access.
 import * as P from './protocol.js';
 import { SIGNALING, ICE_SERVERS, LIMITS } from './config.js';
+import { LocalHub, localSupported } from './local.js';
 
-// PeerJS's built-in defaults, spelled out so relay-only mode can reuse them.
-const DEFAULT_ICE = [
+// Defaults when config.js leaves ICE_SERVERS null: two independent STUN servers (two are also
+// what lets the network check detect symmetric NAT) plus PeerJS's free public TURN relay.
+// That relay is best-effort and is unreachable from many networks; for dependable relaying
+// configure your own TURN server (config.js) or add one in the app (Privacy → Customize).
+export const DEFAULT_ICE = [
   { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun.cloudflare.com:3478' },
   { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' },
 ];
+/** The ICE servers a session uses: configured (or default) servers plus any the user added. */
+export function iceServersWith(extra = []) { return [...(ICE_SERVERS || DEFAULT_ICE), ...extra]; }
+/** Validates a user-supplied TURN server. Returns an RTCIceServer or throws Error(message). */
+export function parseTurn(url, username = '', credential = '') {
+  const urls = String(url || '').split(/[\s,]+/).filter(Boolean);
+  if (!urls.length) throw new Error('Enter a relay URL, like turn:relay.example.org:3478');
+  for (const u of urls) {
+    if (!/^turns?:[A-Za-z0-9.\-\[\]:]+(\?transport=(udp|tcp))?$/.test(u)) throw new Error(`"${u.slice(0, 60)}" isn't a TURN URL (turn:host:port or turns:host:443?transport=tcp)`);
+  }
+  if (!username || !credential) throw new Error('TURN servers need a username and password');
+  return { urls, username: String(username).slice(0, 256), credential: String(credential).slice(0, 512) };
+}
+const LOCAL_THROTTLE_MS = 2;
+// UI hooks: the first bytes of each sealed frame's ciphertext (after the 6-byte header and
+// 12-byte IV), and the type of each handshake frame. Both are exactly what the network sees.
+const CT_AT = 18, WIRE_PEEK = 6;
+function hsKind(b) {
+  if (b[1] === P.T_HELLO) return b[2] === 0x4a ? 'hello-j' : 'hello-h';
+  if (b[1] === P.T_CONFIRM) return 'confirm';
+  if (b[1] === P.T_LOCKED) return 'locked';
+  return 'other';
+} // same-device file streaming: let the receiving tab keep up
 
 const FILE_CHUNK = 60 * 1024;           // fits the 64 KiB padding bucket with header room
 const BUFFER_HIGH = 2 * 1024 * 1024;    // pause file streaming above this many queued bytes
@@ -49,6 +76,9 @@ class Link {
     this.channel = null; this.closed = false; this.lastRx = Date.now();
     this.inq = Promise.resolve(); this.outq = Promise.resolve();
     this.hsTimer = setTimeout(() => { if (!this.channel) this.close('handshake-timeout'); }, LIMITS.handshakeTimeoutMs);
+    this.local = !!conn.local;
+    this.diag = { host: 0, srflx: 0, relay: 0, ice: 'new' };
+    if (!this.local) this.watchIce();
 
     conn.on('open', async () => {
       session.emit('link-open', { role });
@@ -57,7 +87,7 @@ class Link {
       }
     });
     conn.on('data', (d) => { this.inq = this.inq.then(() => this.onData(d)); });
-    conn.on('close', () => this.close('closed'));
+    conn.on('close', () => this.close(conn.unanswered ? 'local-unavailable' : 'closed'));
     conn.on('error', () => this.close('error'));
   }
 
@@ -71,6 +101,7 @@ class Link {
     this.lastRx = Date.now();
 
     if (!this.channel) {
+      this.s.emit('hs-frame', { dir: 'in', kind: hsKind(bytes) });
       try {
         const r = await this.hs.receive(bytes);
         if (r.send) {
@@ -99,10 +130,29 @@ class Link {
     let frame;
     try { frame = await this.channel.open(bytes); }
     catch (e) { console.warn('[ghost] protocol violation:', e.message); return this.close('protocol'); }
+    if (this === this.s.active) this.s.emit('wire', { dir: 'in', bytes: bytes.slice(CT_AT, CT_AT + WIRE_PEEK) });
     this.s._onFrame(this, frame.kind, frame.payload);
   }
 
-  rawSend(bytes) { if (!this.closed) this.conn.send(bytes); }
+  /** Records which kinds of ICE candidates this side found, and fails fast when ICE gives up. */
+  watchIce() {
+    const pc = this.conn.peerConnection;
+    if (!pc?.addEventListener) return;
+    pc.addEventListener('icecandidate', (e) => {
+      const t = (/ typ (\w+)/.exec(e.candidate?.candidate || '') || [])[1];
+      if (t in this.diag) this.diag[t]++;
+    });
+    pc.addEventListener('iceconnectionstatechange', () => {
+      this.diag.ice = pc.iceConnectionState;
+      if (pc.iceConnectionState === 'failed' && !this.channel) this.close('ice-failed');
+    });
+  }
+
+  rawSend(bytes) {
+    if (this.closed) return;
+    if (!this.channel) this.s.emit('hs-frame', { dir: 'out', kind: hsKind(bytes) });
+    this.conn.send(bytes);
+  }
 
   /** Seal + send, strictly in order, with backpressure. */
   sendFrame(kind, payload, minSize = 0) {
@@ -111,6 +161,7 @@ class Link {
       const f = await this.channel.seal(kind, payload, minSize);
       if (this.closed) throw new Error('link closed');
       this.conn.send(f);
+      if (this === this.s.active) this.s.emit('wire', { dir: 'out', bytes: f.slice(CT_AT, CT_AT + WIRE_PEEK) });
     });
     this.outq = job.catch(() => {});
     return job;
@@ -122,6 +173,7 @@ class Link {
     return (dc ? dc.bufferedAmount : 0) + (this.conn.bufferSize || 0) * FILE_CHUNK;
   }
   async drain() {
+    if (this.local) { await sleep(LOCAL_THROTTLE_MS); return; }
     while (!this.closed && this.buffered() > BUFFER_HIGH) await sleep(15);
   }
 
@@ -150,8 +202,9 @@ class Link {
  *  ended {reason}                      local | peer-left | lost | resume-failed
  */
 export class Session extends Emitter {
-  constructor({ code, role, relayOnly = false }) {
+  constructor({ code, role, relayOnly = false, extraIce = [], sameDevice = true }) {
     super();
+    this.extraIce = extraIce; this.sameDevice = sameDevice;
     const c = P.normalizeCode(code);
     if (!c) throw new Error('Invalid room code');
     this.code = c; this.role = role; this.relayOnly = relayOnly;
@@ -178,8 +231,16 @@ export class Session extends Emitter {
     const opts = {
       host: SIGNALING.host, port: SIGNALING.port, path: SIGNALING.path, secure: SIGNALING.secure, key: SIGNALING.key,
       debug: 0,
-      config: { iceServers: ICE_SERVERS || DEFAULT_ICE, ...(this.relayOnly ? { iceTransportPolicy: 'relay' } : {}) },
+      config: { iceServers: iceServersWith(this.extraIce), ...(this.relayOnly ? { iceTransportPolicy: 'relay' } : {}) },
     };
+    // Same-device link: starts before (and works without) the signaling server.
+    if (this.sameDevice && localSupported()) {
+      try {
+        this.hub = new LocalHub(this.roomId, this.role);
+        if (this.role === 'host') this.hub.onConnection = (conn) => this.accept(conn);
+        else this.dialLocal();
+      } catch (e) { console.warn('[ghost] same-device link unavailable', e); this.hub = null; }
+    }
     this.peer = this.role === 'host' ? new window.Peer(this.roomId, opts) : new window.Peer(opts);
     this.peer.on('open', () => {
       if (this.ended) return;
@@ -201,11 +262,17 @@ export class Session extends Emitter {
     if (t === 'unavailable-id') return this.fail('room-taken');
     if (t === 'browser-incompatible') return this.fail('unsupported');
     if (t === 'peer-unavailable') {
+      if (this.hasLocalLink()) { this.deferredFail = 'not-found'; return; }   // a local link may still carry it
       if (!this.everReady) return this.fail('not-found');
       return this.scheduleRetry();
     }
     if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(t)) {
-      if (!this.everReady && (this.state === 'signaling' || this.state === 'dialing')) return this.fail('signaling');
+      if (!this.everReady && (this.state === 'signaling' || this.state === 'dialing')) {
+        if (this.hasLocalLink()) { this.deferredFail = 'signaling'; return; }
+        // A host can still be joined from this browser without signaling; say so instead of failing.
+        if (this.role === 'host' && this.hub) { this.signalingDown = true; this.emit('signaling-down', {}); return; }
+        return this.fail('signaling');
+      }
       if (this.role === 'joiner' && this.state === 'reconnecting') this.scheduleRetry();
       return;
     }
@@ -225,9 +292,16 @@ export class Session extends Emitter {
   }
 
   // ── joiner side ──
+  hasLocalLink() { return [...this.pending, this.active].some((l) => l && l.local && !l.closed); }
+  dialLocal() {
+    if (!this.hub || this.ended || this.hasLocalLink()) return;
+    this.pending.add(new Link(this, this.hub.dial(), 'joiner'));
+  }
+
   dial() {
     if (this.ended || this.role !== 'joiner') return;
     if (this.active && !this.active.closed) return;
+    if (this.everReady) this.dialLocal();
     if (!this.peer || this.peer.destroyed) return;
     if (this.peer.disconnected) { try { this.peer.reconnect(); } catch {} return; } // 'open' will call dial again
     if (!this.everReady) this.setState('dialing');
@@ -248,6 +322,7 @@ export class Session extends Emitter {
   retry() {
     if (this.ended || this.role !== 'joiner') return;
     this.setState('dialing');
+    this.dialLocal();
     if (this.peer?.open) this.dial();
     else if (this.peer && !this.peer.destroyed) { try { this.peer.reconnect(); } catch {} }
   }
@@ -289,16 +364,16 @@ export class Session extends Emitter {
     this.candidates = [];
     this.resumeRefusals = 0;
     this.liveSafetyNumber = safetyNumber;
-    if (this.role === 'host') {
-      this.locked = true;
-      // Anything still mid-handshake started under the old state: drop it.
-      for (const l of [...this.pending]) l.close('superseded');
-    }
+    if (this.role === 'host') this.locked = true;
+    // Anything still mid-handshake started under the old state (or a slower second transport
+    // racing this one): drop it.
+    for (const l of [...this.pending]) l.close('superseded');
     // A proven resume keeps the original safety number: the reconnecting browser showed it
     // holds a secret only the original two had. A fresh join gets a new one.
     if (!continuity) this.safetyNumber = safetyNumber;
     this.everReady = true; this.retryIdx = 0; this.lostAt = 0;
     clearTimeout(this.retryTimer); clearTimeout(this.lostTimer);
+    this.route = link.local ? 'device' : null;
     this.setState('ready');
     this.emit('ready', { safetyNumber: this.safetyNumber, resumed, continuity, newPeer: resumed && !continuity });
     for (const o of this.outbox.values()) this.transmit(o);
@@ -308,6 +383,10 @@ export class Session extends Emitter {
     if (link.refused) reason = link.refused;
     this.pending.delete(link);
     if (this.ended) return;
+    if (reason === 'local-unavailable' || reason === 'superseded') {   // no host in this browser / lost a race
+      if (this.deferredFail && !this.everReady && !this.active && ![...this.pending].some((l) => !l.closed)) this.fail(this.deferredFail);
+      return;
+    }
     // Host: a joiner that received our MAC but never confirmed could not prove the code.
     const hostRefused = this.role === 'host' && link !== this.active && !link.channel && reason !== 'evicted' && reason !== 'superseded'
       && (reason === 'auth-failed' || reason === 'locked' || link.sentChallenge);
@@ -322,7 +401,11 @@ export class Session extends Emitter {
     }
     if (link !== this.active) {
       if (this.role === 'joiner' && !this.active) {
-        if (!this.everReady && reason !== 'auth-failed' && this.state !== 'failed') return this.fail(reason === 'handshake-timeout' ? 'timeout' : 'not-found');
+        if (!this.everReady && [...this.pending].some((l) => !l.closed)) return;   // another transport is still trying
+        if (!this.everReady && reason !== 'auth-failed' && this.state !== 'failed') {
+          const code = reason === 'handshake-timeout' || reason === 'ice-failed' ? 'timeout' : 'not-found';
+          return this.fail(code, code === 'timeout' ? { ...link.diag, relayOnly: this.relayOnly } : undefined);
+        }
         if (this.everReady) this.scheduleRetry();
       }
       return;
@@ -338,10 +421,10 @@ export class Session extends Emitter {
     if (this.role === 'joiner') this.scheduleRetry();
   }
 
-  fail(code) {
+  fail(code, diag) {
     if (this.ended) return;
     this.setState('failed');
-    this.emit('failed', { code });
+    this.emit('failed', { code, diag });
   }
 
   tick() {
@@ -472,6 +555,7 @@ export class Session extends Emitter {
 
   /** 'direct' | 'local' | 'relay' | null — which ICE path the live link uses. */
   async getRoute() {
+    if (this.active?.local) return 'device';
     const pc = this.active?.conn?.peerConnection;
     if (!pc) return null;
     try {
@@ -618,6 +702,8 @@ export class Session extends Emitter {
     this.pending.clear(); this.active = null;
     try { this.peer?.destroy(); } catch {}
     this.peer = null;
+    try { this.hub?.close(); } catch {}
+    this.hub = null;
     this.incoming.clear(); this.outgoing = []; this.outbox.clear(); this.seenMids.clear();
     if (this.roomKey) this.roomKey.fill(0);
     this.setState('ended');

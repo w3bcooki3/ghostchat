@@ -20,13 +20,19 @@ let css = read('css/app.css').replace(/url\(\.\.\/fonts\/([^)]+)\)/g, (_, f) =>
 const testPort = (process.argv.find((a) => a.startsWith('--test-signal=')) || '').split('=')[1];
 
 // Minimal module linker for our own ES modules plus the vendored ML-KEM build.
-const order = ['config', 'protocol', 'session', 'fog', 'app'];
+const order = ['config', 'protocol', 'local', 'session', 'netcheck', 'fx', 'fog', 'app'];
 let bundle = 'const __mods = {};\n';
 {
   const src = read('vendor/noble-ml-kem1024-0.7.1.min.js');
   const m = src.match(/export\{(\w+) as ml_kem1024\};?\s*$/);
   if (!m) throw new Error('unexpected ML-KEM vendor format');
   bundle += `__mods.mlkem = (() => {\n${src.slice(0, m.index)}\nreturn { ml_kem1024: ${m[1]} };\n})();\n`;
+}
+{
+  const src = read('vendor/uqr-0.1.2.mjs');
+  const m = src.match(/export\s*\{([^}]+)\};?\s*$/);
+  if (!m) throw new Error('unexpected uqr vendor format');
+  bundle += `__mods.uqr = (() => {\n${src.slice(0, m.index)}\nreturn { ${m[1]} };\n})();\n`;
 }
 for (const name of order) {
   let src = read(`js/${name}.js`);
@@ -35,6 +41,7 @@ for (const name of order) {
     .replace('export const ICE_SERVERS = null;', 'export const ICE_SERVERS = [];');
   const exported = [];
   src = src.replace(/^import \{ ml_kem1024 \} from '\.\.\/vendor\/noble-ml-kem1024-0\.7\.1\.min\.js';$/m, 'const { ml_kem1024 } = __mods.mlkem;');
+  src = src.replace(/^import \{([^}]+)\} from '\.\.\/vendor\/uqr-0\.1\.2\.mjs';$/m, (_, names) => `const {${names}} = __mods.uqr;`);
   src = src.replace(/^import \* as (\w+) from '\.\/(\w+)\.js';$/gm, (_, ns, m) => `const ${ns} = __mods.${m};`);
   src = src.replace(/^import \{([^}]+)\} from '\.\/(\w+)\.js';$/gm, (_, names, m) => `const {${names.replace(/\bas\b/g, ':')}} = __mods.${m};`);
   src = src.replace(/^export (async function|function|class|const|let)\s+(\w+)/gm, (_, kw, n) => { exported.push(n); return `${kw} ${n}`; });
@@ -68,7 +75,6 @@ html = html
   .replace('<link rel="stylesheet" href="css/app.css">', () => `<style>${css}</style>`)
   .replace('<script src="vendor/peerjs-1.5.5.min.js" defer></script>\n', '')
   .replace('<script src="js/app.js" type="module"></script>', '')
-  .replaceAll('href="security.html"', `href="${REPO}/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer"`)
   .replace('</body>', () => `<script>${peerjs}</script>\n<script type="module">${bundle}</script>\n</body>`);
 
 if (/src="(js|vendor)\//.test(html) || /href="css\//.test(html)) throw new Error('unresolved local reference');
@@ -77,5 +83,30 @@ if (testPort) html = html.replace('<html lang="en">', '<html lang="en" data-test
 const out = testPort ? 'dist/ghostchat.test.html' : 'dist/ghostchat.html';
 fs.writeFileSync(path.join(root, out), html);
 const digest = crypto.createHash('sha256').update(html, 'utf8').digest('hex');
-if (!testPort) fs.writeFileSync(path.join(root, 'dist/SHA256SUMS'), `${digest}  ghostchat.html\n`);
 console.log(`${out}  ${(html.length / 1024).toFixed(0)} KB  sha256 ${digest}`);
+
+// dist/security.html: the interactive "Who can read what" page, self-contained the same way,
+// so the app's links to it work from the dist folder (and from disk) as well as on the site.
+let sdigest = '';
+if (!testPort) {
+  const scss = read('css/security.css').replace(/url\(\.\.\/fonts\/([^)]+)\)/g, (_, f) =>
+    `url(data:font/woff2;base64,${fs.readFileSync(path.join(root, 'fonts', f)).toString('base64')})`);
+  const sjs = read('js/security.js');
+  let sec = read('security.html');
+  const scspOld = sec.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/)[1];
+  const scsp = ["default-src 'none'", `script-src ${sha(sjs)}`, `style-src ${sha(scss)}`, 'font-src data:', 'img-src data:', "base-uri 'none'", "form-action 'none'"].join('; ');
+  sec = sec
+    .replace(scspOld, scsp)
+    .replace('<link rel="icon" href="icon.svg" type="image/svg+xml">', `<link rel="icon" href="${icon}" type="image/svg+xml">`)
+    .replace('<link rel="stylesheet" href="css/security.css">', () => `<style>${scss}</style>`)
+    .replace('<script src="js/security.js" defer></script>\n', '')
+    .replaceAll('href="index.html"', 'href="ghostchat.html"')
+    .replaceAll('href="SECURITY.md"', `href="${REPO}/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer"`)
+    .replaceAll('href="docs/AUDIT.md"', `href="${REPO}/blob/main/docs/AUDIT.md" target="_blank" rel="noopener noreferrer"`)
+    .replace('</body>', () => `<script>${sjs}</script>\n</body>`);
+  if (/src="js\//.test(sec) || /href="css\//.test(sec)) throw new Error('unresolved local reference in security.html');
+  fs.writeFileSync(path.join(root, 'dist/security.html'), sec);
+  sdigest = crypto.createHash('sha256').update(sec, 'utf8').digest('hex');
+  console.log(`dist/security.html  ${(sec.length / 1024).toFixed(0)} KB  sha256 ${sdigest}`);
+  fs.writeFileSync(path.join(root, 'dist/SHA256SUMS'), `${digest}  ghostchat.html\n${sdigest}  security.html\n`);
+}
