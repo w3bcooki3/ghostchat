@@ -918,3 +918,41 @@ html.dock .bubble { font-size: 16px; }
 .fx-host.is-decrypting::after { content: attr(data-fx); content: attr(data-fx) / ""; position: absolute; inset: 0; color: var(--paper); white-space: pre-wrap; overflow-wrap: anywhere; pointer-events: none; }
 .hl-1.fx-host.is-decrypting::after { white-space: nowrap; color: var(--paper); }
 .hero-word #heroLine.fx-host.is-decrypting::after { white-space: nowrap; text-align: center; }
+
+/* ── one place to verify: on wide screens the docked panel is it ── */
+html.dock #verifyChip, html.dock .sn-card .sn-open { display: none; }
+
+/* ── connecting: a connected stepper instead of four boxes ── */
+@media (min-width: 900px) {
+  .steps { width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; counter-reset: step; }
+  .steps li { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px; padding: 0 10px; border: 0; background: none; border-radius: 0; text-align: center; font-size: 13.5px; line-height: 1.4; }
+  .steps li .step-dot { position: relative; z-index: 1; width: 30px; height: 30px; background: var(--ink); font-size: 12px; }
+  .steps li .step-text { max-width: 17em; }
+  .steps li::before { content: ''; position: absolute; top: 14px; right: 50%; left: -50%; height: 2px; background: var(--line-2); border-radius: 2px; transition: background .5s; }
+  .steps li:first-child::before { display: none; }
+  .steps li.is-done::before, .steps li.is-active::before { background: linear-gradient(90deg, var(--ecto), rgba(98, 242, 180, .35)); box-shadow: 0 0 10px rgba(98, 242, 180, .35); }
+  .steps li.is-error::before { background: rgba(255, 84, 104, .5); }
+  .steps li.is-active { background: none; border: 0; }
+  .steps li.is-active .step-dot { box-shadow: 0 0 0 6px rgba(98, 242, 180, .12), 0 0 18px rgba(98, 242, 180, .5); }
+}
+@media (min-width: 641px) and (max-height: 560px) {
+  .steps li { font-size: 12px; gap: 8px; }
+}
+
+/* ── chat watermark ── */
+.chat-body .watermark { position: absolute; inset: 0; z-index: 0; display: grid; place-content: center; justify-items: center; gap: 6px; pointer-events: none; user-select: none; overflow: hidden; }
+.wm-word { font: 400 clamp(64px, 13vw, 200px)/.85 var(--f-display); letter-spacing: .06em; color: rgba(228, 236, 238, .028); white-space: nowrap; }
+.wm-by { font: 500 clamp(11px, 1.1vw, 14px) var(--f-mono); letter-spacing: .4em; text-transform: uppercase; color: rgba(98, 242, 180, .09); }
+.chat-body .messages { position: relative; z-index: 1; }
+html.dock .chat-body .watermark { right: 0; }
+
+/* ── received files: nothing opens by itself ── */
+.file-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.file-act { display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(255, 255, 255, .03); color: var(--paper); font: 500 13px var(--f-ui); text-decoration: none; cursor: pointer; }
+.file-act:hover { border-color: var(--ecto-line); color: var(--ecto); }
+.media-view { border-color: var(--ecto-line); color: var(--ecto); }
+.file-card.is-received { width: min(360px, 76vw); }
+.file-card.kind-image .file-ico { background: linear-gradient(135deg, #1d3b33, #13252b); color: var(--ecto); }
+.file-card.is-risky { border-color: rgba(242, 181, 68, .45); }
+.file-sub .risk { color: var(--amber); }
+.dialog-detail { margin: -10px 0 20px; padding: 10px 12px; border-radius: 10px; background: var(--ink); border: 1px solid var(--line-2); font: 500 12.5px/1.5 var(--f-mono); color: var(--paper); overflow-wrap: anywhere; max-height: 7.5em; overflow-y: auto; }

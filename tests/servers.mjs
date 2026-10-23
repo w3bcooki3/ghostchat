@@ -10,7 +10,7 @@ import { PeerServer } from 'peer';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.txt': 'text/plain; charset=utf-8' };
 
-export async function startServers({ appPort = 0, signalPort = 0, test = true, deadSignal = false, inviteMs = 0, deadRelay = false } = {}) {
+export async function startServers({ appPort = 0, signalPort = 0, test = true, deadSignal = false, inviteMs = 0, deadRelay = false, relayUrl = null } = {}) {
   const signal = await new Promise((resolve) => {
     const s = PeerServer({ port: signalPort, host: '127.0.0.1', path: '/gc', allow_discovery: false }, (srv) => resolve(srv));
     void s;
@@ -31,10 +31,11 @@ export async function startServers({ appPort = 0, signalPort = 0, test = true, d
           .replace(/host: '0\.peerjs\.com',\s*port: 443,\s*path: '\/',\s*secure: true,/, `host: '127.0.0.1', port: ${sPort}, path: '/gc', secure: false,`)
           .replace('export const ICE_SERVERS = null;', 'export const ICE_SERVERS = [];').replace('export const PUBLIC_RELAY = true;', 'export const PUBLIC_RELAY = false;');
         if (deadRelay) body = body.replace('export const ICE_SERVERS = [];', "export const ICE_SERVERS = [{ urls: 'turn:127.0.0.1:9', username: 'x', credential: 'y' }];");
+        body = body.replace(/export const RELAY_URL = [^;]+;/, `export const RELAY_URL = ${relayUrl ? `'${relayUrl}'` : 'null'};`);   // never the production relay
         if (inviteMs) body = body.replace('inviteTtlMs: 10 * 60_000', `inviteTtlMs: ${inviteMs}`);
       }
       if (rel.endsWith('.html')) {
-        let html = buf.toString('utf8').replace(/connect-src [^;"]+/, `connect-src http://127.0.0.1:${sPort} ws://127.0.0.1:${sPort}`);
+        let html = buf.toString('utf8').replace(/connect-src [^;"]+/, `connect-src http://127.0.0.1:${sPort} ws://127.0.0.1:${sPort}${relayUrl ? ' ' + relayUrl : ''}`);
         if (test) html = html.replace('<html lang="en">', '<html lang="en" data-test="1">');
         body = html;
       }

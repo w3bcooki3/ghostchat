@@ -159,12 +159,14 @@ await test('5 MB file transfers byte-for-byte', async () => {
   assert(dl === 'payload.bin', 'name ' + dl);
 });
 
-await test('images render inline only for sniffed raster types; SVG and spoofed MIME do not', async () => {
+await test('received images are never opened automatically; only sniffed raster types can be viewed; SVG and spoofed MIME cannot', async () => {
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
   await S.A.setInputFiles('#fileInput', { name: 'dot.png', mimeType: 'image/png', buffer: png });
-  await S.B.waitForSelector('.msg.them .img-wrap img', { timeout: 10000 });
-  const src = await S.B.getAttribute('.msg.them .img-wrap img', 'src');
-  assert(src.startsWith('blob:'), 'image should be a blob URL');
+  await S.B.waitForSelector('.msg.them .media-view', { timeout: 10000 });
+  assert(await S.B.$$eval('.msg.them img', (els) => els.length) === 0, 'an image was decoded before the person chose to view it');
+  await S.B.click('.msg.them .media-view');
+  await S.B.waitForSelector('#viewer:not([hidden]) #viewerImg[src^="blob:"]', { timeout: 5000 });
+  await S.B.click('#viewerClose');
   const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" onload="parent.__pwned=2"><script>parent.__pwned=3</script></svg>');
   await S.A.setInputFiles('#fileInput', { name: 'evil.svg', mimeType: 'image/svg+xml', buffer: svg });
   await S.B.waitForFunction(() => [...document.querySelectorAll('.file-sub a[download]')].some((a) => a.download === 'evil.svg'), null, { timeout: 10000 });
@@ -175,11 +177,12 @@ await test('images render inline only for sniffed raster types; SVG and spoofed 
     const a = [...document.querySelectorAll('.file-sub a[download]')].find((x) => x.download === 'evil.svg');
     let fetchBlocked = false;
     try { await fetch(a.href); } catch { fetchBlocked = true; }
-    return { pwned: window.__pwned, fetchBlocked, inlineImgs: document.querySelectorAll('.msg.them .img-wrap').length };
+    return { pwned: window.__pwned, fetchBlocked, viewable: document.querySelectorAll('.msg.them .media-view').length, svgRisky: !!a.closest('.file-card.is-risky') };
   });
   assert(t.pwned === undefined, 'script ran');
   assert(t.fetchBlocked, 'CSP should block fetch of blob URLs');
-  assert(t.inlineImgs === 1, 'only the PNG should be inline, got ' + t.inlineImgs);
+  assert(t.viewable === 1, 'only the PNG should be viewable, got ' + t.viewable);
+  assert(t.svgRisky, 'SVG should be flagged as able to run code');
 });
 
 await test('reply, reactions and unsend sync between peers', async () => {

@@ -27,6 +27,14 @@ export const T_HELLO = 0x03; // v3 hello (v2 used 0x01; mixed versions fail fast
 export const T_CONFIRM = 0x02;
 export const T_LOCKED = 0x04;
 export const T_DATA = 0x10;
+// Instant goodbye: MAGIC ‖ T_BYE ‖ 32-byte token. Each side picks a random token and gives it
+// to the other INSIDE the encrypted channel; presenting it later ends the session at once.
+// It is sent unencrypted because it must go out synchronously while a page is being torn
+// down, which async WebCrypto can't guarantee. Only the peer can know the token, it's
+// compared in constant time, and it is single-use (it ends the session), so a network
+// attacker can neither forge nor usefully replay it.
+export const T_BYE = 0x05;
+export const BYE_TOKEN_LEN = 32;
 
 export const KIND_JSON = 1;
 export const KIND_BIN = 2;

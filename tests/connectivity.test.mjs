@@ -109,3 +109,39 @@ test('default ICE includes STUN and the public TLS relay on 443', async () => {
   assert.ok(urls.some((u) => u.startsWith('stun:')));
   assert.ok(urls.includes('turns:staticauth.openrelay.metered.ca:443?transport=tcp'));
 });
+
+import { cleanLabel, cleanText, fileRisk, safeFilename, parseLink, sniffKind } from '../js/ui/sanitize.js';
+
+test('text and names lose bidi overrides and control characters', () => {
+  assert.equal(cleanLabel('photo‮gpj.exe', 60), 'photogpj.exe');
+  assert.equal(cleanText('see https://bank.example‮/moc.live⁦x⁩', 100), 'see https://bank.example/moc.livex');
+  assert.equal(cleanText('line one\nline two\ttab', 100), 'line one\nline two\ttab');
+  assert.equal(cleanText('a\u0000b\u0007c', 10), 'abc');
+});
+
+test('risky files are recognised by name and by content', () => {
+  assert.ok(fileRisk('setup.exe').risky);
+  assert.ok(fileRisk('invoice.pdf.exe').risky);
+  assert.ok(fileRisk('page.HTML').risky);
+  assert.ok(fileRisk('logo.svg').risky);
+  assert.ok(fileRisk('holiday.jpg', Uint8Array.of(0x4d, 0x5a, 0x90, 0)).risky, 'PE executable named .jpg');
+  assert.ok(fileRisk('notes.txt', new TextEncoder().encode('#!/bin/sh\nrm -rf ~')).risky, 'script named .txt');
+  assert.ok(fileRisk('report.pdf          .bat').risky);
+  assert.equal(fileRisk('photo.jpg', Uint8Array.of(0xff, 0xd8, 0xff, 0xe0)).risky, false);
+  assert.equal(fileRisk('report.pdf', new TextEncoder().encode('%PDF-1.7')).risky, false);
+  assert.equal(sniffKind(new TextEncoder().encode('%PDF-1.7')), 'pdf');
+});
+
+test('download names are safe', () => {
+  assert.equal(safeFilename('../../etc/passwd'), '_._etc_passwd');
+  assert.equal(safeFilename('a:b*c?.txt'), 'a_b_c_.txt');
+  assert.equal(safeFilename('...hidden'), 'hidden');
+  assert.equal(safeFilename('CON.txt'), '_CON.txt');
+  assert.equal(safeFilename('‮'), 'file');
+});
+
+test('only http(s) links are links, and hosts come out in ASCII', () => {
+  assert.equal(parseLink('javascript:alert(1)'), null);
+  assert.equal(parseLink('data:text/html,x'), null);
+  assert.equal(parseLink('https://exämple.com/').hostname, 'xn--exmple-cua.com');
+});

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' blob:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com; worker-src blob:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' blob:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com wss://ghostchat-relay.mrsaini281-678.workers.dev; worker-src blob:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#05080A">
@@ -180,6 +180,7 @@
   <div id="banner" class="banner" role="status" hidden></div>
 
   <div class="chat-body">
+    <div class="watermark" aria-hidden="true"><span class="wm-word">Ghost Chat</span><span class="wm-by">by w3bcooki3</span></div>
     <div id="messages" class="messages" role="log" aria-live="polite" aria-relevant="additions"></div>
     <div id="veil" class="veil" hidden><button id="unveilBtn" class="btn btn-ghost" type="button">Show conversation</button></div>
     <div id="dropzone" class="dropzone" hidden><span>Drop to send encrypted</span></div>
@@ -346,6 +347,7 @@
   <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dialogTitle" aria-describedby="dialogBody">
     <h2 id="dialogTitle"></h2>
     <p id="dialogBody"></p>
+    <p id="dialogDetail" class="dialog-detail" hidden></p>
     <div class="dialog-actions">
       <button id="dialogCancel" class="btn btn-ghost" type="button">Cancel</button>
       <button id="dialogOk" class="btn btn-danger" type="button"></button>

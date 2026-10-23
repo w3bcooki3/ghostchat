@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/51UcYAVCDMgBTJSL3dvQcmY+PnXKbGOzweMdOWJZ+Q=' 'sha256-IjX/xV9iIL3NL6HtqbEscqhW44ScXo5r4FnB+EIPyxY='; style-src 'sha256-MTazY9cqaCEngppXUhlnzJB8g9QwCbKJx55OOjfEUKU='; font-src data:; img-src blob: data:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com; worker-src blob:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/51UcYAVCDMgBTJSL3dvQcmY+PnXKbGOzweMdOWJZ+Q=' 'sha256-plppeHDaA/P+SBzljPphAltidB6pD8/i9TdimXi7ElA='; style-src 'sha256-Nw0N/7eXC7eYskAV+XHH1bm04RYptm4h2Yuyazw21wk='; font-src data:; img-src blob: data:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com wss://ghostchat-relay.mrsaini281-678.workers.dev; worker-src blob:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#05080A">
@@ -930,6 +930,44 @@ html.dock .bubble { font-size: 16px; }
 .fx-host.is-decrypting::after { content: attr(data-fx); content: attr(data-fx) / ""; position: absolute; inset: 0; color: var(--paper); white-space: pre-wrap; overflow-wrap: anywhere; pointer-events: none; }
 .hl-1.fx-host.is-decrypting::after { white-space: nowrap; color: var(--paper); }
 .hero-word #heroLine.fx-host.is-decrypting::after { white-space: nowrap; text-align: center; }
+
+/* ── one place to verify: on wide screens the docked panel is it ── */
+html.dock #verifyChip, html.dock .sn-card .sn-open { display: none; }
+
+/* ── connecting: a connected stepper instead of four boxes ── */
+@media (min-width: 900px) {
+  .steps { width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; counter-reset: step; }
+  .steps li { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px; padding: 0 10px; border: 0; background: none; border-radius: 0; text-align: center; font-size: 13.5px; line-height: 1.4; }
+  .steps li .step-dot { position: relative; z-index: 1; width: 30px; height: 30px; background: var(--ink); font-size: 12px; }
+  .steps li .step-text { max-width: 17em; }
+  .steps li::before { content: ''; position: absolute; top: 14px; right: 50%; left: -50%; height: 2px; background: var(--line-2); border-radius: 2px; transition: background .5s; }
+  .steps li:first-child::before { display: none; }
+  .steps li.is-done::before, .steps li.is-active::before { background: linear-gradient(90deg, var(--ecto), rgba(98, 242, 180, .35)); box-shadow: 0 0 10px rgba(98, 242, 180, .35); }
+  .steps li.is-error::before { background: rgba(255, 84, 104, .5); }
+  .steps li.is-active { background: none; border: 0; }
+  .steps li.is-active .step-dot { box-shadow: 0 0 0 6px rgba(98, 242, 180, .12), 0 0 18px rgba(98, 242, 180, .5); }
+}
+@media (min-width: 641px) and (max-height: 560px) {
+  .steps li { font-size: 12px; gap: 8px; }
+}
+
+/* ── chat watermark ── */
+.chat-body .watermark { position: absolute; inset: 0; z-index: 0; display: grid; place-content: center; justify-items: center; gap: 6px; pointer-events: none; user-select: none; overflow: hidden; }
+.wm-word { font: 400 clamp(64px, 13vw, 200px)/.85 var(--f-display); letter-spacing: .06em; color: rgba(228, 236, 238, .028); white-space: nowrap; }
+.wm-by { font: 500 clamp(11px, 1.1vw, 14px) var(--f-mono); letter-spacing: .4em; text-transform: uppercase; color: rgba(98, 242, 180, .09); }
+.chat-body .messages { position: relative; z-index: 1; }
+html.dock .chat-body .watermark { right: 0; }
+
+/* ── received files: nothing opens by itself ── */
+.file-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.file-act { display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(255, 255, 255, .03); color: var(--paper); font: 500 13px var(--f-ui); text-decoration: none; cursor: pointer; }
+.file-act:hover { border-color: var(--ecto-line); color: var(--ecto); }
+.media-view { border-color: var(--ecto-line); color: var(--ecto); }
+.file-card.is-received { width: min(360px, 76vw); }
+.file-card.kind-image .file-ico { background: linear-gradient(135deg, #1d3b33, #13252b); color: var(--ecto); }
+.file-card.is-risky { border-color: rgba(242, 181, 68, .45); }
+.file-sub .risk { color: var(--amber); }
+.dialog-detail { margin: -10px 0 20px; padding: 10px 12px; border-radius: 10px; background: var(--ink); border: 1px solid var(--line-2); font: 500 12.5px/1.5 var(--f-mono); color: var(--paper); overflow-wrap: anywhere; max-height: 7.5em; overflow-y: auto; }
 </style>
 
 </head>
@@ -1098,6 +1136,7 @@ html.dock .bubble { font-size: 16px; }
   <div id="banner" class="banner" role="status" hidden></div>
 
   <div class="chat-body">
+    <div class="watermark" aria-hidden="true"><span class="wm-word">Ghost Chat</span><span class="wm-by">by w3bcooki3</span></div>
     <div id="messages" class="messages" role="log" aria-live="polite" aria-relevant="additions"></div>
     <div id="veil" class="veil" hidden><button id="unveilBtn" class="btn btn-ghost" type="button">Show conversation</button></div>
     <div id="dropzone" class="dropzone" hidden><span>Drop to send encrypted</span></div>
@@ -1264,6 +1303,7 @@ html.dock .bubble { font-size: 16px; }
   <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dialogTitle" aria-describedby="dialogBody">
     <h2 id="dialogTitle"></h2>
     <p id="dialogBody"></p>
+    <p id="dialogDetail" class="dialog-detail" hidden></p>
     <div class="dialog-actions">
       <button id="dialogCancel" class="btn btn-ghost" type="button">Cancel</button>
       <button id="dialogOk" class="btn btn-danger" type="button"></button>
@@ -2061,11 +2101,20 @@ const SIGNALING = {
 //
 // TURN_ENDPOINT: a URL that returns fresh TURN credentials as JSON ({ iceServers: [...] } or
 // [...]). The dependable option for a public site, and free at small scale:
-//   * Cloudflare Realtime TURN (1,000 GB/month free): deploy relay/cloudflare-worker.js and
+//   * Cloudflare Realtime TURN (1,000 GB/month free): deploy relay/turn-credentials.js and
 //     put its URL here, e.g. 'https://ghostchat-turn.<you>.workers.dev/'
 //   * Metered (free tier): 'https://<app>.metered.live/api/v1/turn/credentials?apiKey=<key>'
 // Then add the URL's origin to connect-src in index.html's Content-Security-Policy.
 const TURN_ENDPOINT = null;
+
+// RELAY_URL: your Ghost Chat WebSocket relay (relay/ws-relay.js on Cloudflare Workers, free
+// plan, no card). The fallback that works on almost any network — VPNs, phones on mobile
+// data, strict NAT — because it's ordinary HTTPS on port 443. It only ever carries end-to-end
+// encrypted frames. Add its origin (wss://…) to connect-src in index.html's CSP.
+const RELAY_URL = 'wss://ghostchat-relay.mrsaini281-678.workers.dev';
+// Joiners try a direct connection first and bring in the relay after this long (or at once
+// if the direct attempt fails, or in "Hide my IP" mode, where the relay is what hides it).
+const RELAY_AFTER_MS = 2500;
 
 // PUBLIC_RELAY: also use the free, shared Open Relay project as a fallback (no signup;
 // best-effort, limited monthly capacity shared by everyone using it).
@@ -2088,7 +2137,7 @@ const LIMITS = {
   deadAfterMs: 25_000,           // no frames for this long → link considered dead
 };
 
-return { SIGNALING, TURN_ENDPOINT, PUBLIC_RELAY, ICE_SERVERS, LIMITS };
+return { SIGNALING, TURN_ENDPOINT, RELAY_URL, RELAY_AFTER_MS, PUBLIC_RELAY, ICE_SERVERS, LIMITS };
 })();
 __mods.protocol = (() => {
 // Ghost Chat wire protocol v3 — pure crypto, no DOM, no network.
@@ -2120,6 +2169,14 @@ const T_HELLO = 0x03; // v3 hello (v2 used 0x01; mixed versions fail fast)
 const T_CONFIRM = 0x02;
 const T_LOCKED = 0x04;
 const T_DATA = 0x10;
+// Instant goodbye: MAGIC ‖ T_BYE ‖ 32-byte token. Each side picks a random token and gives it
+// to the other INSIDE the encrypted channel; presenting it later ends the session at once.
+// It is sent unencrypted because it must go out synchronously while a page is being torn
+// down, which async WebCrypto can't guarantee. Only the peer can know the token, it's
+// compared in constant time, and it is single-use (it ends the session), so a network
+// attacker can neither forge nor usefully replay it.
+const T_BYE = 0x05;
+const BYE_TOKEN_LEN = 32;
 
 const KIND_JSON = 1;
 const KIND_BIN = 2;
@@ -2546,7 +2603,7 @@ function decodeJSON(payload) {
   return o;
 }
 
-return { VERSION, MAGIC, T_HELLO, T_CONFIRM, T_LOCKED, T_DATA, KIND_JSON, KIND_BIN, KIND_FRAG, PAD_BUCKETS, MAX_PLAINTEXT, MAX_FRAME, ProtocolError, concat, toBytes, bytesEqual, sha256, ALPHABET, CODE_CHARS, ROOM_CHARS, generateCode, formatCode, normalizeCode, roomIdFromCode, deriveRoomKey, pad, unpad, safetyNumber, resumeId, Handshake, SecureChannel, decodeJSON };
+return { VERSION, MAGIC, T_HELLO, T_CONFIRM, T_LOCKED, T_DATA, T_BYE, BYE_TOKEN_LEN, KIND_JSON, KIND_BIN, KIND_FRAG, PAD_BUCKETS, MAX_PLAINTEXT, MAX_FRAME, ProtocolError, concat, toBytes, bytesEqual, sha256, ALPHABET, CODE_CHARS, ROOM_CHARS, generateCode, formatCode, normalizeCode, roomIdFromCode, deriveRoomKey, pad, unpad, safetyNumber, resumeId, Handshake, SecureChannel, decodeJSON };
 })();
 __mods.local = (() => {
 // Same-device transport: two tabs or windows of the same browser profile (for example two
@@ -2648,6 +2705,151 @@ class LocalHub {
 }
 
 return { localSupported, LocalHub };
+})();
+__mods.relay = (() => {
+// WebSocket relay transport (relay/ws-relay.js on Cloudflare Workers).
+//
+// The fallback that works on networks where WebRTC can't: phones on mobile data, VPNs,
+// symmetric NAT, blocked TURN servers. Both browsers open a WebSocket (HTTPS, port 443)
+// to the relay, which forwards frames between them.
+//
+// Like the same-device link this is ONLY a byte pipe: the room-code-authenticated hybrid
+// handshake and AES-256-GCM frames run on top, unchanged. The relay sees ciphertext,
+// sizes, timing and IP addresses — never the code, keys or content. Rooms on the relay are
+// addressed by relayRoomId(): a hash of the room KEY (derived from the full 20-character
+// code), unrelated to the public signaling ID, so the relay can't link the two, and nobody
+// without the code can find, squat or observe a room.
+//
+// The objects handed to Link mimic the subset of a PeerJS DataConnection that Link uses.
+
+const PING_MS = 25_000;          // keeps idle VPN/NAT/proxy mappings alive (answered for free)
+const OPEN_TIMEOUT_MS = 8_000;
+const te = new TextEncoder();
+const hex = (u8) => Array.from(u8, (b) => b.toString(16).padStart(2, '0')).join('');
+
+/** 128-bit relay address for a room, derived from the room key. */
+async function relayRoomId(roomKey) {
+  const d = new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array([...te.encode('ghostchat/v3/relay-room'), ...roomKey])));
+  return hex(d.slice(0, 16));
+}
+
+class RelayConn {
+  constructor({ send, close }) {
+    this.relay = true; this.serialization = 'raw'; this.bufferSize = 0;
+    this.dataChannel = null; this.peerConnection = null;
+    this.open = false; this.closed = false;
+    this._send = send; this._close = close;
+    this._h = { open: [], data: [], close: [], error: [] };
+  }
+  on(ev, fn) { (this._h[ev] ||= []).push(fn); return this; }
+  _emit(ev, d) { for (const f of this._h[ev] || []) { try { f(d); } catch (e) { console.error('[ghost] relay', ev, e); } } }
+  _opened() { if (this.open || this.closed) return; this.open = true; this._emit('open'); }
+  send(bytes) { if (!this.closed && this.open) this._send(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)); }
+  get bufferedAmount() { return this._buffered ? this._buffered() : 0; }
+  close() { this._shut(true); }
+  _shut(notify) {
+    if (this.closed) return;
+    this.closed = true;
+    if (notify) { try { this._close(); } catch {} }
+    this._emit('close');
+  }
+}
+
+function socketUrl(base, room, role) {
+  const u = new URL(base.replace(/\/+$/, '') + '/r/' + room);
+  u.searchParams.set('role', role);
+  return u.href;
+}
+
+/** Joiner: one WebSocket per connection attempt. Closes with `unanswered` if no host is there. */
+function dialRelay(base, room) {
+  let ws;
+  const conn = new RelayConn({ send: (b) => ws.send(b), close: () => ws.close(1000) });
+  conn._buffered = () => ws?.bufferedAmount || 0;
+  try { ws = new WebSocket(socketUrl(base, room, 'joiner')); } catch { queueMicrotask(() => { conn.unanswered = true; conn._shut(false); }); return conn; }
+  ws.binaryType = 'arraybuffer';
+  const timer = setTimeout(() => { if (!conn.open) { conn.unanswered = true; try { ws.close(); } catch {} conn._shut(false); } }, OPEN_TIMEOUT_MS);
+  const ping = setInterval(() => { if (ws.readyState === 1) ws.send('ping'); }, PING_MS);
+  ws.onmessage = (e) => {
+    if (typeof e.data === 'string') {
+      let m; try { m = JSON.parse(e.data); } catch { return; }
+      if (m?.t === 'ready') { clearTimeout(timer); conn._opened(); }
+      else if (m?.t === 'nohost') { conn.unanswered = true; conn.nohost = true; }
+      else if (m?.t === 'hostgone') conn._shut(false);
+      return;
+    }
+    if (conn.open) conn._emit('data', e.data);
+  };
+  ws.onclose = () => { clearTimeout(timer); clearInterval(ping); if (!conn.open) conn.unanswered = true; conn._shut(false); };
+  ws.onerror = () => {};
+  return conn;
+}
+
+/**
+ * Host: one WebSocket that stays registered for the room and multiplexes joiners (the relay
+ * prefixes each frame with a one-byte joiner id). Reconnects on its own while the session lives.
+ */
+class RelayHost {
+  constructor(base, room) {
+    this.base = base; this.room = room;
+    this.conns = new Map(); this.ws = null; this.closed = false; this.retry = 0;
+    this.onConnection = null; this.onState = null; // onState(up: boolean)
+  }
+  start() { this._connect(); }
+  _connect() {
+    if (this.closed) return;
+    let ws;
+    try { ws = this.ws = new WebSocket(socketUrl(this.base, this.room, 'host')); } catch { return this._again(); }
+    ws.binaryType = 'arraybuffer';
+    clearInterval(this.ping);
+    this.ping = setInterval(() => { if (ws.readyState === 1) ws.send('ping'); }, PING_MS);
+    ws.onopen = () => { this.retry = 0; this.onState?.(true); };
+    ws.onmessage = (e) => {
+      if (typeof e.data === 'string') {
+        let m; try { m = JSON.parse(e.data); } catch { return; }
+        if (m?.t === 'join' && Number.isInteger(m.id) && m.id >= 0 && m.id < 256 && !this.conns.has(m.id)) {
+          const id = m.id;
+          const conn = new RelayConn({
+            send: (b) => { if (ws.readyState !== 1) return; const out = new Uint8Array(b.length + 1); out[0] = id; out.set(b, 1); ws.send(out); },
+            close: () => { this.conns.delete(id); if (ws.readyState === 1) ws.send(JSON.stringify({ t: 'kick', id })); },
+          });
+          conn._buffered = () => ws.bufferedAmount || 0;
+          this.conns.set(id, conn);
+          this.onConnection?.(conn);           // Link attaches its handlers synchronously
+          conn._opened();
+        } else if (m?.t === 'leave') { const c = this.conns.get(m.id); this.conns.delete(m.id); c?._shut(false); }
+        return;
+      }
+      const u8 = new Uint8Array(e.data);
+      if (u8.length < 2) return;
+      const c = this.conns.get(u8[0]);
+      if (c?.open) c._emit('data', u8.slice(1).buffer);
+    };
+    ws.onclose = () => {
+      clearInterval(this.ping);
+      for (const c of this.conns.values()) c._shut(false);
+      this.conns.clear();
+      this.onState?.(false);
+      this._again();
+    };
+    ws.onerror = () => {};
+  }
+  _again() {
+    if (this.closed) return;
+    const d = [1000, 2000, 4000, 8000, 15000][Math.min(this.retry++, 4)];
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this._connect(), d);
+  }
+  close() {
+    this.closed = true;
+    clearTimeout(this.timer); clearInterval(this.ping);
+    for (const c of this.conns.values()) c._shut(false);
+    this.conns.clear();
+    try { this.ws?.close(1000); } catch {}
+  }
+}
+
+return { relayRoomId, dialRelay, RelayHost };
 })();
 __mods.ice = (() => {
 // Which STUN/TURN servers a connection uses. TURN relays are what make a connection work when
@@ -2752,7 +2954,8 @@ __mods.session = (() => {
 // Session layer: PeerJS transport + authenticated handshake + reliable delivery,
 // reconnection, heartbeats and file streaming. No DOM access.
 const P = __mods.protocol;
-const { SIGNALING, LIMITS } = __mods.config;
+const { SIGNALING, LIMITS, RELAY_URL, RELAY_AFTER_MS } = __mods.config;
+const { relayRoomId, dialRelay, RelayHost } = __mods.relay;
 const { LocalHub, localSupported } = __mods.local;
 const { resolveIce } = __mods.ice;
 
@@ -2781,7 +2984,7 @@ function hsKind(b) {
 
 const FILE_CHUNK = 60 * 1024;           // fits the 64 KiB padding bucket with header room
 const BUFFER_HIGH = 2 * 1024 * 1024;    // pause file streaming above this many queued bytes
-const MAX_PENDING_HANDSHAKES = 3;
+const MAX_PENDING_HANDSHAKES = 5;
 const RETRY_DELAYS = [800, 1500, 2500, 4000, 6000, 8000, 10000];
 // Constant-rate traffic: one identically sized frame every slot, real or dummy.
 const SHAPE_SLOT_MS = 250;
@@ -2819,9 +3022,9 @@ class Link {
     this.channel = null; this.closed = false; this.lastRx = Date.now();
     this.inq = Promise.resolve(); this.outq = Promise.resolve();
     this.hsTimer = setTimeout(() => { if (!this.channel) this.close('handshake-timeout'); }, LIMITS.handshakeTimeoutMs);
-    this.local = !!conn.local;
+    this.local = !!conn.local; this.relay = !!conn.relay;
     this.diag = { host: 0, srflx: 0, relay: 0, ice: 'new' };
-    if (!this.local) this.watchIce();
+    if (!this.local && !this.relay) this.watchIce();
 
     conn.on('open', async () => {
       session.emit('link-open', { role });
@@ -2830,7 +3033,7 @@ class Link {
       }
     });
     conn.on('data', (d) => { this.inq = this.inq.then(() => this.onData(d)); });
-    conn.on('close', () => this.close(conn.unanswered ? 'local-unavailable' : 'closed'));
+    conn.on('close', () => this.close(conn.unanswered ? 'alt-unavailable' : 'closed'));
     conn.on('error', () => this.close('error'));
   }
 
@@ -2843,6 +3046,10 @@ class Link {
     if (bytes.length > P.MAX_FRAME) return this.close('protocol');
     this.lastRx = Date.now();
 
+    if (this.channel && bytes.length === 2 + P.BYE_TOKEN_LEN && bytes[0] === P.MAGIC && bytes[1] === P.T_BYE) {
+      this.s._onQuickBye(this, bytes.subarray(2));
+      return;
+    }
     if (!this.channel) {
       this.s.emit('hs-frame', { dir: 'in', kind: hsKind(bytes) });
       try {
@@ -2922,6 +3129,7 @@ class Link {
   sendJSON(o) { return this.sendFrame(P.KIND_JSON, te.encode(JSON.stringify(o))); }
 
   buffered() {
+    if (this.relay) return this.conn.bufferedAmount;
     const dc = this.conn.dataChannel;
     return (dc ? dc.bufferedAmount : 0) + (this.conn.bufferSize || 0) * FILE_CHUNK;
   }
@@ -2970,6 +3178,7 @@ class Session extends Emitter {
     this.rejected = 0; this.retryIdx = 0; this.lostAt = 0;
     this.pingSeq = 0; this.pings = new Map();
     this.locked = false; this.resumeSecret = null; this.candidates = []; this.resumeRefusals = 0;
+    this.byeOut = crypto.getRandomValues(new Uint8Array(P.BYE_TOKEN_LEN)); this.byeIn = null;
     this.frag = null;
     this.shaping = false; this.shapeQ = []; this.shapeTimer = 0;
   }
@@ -2984,7 +3193,7 @@ class Session extends Emitter {
     const iceServers = await resolveIce(this.extraIce);
     if (this.ended) return;
     this.relayAvailable = iceServers.some((s) => [].concat(s.urls).some((u) => /^turns?:/.test(u)));
-    if (this.relayOnly && !this.relayAvailable) { this.fail('timeout', { relayOnly: true, relay: 0, host: 0, srflx: 0, noRelayConfigured: true }); return; }
+    if (this.relayOnly && !this.relayAvailable && !RELAY_URL) { this.fail('timeout', { relayOnly: true, relay: 0, host: 0, srflx: 0, noRelayConfigured: true }); return; }
     const opts = {
       host: SIGNALING.host, port: SIGNALING.port, path: SIGNALING.path, secure: SIGNALING.secure, key: SIGNALING.key,
       debug: 0,
@@ -2997,6 +3206,23 @@ class Session extends Emitter {
         if (this.role === 'host') this.hub.onConnection = (conn) => this.accept(conn);
         else this.dialLocal();
       } catch (e) { console.warn('[ghost] same-device link unavailable', e); this.hub = null; }
+    }
+    // WebSocket relay: the host registers right away; a joiner brings it in as a fallback.
+    if (RELAY_URL) {
+      try {
+        this.relayRoom = await relayRoomId(this.roomKey);
+        if (this.ended) return;
+        if (this.role === 'host') {
+          this.relayHost = new RelayHost(RELAY_URL, this.relayRoom);
+          this.relayHost.onConnection = (conn) => this.accept(conn);
+          this.relayHost.onState = (up) => {
+            this.relayUp = up;
+            if (up && !this.everReady && !this.ended && (this.state === 'signaling' || this.state === 'failed')) { this.setState('waiting'); this.emit('relay-up', {}); }
+          };
+          this.relayHost.start();
+        } else if (this.relayOnly) this.dialRelayNow();
+        else this.relayTimer = setTimeout(() => { if (!this.everReady) this.dialRelayNow(); }, RELAY_AFTER_MS);
+      } catch (e) { console.warn('[ghost] relay unavailable', e); }
     }
     this.peer = this.role === 'host' ? new window.Peer(this.roomId, opts) : new window.Peer(opts);
     this.peer.on('open', () => {
@@ -3043,15 +3269,17 @@ class Session extends Emitter {
     if (t === 'unavailable-id') return this.fail('room-taken');
     if (t === 'browser-incompatible') return this.fail('unsupported');
     if (t === 'peer-unavailable') {
+      if (this.canRelay()) { this.dialRelayNow(); this.deferredFail = 'not-found'; return; }  // the relay may still find the host
       if (this.hasLocalLink()) { this.deferredFail = 'not-found'; return; }   // a local link may still carry it
       if (!this.everReady) return this.fail('not-found');
       return this.scheduleRetry();
     }
     if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(t)) {
       if (!this.everReady && (this.state === 'signaling' || this.state === 'dialing')) {
+        if (this.role === 'joiner' && this.canRelay()) { this.dialRelayNow(); this.deferredFail = 'signaling'; return; }
         if (this.hasLocalLink()) { this.deferredFail = 'signaling'; return; }
-        // A host can still be joined from this browser without signaling; say so instead of failing.
-        if (this.role === 'host' && this.hub) { this.signalingDown = true; this.emit('signaling-down', {}); return; }
+        // A host can still be joined through the relay or from this browser; say so instead of failing.
+        if (this.role === 'host' && (this.relayHost || this.hub)) { this.signalingDown = true; this.emit('signaling-down', { relay: !!this.relayHost }); return; }
         return this.fail('signaling');
       }
       if (this.role === 'joiner' && this.state === 'reconnecting') this.scheduleRetry();
@@ -3074,6 +3302,15 @@ class Session extends Emitter {
 
   // ── joiner side ──
   hasLocalLink() { return [...this.pending, this.active].some((l) => l && l.local && !l.closed); }
+  hasRelayLink() { return [...this.pending, this.active].some((l) => l && l.relay && !l.closed); }
+  canRelay() { return !!(RELAY_URL && this.relayRoom && this.role === 'joiner'); }
+  dialRelayNow() {
+    if (!this.canRelay() || this.ended || this.hasRelayLink()) return;
+    if (this.active && !this.active.closed) return;
+    clearTimeout(this.relayTimer);
+    this.relayTried = true;
+    this.pending.add(new Link(this, dialRelay(RELAY_URL, this.relayRoom), 'joiner'));
+  }
   dialLocal() {
     if (!this.hub || this.ended || this.hasLocalLink()) return;
     this.pending.add(new Link(this, this.hub.dial(), 'joiner'));
@@ -3082,7 +3319,7 @@ class Session extends Emitter {
   dial() {
     if (this.ended || this.role !== 'joiner') return;
     if (this.active && !this.active.closed) return;
-    if (this.everReady) this.dialLocal();
+    if (this.everReady) { this.dialLocal(); this.dialRelayNow(); }
     if (!this.peer || this.peer.destroyed) return;
     if (this.peer.disconnected) { try { this.peer.reconnect(); } catch {} return; } // 'open' will call dial again
     if (!this.everReady) this.setState('dialing');
@@ -3104,6 +3341,8 @@ class Session extends Emitter {
     if (this.ended || this.role !== 'joiner') return;
     this.setState('dialing');
     this.dialLocal();
+    this.relayTried = false; this.deferredFail = null; this.relayNoHost = false;
+    if (this.canRelay()) this.relayTimer = setTimeout(() => { if (!this.everReady) this.dialRelayNow(); }, RELAY_AFTER_MS);
     if (this.peer?.open) this.dial();
     else if (this.peer && !this.peer.destroyed) { try { this.peer.reconnect(); } catch {} }
   }
@@ -3158,6 +3397,8 @@ class Session extends Emitter {
     this.route = link.local ? 'device' : null;
     this.setState('ready');
     this.emit('ready', { safetyNumber: this.safetyNumber, resumed, continuity, newPeer: resumed && !continuity });
+    // Hand the peer our goodbye token (inside the encrypted channel) on every (re)connection.
+    this.transmit({ t: 'bye-key', v: hex(this.byeOut) });
     for (const o of this.outbox.values()) this.transmit(o);
   }
 
@@ -3165,8 +3406,14 @@ class Session extends Emitter {
     if (link.refused) reason = link.refused;
     this.pending.delete(link);
     if (this.ended) return;
-    if (reason === 'local-unavailable' || reason === 'superseded') {   // no host in this browser / lost a race
-      if (this.deferredFail && !this.everReady && !this.active && ![...this.pending].some((l) => !l.closed)) this.fail(this.deferredFail);
+    if (reason === 'alt-unavailable' || reason === 'superseded') {   // no host in this browser or on the relay / lost a race
+      if (link.relay && link.conn.nohost) this.relayNoHost = true;
+      if (this.role === 'joiner' && !this.everReady && !this.active && ![...this.pending].some((l) => !l.closed)) {
+        if (this.relayNoHost) this.fail('not-found');   // the relay answered: nobody holds this room
+        else if (this.deferredFail) this.fail(this.deferredFail);
+        else if (this.lastDirect) this.fail('timeout', { ...this.lastDirect.diag, relayOnly: this.relayOnly, relayTried: true });
+        else if (link.relay && this.peer?.open) this.dial();   // relay found no host; signaling may still
+      }
       return;
     }
     // Host: a joiner that received our MAC but never confirmed could not prove the code.
@@ -3184,6 +3431,10 @@ class Session extends Emitter {
     if (link !== this.active) {
       if (this.role === 'joiner' && !this.active) {
         if (!this.everReady && [...this.pending].some((l) => !l.closed)) return;   // another transport is still trying
+        // The direct attempt failed: bring in the relay before giving up.
+        if (!this.everReady && !link.local && !link.relay && this.canRelay() && !this.relayTried && reason !== 'auth-failed') {
+          this.lastDirect = { reason, diag: link.diag }; this.dialRelayNow(); return;
+        }
         if (!this.everReady && reason !== 'auth-failed' && this.state !== 'failed') {
           const code = reason === 'handshake-timeout' || reason === 'ice-failed' ? 'timeout' : 'not-found';
           return this.fail(code, code === 'timeout' ? { ...link.diag, relayOnly: this.relayOnly } : undefined);
@@ -3310,6 +3561,9 @@ class Session extends Emitter {
         }
         return;
       case 'bye': this.destroy('peer-left'); return;
+      case 'bye-key':
+        if (typeof o.v === 'string' && /^[0-9a-f]{64}$/.test(o.v)) { this.byeIn?.fill(0); this.byeIn = unhex(o.v); }
+        return;
       case 'file': return this.onFileOffer(o);
       case 'file-end': return this.onFileEnd(o);
       case 'file-abort': return this.onFileAbort(o);
@@ -3338,6 +3592,7 @@ class Session extends Emitter {
   /** 'direct' | 'local' | 'relay' | null — which ICE path the live link uses. */
   async getRoute() {
     if (this.active?.local) return 'device';
+    if (this.active?.relay) return 'relay-ws';
     const pc = this.active?.conn?.peerConnection;
     if (!pc) return null;
     try {
@@ -3463,6 +3718,22 @@ class Session extends Emitter {
   }
 
   // ── teardown ──
+  /** Peer presented a goodbye token. Valid → end now; anything else is ignored (never trusted). */
+  _onQuickBye(link, token) {
+    if (link !== this.active || !this.byeIn || !P.bytesEqual(token, this.byeIn)) return;
+    this.destroy('peer-left');
+  }
+  /**
+   * Synchronous, best-effort "I'm gone" for panic, closing or reloading the tab: no awaits,
+   * so it leaves even while the page is being torn down. The peer ends the session at once
+   * instead of waiting for a reconnection that can never happen (our keys are wiped).
+   */
+  quickBye() {
+    const l = this.active;
+    if (!l?.channel || l.closed || !this.byeOut) return;
+    try { l.conn.send(P.concat(Uint8Array.of(P.MAGIC, P.T_BYE), this.byeOut)); } catch {}
+  }
+
   async end() {
     if (this.ended) return;
     const l = this.active;
@@ -3478,6 +3749,7 @@ class Session extends Emitter {
     clearInterval(this.heartbeat); this.stopClock(); clearTimeout(this.retryTimer); clearTimeout(this.lostTimer); clearTimeout(this.expiryTimer);
     this.shapeQ = []; this.frag = null;
     this.resumeSecret?.fill(0); this.resumeSecret = null;
+    this.byeOut?.fill(0); this.byeIn?.fill(0); this.byeOut = this.byeIn = null;
     for (const c of this.candidates) c.secret.fill(0);
     this.candidates = [];
     for (const l of [...this.pending, this.active]) if (l) { try { l.close('ended'); } catch {} }
@@ -3485,6 +3757,8 @@ class Session extends Emitter {
     try { this.peer?.destroy(); } catch {}
     this.peer = null;
     try { this.hub?.close(); } catch {}
+    try { this.relayHost?.close(); } catch {}
+    clearTimeout(this.relayTimer);
     this.hub = null;
     this.incoming.clear(); this.outgoing = []; this.outbox.clear(); this.seenMids.clear();
     if (this.roomKey) this.roomKey.fill(0);
@@ -4111,6 +4385,307 @@ function initFog(els) {
 
 return { initFog };
 })();
+__mods.ui_sanitize = (() => {
+// Input hygiene for everything the other person sends that reaches the screen or the disk.
+// Pure functions, no DOM: unit-tested in tests/connectivity.test.mjs.
+//
+// Rules the interface relies on:
+//   * Peer text only ever reaches the DOM through textContent / attribute setters.
+//   * Names and file names lose control characters and all bidirectional-override/isolate
+//     characters (so "photo‮gpj.exe" can't pose as a .jpg); message text loses the
+//     override/isolate controls too, so a link can't display one address and point at another.
+//   * Only http(s) links are clickable, and opening one shows the real host first.
+//   * Files are never rendered from the peer's declared type: images are recognised by their
+//     magic bytes and decoded only when the person chooses to view them; everything else is
+//     saved as opaque bytes, with a warning for types that can run code.
+
+// C0/C1 controls, zero-width & bidi marks/overrides/isolates, BOM.
+const LABEL_STRIP = /[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩﻿]/g;
+// In message text, keep tabs/newlines and ordinary marks; drop the explicit overrides/isolates.
+const TEXT_STRIP = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f‪-‮⁦-⁩]/g;
+
+const cleanLabel = (s, max) => String(s ?? '').replace(LABEL_STRIP, '').trim().slice(0, max);
+const cleanText = (s, max) => String(s ?? '').replace(TEXT_STRIP, '').slice(0, max);
+const isMid = (s) => typeof s === 'string' && /^[0-9a-f]{16}$/.test(s);
+
+/** Magic-byte sniffing: only these raster formats may ever be shown as images. */
+function sniffImage(b) {
+  if (b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image/png';
+  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+  if (b.length >= 6 && b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return 'image/gif';
+  if (b.length >= 12 && b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return 'image/webp';
+  return null;
+}
+
+/** Coarse kind for labelling a received file (never used to render it). */
+function sniffKind(b) {
+  if (sniffImage(b)) return 'image';
+  if (b.length >= 12 && b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70) return 'video'; // ISO-BMFF (mp4/mov)
+  if (b.length >= 4 && b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) return 'video';   // Matroska/WebM
+  if (b.length >= 4 && b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46) return 'pdf';
+  return 'file';
+}
+
+// Types that can execute code or script when opened (or are commonly used to smuggle it).
+const RISKY_EXT = new Set(('exe msi msp com scr pif bat cmd ps1 psm1 vbs vbe js jse mjs wsf wsh hta cpl msc jar ' +
+  'apk aab xapk ipa app dmg pkg deb rpm run sh bash zsh command bin elf so dll sys drv ocx lnk url scf reg inf ' +
+  'html htm xhtml shtml mht mhtml svg svgz xml xsl swf docm dotm xlsm xltm xlam pptm potm ppam sldm iso img vhd vhdx ' +
+  'appx msix appinstaller library-ms settingcontent-ms gadget workflow action terminal').split(' '));
+
+/**
+ * Risk assessment for saving a received file.
+ * @returns {{ risky: boolean, reason: string }}
+ */
+function fileRisk(name, head = new Uint8Array(0)) {
+  const n = String(name || '').toLowerCase();
+  const parts = n.split('.');
+  const ext = parts.length > 1 ? parts.pop() : '';
+  if (RISKY_EXT.has(ext)) return { risky: true, reason: `.${ext} files can run code on your device when opened.` };
+  // Executable content regardless of the name.
+  if (head.length >= 2 && head[0] === 0x4d && head[1] === 0x5a) return { risky: true, reason: 'This file is a Windows program, whatever its name says.' };
+  if (head.length >= 4 && head[0] === 0x7f && head[1] === 0x45 && head[2] === 0x4c && head[3] === 0x46) return { risky: true, reason: 'This file is a Linux program, whatever its name says.' };
+  if (head.length >= 4 && ((head[0] === 0xcf && head[1] === 0xfa && head[2] === 0xed && head[3] === 0xfe) || (head[0] === 0xca && head[1] === 0xfe && head[2] === 0xba && head[3] === 0xbe))) return { risky: true, reason: 'This file is a macOS program, whatever its name says.' };
+  if (head.length >= 2 && head[0] === 0x23 && head[1] === 0x21) return { risky: true, reason: 'This file is a script that can run code.' };
+  // Double extensions like "invoice.pdf.exe" are caught above; flag lookalike padding too.
+  if (/\s{3,}\.\w+$/.test(name || '')) return { risky: true, reason: 'The name hides its real extension behind spaces.' };
+  return { risky: false, reason: '' };
+}
+
+/** A file name that is safe to hand to the browser's download (no paths, reserved chars or dot tricks). */
+function safeFilename(name) {
+  let n = cleanLabel(name, 200).replace(/[\\/:*?"<>|]+/g, '_').replace(/\.{2,}/g, '.').replace(/^[.\s]+/, '').replace(/[.\s]+$/, '');
+  if (/^(con|prn|aux|nul|com\d|lpt\d)(\.|$)/i.test(n)) n = '_' + n;
+  return n || 'file';
+}
+
+/** http(s) only; returns the parsed URL or null. Hostnames come back in ASCII (punycode). */
+function parseLink(raw) {
+  try { const u = new URL(raw); return u.protocol === 'http:' || u.protocol === 'https:' ? u : null; } catch { return null; }
+}
+
+return { cleanLabel, cleanText, isMid, sniffImage, sniffKind, fileRisk, safeFilename, parseLink };
+})();
+__mods.ui_dom = (() => {
+// Small DOM toolkit shared by the interface modules. Text always goes in through
+// textContent; nothing here ever parses HTML.
+
+const $ = (id) => document.getElementById(id);
+const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+const fmtSize = (b) => b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
+const fmtTime = (t) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const fmtSecs = (s) => s >= 3600 ? Math.round(s / 3600) + ' h' : s >= 60 ? Math.round(s / 60) + ' min' : s + ' s';
+const fmtLeft = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return s >= 60 ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') : s + 's'; };
+
+let toastTimer;
+function toast(text, bad = false) {
+  const t = $('toast');
+  t.textContent = text;
+  t.className = 'toast is-on' + (bad ? ' is-bad' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('is-on'), 2600);
+}
+
+async function copy(text, label) {
+  try { await navigator.clipboard.writeText(text); toast(label + ' copied'); }
+  catch { toast("Couldn't access the clipboard", true); }
+}
+
+// ── confirmation dialog (one at a time) ──
+let dialogResolve = null, dialogOpener = null;
+/**
+ * @param {string} title
+ * @param {string} body plain text (rendered with textContent)
+ * @param {string} okLabel
+ * @param {{ danger?: boolean, cancelLabel?: string, detail?: string }} [o] detail: an extra
+ *        monospace line, e.g. the full address of a link
+ */
+function confirmDialog(title, body, okLabel, o = {}) {
+  dialogResolve?.(false);
+  dialogOpener = document.activeElement;
+  $('dialogTitle').textContent = title;
+  $('dialogBody').textContent = body;
+  $('dialogDetail').textContent = o.detail || '';
+  $('dialogDetail').hidden = !o.detail;
+  $('dialogOk').textContent = okLabel;
+  $('dialogOk').className = 'btn ' + (o.danger === false ? 'btn-primary' : 'btn-danger');
+  $('dialogCancel').textContent = o.cancelLabel || 'Cancel';
+  $('dialog').hidden = false;
+  $('dialogCancel').focus();
+  return new Promise((r) => { dialogResolve = r; });
+}
+function closeDialog(v) {
+  if ($('dialog').hidden) return;
+  $('dialog').hidden = true;
+  dialogResolve?.(v); dialogResolve = null;
+  dialogOpener?.focus?.({ preventScroll: true }); dialogOpener = null;
+}
+const dialogOpen = () => !$('dialog').hidden;
+
+function initDialog() {
+  $('dialogCancel').onclick = () => closeDialog(false);
+  $('dialogOk').onclick = () => closeDialog(true);
+  $('dialog').addEventListener('click', (e) => { if (e.target === $('dialog')) closeDialog(false); });
+}
+
+return { $, h, fmtSize, fmtTime, fmtSecs, fmtLeft, toast, copy, confirmDialog, closeDialog, dialogOpen, initDialog };
+})();
+__mods.ui_handshake = (() => {
+// The handshake stage on the connecting screen: two ghosts, the packets between them and the
+// seal. Packets are drawn from the REAL handshake frames this browser sends and receives
+// (session 'hs-frame' events), and the safety number shown at the seal is the real one.
+const { $ } = __mods.ui_dom;
+const { scramble, wait, reducedMotion } = __mods.fx;
+
+const LABEL = { 'hello-j': 'HELLO · ML-KEM + P-384 keys', 'hello-h': 'HELLO · ciphertext + proof', confirm: 'CONFIRM · proof', locked: 'LOCKED' };
+
+class HandshakeStage {
+  constructor() { this.queue = []; this.running = null; this.linkedAt = 0; }
+
+  set(state) {
+    const st = $('hsStage');
+    st.classList.remove('is-waiting', 'is-linking', 'is-sealed', 'is-failed');
+    st.classList.add('is-' + state);
+  }
+
+  reset(role) {
+    this.queue = []; this.linkedAt = 0;
+    this.set('waiting');
+    $('hsThemName').textContent = role === 'host' ? 'Waiting…' : 'The room';
+    $('hsSn').textContent = ''; $('hsSn').classList.remove('is-on');
+    $('keycard').classList.remove('is-spent');
+    $('hsPkt').getAnimations?.().forEach((a) => a.cancel());
+    $('hsPkt').classList.remove('is-on');
+  }
+
+  /** A transport opened: the other side is here and the key exchange starts. */
+  linked(role) {
+    if (this.linkedAt) return;
+    this.linkedAt = Date.now();
+    this.set('linking');
+    $('hsThemName').textContent = role === 'host' ? 'Someone with the code' : 'The room';
+  }
+
+  packet(dir, kind) {
+    if (!this.linkedAt || !LABEL[kind] || this.queue.length > 6) return;
+    this.queue.push({ dir, kind });
+    if (!this.running) this.running = this._run();
+  }
+
+  async _run() {
+    const pkt = $('hsPkt');
+    while (this.queue.length) {
+      const { dir, kind } = this.queue.shift();
+      $('hsPktLabel').textContent = LABEL[kind];
+      if (!reducedMotion() && pkt.animate) {
+        pkt.classList.add('is-on');
+        const from = dir === 'out' ? '0%' : '100%', to = dir === 'out' ? '100%' : '0%';
+        await pkt.animate([{ left: from, opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 1, offset: .85 }, { left: to, opacity: 0 }],
+          { duration: 720, easing: 'cubic-bezier(.45,0,.2,1)' }).finished.catch(() => {});
+        pkt.classList.remove('is-on');
+      }
+    }
+    this.running = null;
+  }
+
+  /** The seal: lock closes, the code is spent, the safety number decrypts into view. */
+  async seal(safetyNumber, onSealed) {
+    const minLinked = 1300 - (Date.now() - (this.linkedAt || Date.now()));
+    if (minLinked > 0) await wait(minLinked);
+    await (this.running || Promise.resolve());
+    this.set('sealed');
+    $('keycard').classList.add('is-spent');
+    onSealed?.();
+    $('hsSn').classList.add('is-on');
+    await scramble($('hsSn'), (safetyNumber || '').split(' ').slice(0, 6).join('  '), { duration: 800 });
+    await wait(700);
+  }
+}
+
+return { HandshakeStage };
+})();
+__mods.ui_media = (() => {
+// What happens to a file the other person sends, once all of its encrypted chunks arrived.
+//
+// Nothing is opened automatically. The card shows what the file really is (by its bytes,
+// not its name or declared type) and offers actions:
+//   View  — images only (PNG/JPEG/GIF/WebP by magic bytes). Decoded only when chosen, then
+//           shown in the viewer; never inline in the conversation.
+//   Save  — always as opaque bytes (application/octet-stream), under a sanitised name, so the
+//           browser can't render or run it. Types that can run code ask for confirmation.
+//   Share — the device's share sheet, where supported.
+// Blob URLs are page-local, revoked when the conversation is wiped, and the CSP stops the
+// page from fetching them (see the e2e tests).
+const { h, fmtSize, confirmDialog, toast } = __mods.ui_dom;
+const { sniffImage, sniffKind, fileRisk, safeFilename } = __mods.ui_sanitize;
+
+const KIND_LABEL = { image: 'Photo', video: 'Video', pdf: 'PDF', file: 'File' };
+
+/**
+ * @param {object} r     the message record (r.card = the file card, r.sub = its subtitle)
+ * @param {{ name: string, size: number, blob: Blob }} f
+ * @param {{ track(url): string, openViewer(url, alt): void, onSeen(): void }} ctx
+ */
+async function presentReceived(r, f, ctx) {
+  const head = new Uint8Array(await f.blob.slice(0, 64).arrayBuffer());
+  const imgType = sniffImage(head);
+  const kind = sniffKind(head);
+  const name = safeFilename(f.name);
+  const risk = fileRisk(f.name, head);
+
+  r.sub.replaceChildren(`${KIND_LABEL[kind]} · ${fmtSize(f.size)}`);
+  if (risk.risky) { r.sub.append(' · '); r.sub.append(h('span', 'risk', 'can run code')); }
+  r.bar?.remove();
+  r.card.classList.add('is-received', 'kind-' + kind);
+  if (risk.risky) r.card.classList.add('is-risky');
+
+  const row = h('div', 'file-sub file-actions');
+  if (imgType) {
+    const view = h('button', 'file-act media-view', 'View');
+    view.type = 'button';
+    view.onclick = async () => {
+      const url = ctx.track(URL.createObjectURL(new Blob([f.blob], { type: imgType })));
+      r.urls.push(url);
+      const ok = await new Promise((res) => { const t = new Image(); t.onload = () => res(true); t.onerror = () => res(false); t.src = url; });
+      if (!ok) { toast('That image is damaged and can\'t be shown. You can still save it.', true); return; }
+      ctx.openViewer(url, name);
+      ctx.onSeen();
+    };
+    row.append(view);
+  }
+
+  // Save: an <a download> of opaque bytes (the browser can't render it); risky types confirm first.
+  const url = ctx.track(URL.createObjectURL(new Blob([f.blob], { type: 'application/octet-stream' })));
+  r.urls.push(url);
+  const save = h('a', 'file-act', 'Save');
+  save.href = url; save.download = name; save.rel = 'noopener';
+  save.addEventListener('click', async (e) => {
+    if (!risk.risky || save.dataset.ok === '1') { delete save.dataset.ok; return; }
+    e.preventDefault();
+    const go = await confirmDialog('This file could harm your device',
+      `${risk.reason} Only open it if you trust the sender and were expecting this exact file.`, 'Save anyway', { detail: name });
+    if (go) { save.dataset.ok = '1'; save.click(); }
+  });
+  row.append(save);
+
+  if (navigator.canShare) {
+    const file = new File([f.blob], name, { type: imgType || 'application/octet-stream' });
+    if (navigator.canShare({ files: [file] })) {
+      const share = h('button', 'file-act', 'Share');
+      share.type = 'button';
+      share.onclick = async () => {
+        if (risk.risky && !(await confirmDialog('Share a file that can run code?', risk.reason, 'Share anyway', { detail: name }))) return;
+        try { await navigator.share({ files: [file] }); } catch (e) { if (e?.name !== 'AbortError') toast('Couldn\'t share that file', true); }
+      };
+      row.append(share);
+    }
+  }
+  r.card.querySelector('.file-info')?.append(row);
+  if (!imgType) ctx.onSeen();
+}
+
+return { presentReceived };
+})();
 __mods.app = (() => {
 // Ghost Chat — interface controller.
 // All peer-supplied strings reach the DOM through textContent / attribute
@@ -4121,6 +4696,10 @@ const { checkNetwork, explain } = __mods.netcheck;
 const { LIMITS } = __mods.config;
 const { initFog } = __mods.fog;
 const { scramble, scrambleOverlay, loopScramble, cycleText, followEyes, EtherLine, renderQR, flash, wait, reducedMotion } = __mods.fx;
+const { cleanLabel, cleanText, isMid, sniffImage, parseLink } = __mods.ui_sanitize;
+const { $, h, fmtSize, fmtTime, fmtSecs, fmtLeft, toast, copy, confirmDialog, closeDialog, dialogOpen, initDialog } = __mods.ui_dom;
+const { HandshakeStage } = __mods.ui_handshake;
+const { presentReceived } = __mods.ui_media;
 
 // Refuse to run inside a frame: prevents click-jacking of the panic/end/verify controls
 // and keeps a hostile embedding page from overlaying the UI.
@@ -4129,8 +4708,6 @@ if (window.top !== window.self) {
   throw new Error('framed');
 }
 
-const $ = (id) => document.getElementById(id);
-const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
 const AVATARS = ['👻', '🦊', '🐺', '🦉', '🐙', '🦑', '🦈', '🐸', '🦎', '🐝', '🦋', '🐌', '🌚', '🌵', '🍄', '🪐', '🔮', '🗝️', '🕯️', '🧊', '⚡', '🌊', '🎭', '🤖', '👾', '🛸', '🦇', '🐈‍⬛', '🐉', '🦂', '🪼', '🌑'];
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
@@ -4160,55 +4737,16 @@ const objectUrls = new Set();
 const testHook = document.documentElement.dataset.test === '1' ? (window.__ghost = { get session() { return session; }, msgs, files: {} }) : null;
 
 // ───────────────────────────── helpers ─────────────────────────────
-// Strip control chars and bidi overrides (filename/name spoofing like "photo‮gpj.exe").
-const cleanLabel = (s, max) => String(s ?? '').replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩﻿]/g, '').trim().slice(0, max);
-const fmtSize = (b) => b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
-const fmtTime = (t) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-const fmtSecs = (s) => s >= 3600 ? Math.round(s / 3600) + ' h' : s >= 60 ? Math.round(s / 60) + ' min' : s + ' s';
-const fmtLeft = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return s >= 60 ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') : s + 's'; };
-const isMid = (s) => typeof s === 'string' && /^[0-9a-f]{16}$/.test(s);
 const inviteLink = () => location.href.split('#')[0] + '#' + code;
 
-let toastTimer;
-function toast(text, bad = false) {
-  const t = $('toast');
-  t.textContent = text;
-  t.className = 'toast is-on' + (bad ? ' is-bad' : '');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('is-on'), 2600);
-}
-async function copy(text, label) {
-  try { await navigator.clipboard.writeText(text); toast(label + ' copied'); }
-  catch { toast("Couldn't access the clipboard", true); }
-}
 let fog = null; // home-screen atmosphere; created once the DOM helpers below exist
 function show(id) {
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('is-on', s.id === id);
   fog?.setActive(id === 'home' || id === 'joinScreen');
 }
 
-let dialogResolve = null;
-function confirmDialog(title, body, okLabel) {
-  $('dialogTitle').textContent = title;
-  $('dialogBody').textContent = body;
-  $('dialogOk').textContent = okLabel;
-  $('dialog').hidden = false;
-  $('dialogCancel').focus();
-  return new Promise((r) => { dialogResolve = r; });
-}
-function closeDialog(v) { $('dialog').hidden = true; dialogResolve?.(v); dialogResolve = null; }
-$('dialogCancel').onclick = () => closeDialog(false);
-$('dialogOk').onclick = () => closeDialog(true);
-$('dialog').addEventListener('click', (e) => { if (e.target === $('dialog')) closeDialog(false); });
+initDialog();
 
-// Magic-byte sniffing: only raster formats render inline. Peer-declared MIME types are ignored.
-function sniffImage(b) {
-  if (b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image/png';
-  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
-  if (b.length >= 6 && b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return 'image/gif';
-  if (b.length >= 12 && b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return 'image/webp';
-  return null;
-}
 async function imageTypeOf(blob) { return sniffImage(new Uint8Array(await blob.slice(0, 16).arrayBuffer())); }
 function track(url) { objectUrls.add(url); return url; }
 function release(url) { if (url) { URL.revokeObjectURL(url); objectUrls.delete(url); } }
@@ -4430,6 +4968,7 @@ function timeoutAdvice(d) {
   if (d.noRelayConfigured) return '"Hide my IP" needs a relay server, and none is configured. Add one under Privacy → Customize, or switch to Standard.';
   if (d.relayOnly && !d.relay) return '"Hide my IP" needs a relay server, and none answered from your network. Add your own relay under Privacy → Customize, or switch to Standard.';
   if (!d.relay && !d.srflx && !d.host) return 'WebRTC found no network paths at all. A browser setting, an extension or a firewall is blocking it.';
+  if (d.relayTried) return 'Your network blocks direct connections, and the Ghost Chat relay couldn\'t reach the other person either. Check that both of you are online and the relay is deployed (see relay/README.md), then try again.';
   if (!d.relay) return 'Your network blocks direct connections (strict NAT, a VPN or a firewall), and no relay server was reachable. Fixes: add a TURN relay under Privacy → Customize; try without the VPN or on another network; or, to test on one computer, open both windows in the same browser profile (two incognito windows work), which connects without the network.';
   return 'A relay was available but the connection still didn\'t open. The other person\'s network may be blocking it.';
 }
@@ -4478,7 +5017,7 @@ function startSession(r, c) {
   renderCode();
   setSteps('signal', null);
   $('qrBox').hidden = true; $('qrBox').replaceChildren(); $('qrBtn').textContent = 'Show QR'; $('qrBtn').setAttribute('aria-expanded', 'false');
-  hsReset();
+  stage.reset(role);
   $('expiryRow').hidden = role !== 'host';
   show('connect');
   if (role === 'host') $('copyLinkBtn').focus();
@@ -4524,55 +5063,8 @@ $('qrBtn').onclick = () => {
 };
 
 // ───────────────────────────── handshake stage ─────────────────────────────
-// Packets are drawn from the REAL handshake frames this browser sends and receives.
-const HS_LABEL = { 'hello-j': 'HELLO · ML-KEM + P-384 keys', 'hello-h': 'HELLO · ciphertext + proof', confirm: 'CONFIRM · proof', locked: 'LOCKED' };
-const hs = { queue: [], running: null, linkedAt: 0 };
-function hsSet(state) {
-  const st = $('hsStage');
-  st.classList.remove('is-waiting', 'is-linking', 'is-sealed', 'is-failed');
-  st.classList.add('is-' + state);
-}
-function hsReset() {
-  hs.queue = []; hs.linkedAt = 0;
-  hsSet('waiting');
-  $('hsThemName').textContent = role === 'host' ? 'Waiting…' : 'The room';
-  $('hsSn').textContent = ''; $('hsSn').classList.remove('is-on');
-  $('keycard').classList.remove('is-spent');
-  $('hsPkt').getAnimations?.().forEach((a) => a.cancel());
-  $('hsPkt').classList.remove('is-on');
-}
-function hsPacket(dir, kind) {
-  if (!HS_LABEL[kind] || hs.queue.length > 6) return;
-  hs.queue.push({ dir, kind });
-  if (!hs.running) hs.running = hsRun();
-}
-async function hsRun() {
-  const pkt = $('hsPkt');
-  while (hs.queue.length) {
-    const { dir, kind } = hs.queue.shift();
-    $('hsPktLabel').textContent = HS_LABEL[kind];
-    if (!reducedMotion() && pkt.animate) {
-      pkt.classList.add('is-on');
-      const from = dir === 'out' ? '0%' : '100%', to = dir === 'out' ? '100%' : '0%';
-      await pkt.animate([{ left: from, opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 1, offset: .85 }, { left: to, opacity: 0 }],
-        { duration: 720, easing: 'cubic-bezier(.45,0,.2,1)' }).finished.catch(() => {});
-      pkt.classList.remove('is-on');
-    }
-  }
-  hs.running = null;
-}
-/** Plays the seal: lock closes, code is spent, safety number decrypts. */
-async function hsSeal(sn) {
-  const minLinked = 1300 - (Date.now() - (hs.linkedAt || Date.now()));
-  if (minLinked > 0) await wait(minLinked);
-  await (hs.running || Promise.resolve());
-  hsSet('sealed');
-  $('keycard').classList.add('is-spent');
-  setSteps(null, 'ready');
-  $('hsSn').classList.add('is-on');
-  await scramble($('hsSn'), (sn || '').split(' ').slice(0, 6).join('  '), { duration: 800 });
-  await wait(700);
-}
+const stage = new HandshakeStage();
+
 $('cancelBtn').onclick = () => { teardown(); show('home'); };
 $('retryBtn').onclick = () => {
   $('connectError').hidden = true;
@@ -4591,23 +5083,24 @@ function wire(s) {
   s.on('link-open', () => {
     if (s !== session || s.everReady) return;
     setSteps('keys', 'peer');
-    if (!hs.linkedAt) { hs.linkedAt = Date.now(); hsSet('linking'); $('hsThemName').textContent = role === 'host' ? 'Someone with the code' : 'The room'; }
+    stage.linked(role);
   });
-  s.on('hs-frame', ({ dir, kind }) => { if (s === session && !s.everReady && hs.linkedAt) hsPacket(dir, kind); });
+  s.on('hs-frame', ({ dir, kind }) => { if (s === session && !s.everReady) stage.packet(dir, kind); });
   s.on('wire', ({ dir, bytes }) => { if (s === session) onWire(dir, bytes); });
   s.on('failed', ({ code: f, diag }) => {
     if (s !== session) return;
     if (f === 'room-taken' && role === 'host' && roomTakenRetries++ < 3) { teardown(); startSession('host', generateCode()); return; }
     const step = f === 'signaling' ? 'signal' : f === 'auth-failed' || f === 'timeout' ? 'keys' : 'peer';
     setSteps(null, { signal: null, peer: 'signal', keys: 'peer' }[step], step);
-    hsSet('failed');
+    stage.set('failed');
     showConnectError((FAIL_TEXT[f] || 'Connection failed.') + (f === 'timeout' ? ' ' + timeoutAdvice(diag) : ''), f !== 'unsupported', f === 'timeout' || f === 'signaling');
   });
-  s.on('signaling-down', () => {
+  s.on('signaling-down', ({ relay }) => {
     if (s !== session) return;
-    $('peerStepText').textContent = 'Introduction server unreachable. Only another window of this browser can join right now';
-    setSteps('peer', null, 'signal');
+    $('peerStepText').textContent = relay ? 'Introduction server unreachable. Waiting through the relay instead' : 'Introduction server unreachable. Only another window of this browser can join right now';
+    setSteps('peer', null, relay ? null : 'signal');
   });
+  s.on('relay-up', () => { if (s === session && !s.everReady) { $('connectError').hidden = true; setSteps('peer', 'signal'); } });
   s.on('rejected', ({ count, locked }) => {
     if (locked) {
       sys('Someone tried to join this room. It\'s locked to the two of you, so they were refused.', 'is-warn');
@@ -4647,7 +5140,7 @@ async function onReady({ safetyNumber, resumed, continuity, newPeer }) {
   stopExpiryClock(); $('expiryRow').hidden = true;
   if (!resumed) {
     $('hsThemName').textContent = them.name !== 'Peer' ? them.name : role === 'host' ? 'Them' : 'The room';
-    await hsSeal(session.safetyNumber);
+    await stage.seal(session.safetyNumber, () => setSteps(null, 'ready'));
     if (!session || session.ended) return;
     show('chat');
     applyDock();
@@ -4671,11 +5164,11 @@ async function onReady({ safetyNumber, resumed, continuity, newPeer }) {
 
 async function refreshRoute() {
   const route = await session?.getRoute();
-  const label = { direct: 'Direct, peer-to-peer', local: 'Direct, same network', relay: 'Relayed via TURN server', device: 'Same browser on this device (no network)' }[route] || 'Unknown';
+  const label = { direct: 'Direct, peer-to-peer', local: 'Direct, same network', relay: 'Relayed via TURN server', 'relay-ws': 'Via the Ghost Chat relay (end-to-end encrypted)', device: 'Same browser on this device (no network)' }[route] || 'Unknown';
   $('kvRoute').textContent = label;
   const chip = $('routeChip');
   chip.hidden = !route;
-  chip.textContent = { direct: 'P2P', local: 'LAN', relay: 'Relay', device: 'This device' }[route] || '';
+  chip.textContent = { direct: 'P2P', local: 'LAN', relay: 'Relay', 'relay-ws': 'Relay', device: 'This device' }[route] || '';
   chip.title = label;
 }
 
@@ -4693,7 +5186,7 @@ function onEnded(s, reason) {
   const chatOn = $('chat').classList.contains('is-on');
   if (!chatOn) {
     if (reason === 'expired') {
-      hsSet('failed'); setSteps(null, 'signal', 'peer');
+      stage.set('failed'); setSteps(null, 'signal', 'peer');
       $('keycard').classList.add('is-spent');
       showConnectError(`This code expired: nobody joined within ${fmtSecs(Math.round((s.expiresAt - s.createdAt) / 1000))}. It no longer works, even for someone who has it.`, true, false, 'Get a new code');
     } else if (reason !== 'local') showConnectError('The session ended.', false);
@@ -4765,7 +5258,7 @@ function sysSafety(sn) {
   head.append(h('strong', null, 'Safety number'), h('span', null, 'Read it to the other person by voice. If both screens match, nobody is in the middle.'));
   const grid = h('div', 'sn-card-grid mono');
   for (const g of sn.split(' ')) grid.append(h('span', null, g));
-  const btn = h('button', 'btn btn-ghost btn-sm', 'Compare and verify');
+  const btn = h('button', 'btn btn-ghost btn-sm sn-open', 'Compare and verify');
   btn.type = 'button'; btn.onclick = () => openPanel(true);
   card.append(head, grid, btn);
   $('messages').append(card);
@@ -4817,16 +5310,28 @@ function fillText(el, text) {
   while ((m = re.exec(text))) {
     let url = m[0].replace(/[).,;:!?]+$/, '');
     if (m.index > last) el.append(text.slice(last, m.index));
-    let ok = false;
-    try { ok = ['http:', 'https:'].includes(new URL(url).protocol); } catch {}
-    if (ok) {
-      const a = h('a', null, url); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer nofollow';
+    const u = parseLink(url);
+    if (u) {
+      const a = h('a', null, url); a.href = u.href; a.target = '_blank'; a.rel = 'noopener noreferrer nofollow';
+      a.addEventListener('click', (e) => { e.preventDefault(); openLink(u); });
       el.append(a);
     } else el.append(url);
     last = m.index + url.length;
     re.lastIndex = last;
   }
   if (last < text.length) el.append(text.slice(last));
+}
+/**
+ * Links never open on a single click: the dialog shows where it really goes (the hostname in
+ * ASCII, so look-alike Unicode domains show as xn--…) and that leaving reveals your IP.
+ */
+async function openLink(u) {
+  const host = u.hostname;
+  const lookalike = host.split('.').some((p) => p.startsWith('xn--'));
+  const ok = await confirmDialog('Open this link?',
+    (lookalike ? 'Careful: this address uses look-alike characters and may imitate another site. ' : '') +
+    'It opens in a new tab outside Ghost Chat, and that site will see your IP address.', 'Open link', { danger: lookalike, detail: u.href });
+  if (ok) window.open(u.href, '_blank', 'noopener,noreferrer');
 }
 const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|\p{Emoji_Component}|‍|️|\s){1,12}$/u;
 
@@ -4835,8 +5340,11 @@ function newRecord(id, side, ts, extra = {}) {
   el.dataset.id = id;
   const r = { id, side, ts, el, reacts: { me: null, them: null }, delivered: side !== 'me', read: false, seen: false, ttl: 0, burnAt: 0, urls: [], ...extra };
   msgs.set(id, r);
+  // A flooding peer can't grow the page without bound: the oldest messages drop off.
+  if (msgs.size > MAX_RECORDS) { const oldest = msgs.values().next().value; if (oldest && oldest !== r) removeRecord(oldest, false); }
   return r;
 }
+const MAX_RECORDS = 2000;
 
 function placeRecord(r, body) {
   const prev = [...$('messages').children].reverse().find((n) => n.classList.contains('msg') || n.classList.contains('sys'));
@@ -5028,7 +5536,9 @@ function onMessage(o) {
       const ttl = Number.isInteger(o.ttl) && o.ttl > 0 && o.ttl <= 86400 ? o.ttl : 0;
       // Quotes are resolved from our own copy of the conversation; the peer only names the message.
       const reply = o.reply && isMid(o.reply.mid) ? quoteFor(o.reply.mid) : null;
-      addText('them', { id: o.mid, text: o.text.slice(0, LIMITS.maxText), ts: Date.now(), ttl, reply });
+      const text = cleanText(o.text, LIMITS.maxText);
+      if (!text.trim()) return;
+      addText('them', { id: o.mid, text, ts: Date.now(), ttl, reply });
       $('typing').hidden = true;
       notifyIncoming();
       return;
@@ -5308,30 +5818,13 @@ async function onFileReceived({ fid, name, size, blob }) {
   if (testHook) testHook.files[name] = blob;
   if (!r) return;
   r.cancelBtn?.remove(); r.el.classList.remove('show-meta');
-  const clean = cleanLabel(name, 255) || 'file';
-  const imgType = await imageTypeOf(blob);
-  if (imgType) {
-    const url = track(URL.createObjectURL(new Blob([blob], { type: imgType })));
-    r.urls.push(url);
-    const ok = await new Promise((res) => { const t = new Image(); t.onload = () => res(true); t.onerror = () => res(false); t.src = url; });
-    if (ok) {
-      const btn = h('button', 'img-wrap'); btn.type = 'button';
-      const img = h('img'); img.src = url; img.alt = clean;
-      btn.append(img); btn.onclick = () => openViewer(url, clean);
-      bindMenu(r, btn);
-      r.card.replaceWith(btn);
-      scrollDown();
-      if (r.ttl && !document.hidden) markSeenSoon();
-      return;
-    }
-  }
-  // Everything else is offered as a download only, typed as opaque bytes so the browser never renders it.
-  const url = track(URL.createObjectURL(new Blob([blob], { type: 'application/octet-stream' })));
-  r.urls.push(url);
-  r.sub.textContent = fmtSize(size) + ' · ';
-  const a = h('a', null, 'Save file'); a.href = url; a.download = clean; a.rel = 'noopener';
-  r.sub.append(a);
-  r.bar?.remove();
+  // Nothing opens by itself: see js/ui/media.js.
+  await presentReceived(r, { name: cleanLabel(name, 255) || 'file', size, blob }, {
+    track,
+    openViewer,
+    onSeen: () => { if (r.ttl && !document.hidden) markSeenSoon(); },
+  });
+  scrollDown();
 }
 
 function onFileFailed({ fid, reason }) {
@@ -5508,12 +6001,15 @@ function teardown() {
 
 function panic() {
   $('wipe').hidden = false;
-  try { session?.destroy('local'); } catch {}
+  const s = session;
   session = null; code = null;
+  try { s?.quickBye(); } catch {}            // the other side ends the session at once
+  s?._h?.clear();                             // nothing may touch the page after this point
   for (const url of objectUrls) URL.revokeObjectURL(url);
   document.body.replaceChildren();
   navigator.clipboard?.writeText('').catch(() => {});
-  location.replace('https://www.google.com/');
+  // Let the goodbye frame leave the transport before tearing it down (the screen is already blank).
+  setTimeout(() => { try { s?.destroy('local'); } catch {} location.replace('https://www.google.com/'); }, 150);
 }
 $('panicBtn').onclick = panic;
 $('panicSheetBtn').onclick = panic;
@@ -5543,7 +6039,9 @@ document.addEventListener('keydown', (e) => {
   if (replyTo) clearReply();
 });
 
-window.addEventListener('pagehide', () => { try { session?.destroy('local'); } catch {} });
+// Closing or reloading the tab: tell the other side immediately (our keys die with the page,
+// so a reconnection could never succeed), then wipe.
+window.addEventListener('pagehide', () => { try { session?.quickBye(); session?.destroy('local'); } catch {} });
 
 // Expose a tiny hook for automated tests only when explicitly served in test mode.
 

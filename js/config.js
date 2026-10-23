@@ -17,11 +17,20 @@ export const SIGNALING = {
 //
 // TURN_ENDPOINT: a URL that returns fresh TURN credentials as JSON ({ iceServers: [...] } or
 // [...]). The dependable option for a public site, and free at small scale:
-//   * Cloudflare Realtime TURN (1,000 GB/month free): deploy relay/cloudflare-worker.js and
+//   * Cloudflare Realtime TURN (1,000 GB/month free): deploy relay/turn-credentials.js and
 //     put its URL here, e.g. 'https://ghostchat-turn.<you>.workers.dev/'
 //   * Metered (free tier): 'https://<app>.metered.live/api/v1/turn/credentials?apiKey=<key>'
 // Then add the URL's origin to connect-src in index.html's Content-Security-Policy.
 export const TURN_ENDPOINT = null;
+
+// RELAY_URL: your Ghost Chat WebSocket relay (relay/ws-relay.js on Cloudflare Workers, free
+// plan, no card). The fallback that works on almost any network — VPNs, phones on mobile
+// data, strict NAT — because it's ordinary HTTPS on port 443. It only ever carries end-to-end
+// encrypted frames. Add its origin (wss://…) to connect-src in index.html's CSP.
+export const RELAY_URL = 'wss://ghostchat-relay.mrsaini281-678.workers.dev';
+// Joiners try a direct connection first and bring in the relay after this long (or at once
+// if the direct attempt fails, or in "Hide my IP" mode, where the relay is what hides it).
+export const RELAY_AFTER_MS = 2500;
 
 // PUBLIC_RELAY: also use the free, shared Open Relay project as a fallback (no signup;
 // best-effort, limited monthly capacity shared by everyone using it).

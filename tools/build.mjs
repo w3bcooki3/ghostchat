@@ -20,7 +20,19 @@ let css = read('css/app.css').replace(/url\(\.\.\/fonts\/([^)]+)\)/g, (_, f) =>
 const testPort = (process.argv.find((a) => a.startsWith('--test-signal=')) || '').split('=')[1];
 
 // Minimal module linker for our own ES modules plus the vendored ML-KEM build.
-const order = ['config', 'protocol', 'local', 'ice', 'session', 'netcheck', 'fx', 'fog', 'app'];
+// Order = dependency order (each module only imports ones listed before it).
+const order = ['config', 'protocol', 'local', 'relay', 'ice', 'session', 'netcheck', 'fx', 'fog',
+  'ui/sanitize', 'ui/dom', 'ui/handshake', 'ui/media', 'app'];
+const key = (name) => name.replace(/\//g, '_');
+/** Resolves an import specifier relative to the importing module (both under js/). */
+function resolve(from, spec) {
+  const parts = from.split('/').slice(0, -1);
+  for (const seg of spec.replace(/\.js$/, '').split('/')) {
+    if (seg === '.') continue;
+    if (seg === '..') parts.pop(); else parts.push(seg);
+  }
+  return parts.join('/');
+}
 let bundle = 'const __mods = {};\n';
 {
   const src = read('vendor/noble-ml-kem1024-0.7.1.min.js');
@@ -38,15 +50,20 @@ for (const name of order) {
   let src = read(`js/${name}.js`);
   if (testPort && name === 'config') src = src
     .replace(/host: '0\.peerjs\.com',\s*port: 443,\s*path: '\/',\s*secure: true,/, `host: '127.0.0.1', port: ${testPort}, path: '/gc', secure: false,`)
-    .replace('export const ICE_SERVERS = null;', 'export const ICE_SERVERS = [];').replace('export const PUBLIC_RELAY = true;', 'export const PUBLIC_RELAY = false;');
+    .replace('export const ICE_SERVERS = null;', 'export const ICE_SERVERS = [];').replace('export const PUBLIC_RELAY = true;', 'export const PUBLIC_RELAY = false;').replace(/export const RELAY_URL = [^;]+;/, 'export const RELAY_URL = null;');
   const exported = [];
   src = src.replace(/^import \{ ml_kem1024 \} from '\.\.\/vendor\/noble-ml-kem1024-0\.7\.1\.min\.js';$/m, 'const { ml_kem1024 } = __mods.mlkem;');
-  src = src.replace(/^import \{([^}]+)\} from '\.\.\/vendor\/uqr-0\.1\.2\.js';$/m, (_, names) => `const {${names}} = __mods.uqr;`);
-  src = src.replace(/^import \* as (\w+) from '\.\/(\w+)\.js';$/gm, (_, ns, m) => `const ${ns} = __mods.${m};`);
-  src = src.replace(/^import \{([^}]+)\} from '\.\/(\w+)\.js';$/gm, (_, names, m) => `const {${names.replace(/\bas\b/g, ':')}} = __mods.${m};`);
-  src = src.replace(/^export (async function|function|class|const|let)\s+(\w+)/gm, (_, kw, n) => { exported.push(n); return `${kw} ${n}`; });
+  src = src.replace(/^import \{([^}]+)\} from '(?:\.\.\/)+vendor\/uqr-0\.1\.2\.js';$/m, (_, names) => `const {${names}} = __mods.uqr;`);
+  const dep = (spec) => {
+    const m = resolve(name, spec);
+    if (!order.includes(m) || order.indexOf(m) >= order.indexOf(name)) throw new Error(`${name}.js imports ${spec}, which isn't listed before it in the build order`);
+    return key(m);
+  };
+  src = src.replace(/^import \* as (\w+) from '(\.{1,2}\/[\w/.]+\.js)';$/gm, (_, ns, spec) => `const ${ns} = __mods.${dep(spec)};`);
+  src = src.replace(/^import \{([^}]+)\} from '(\.{1,2}\/[\w/.]+\.js)';$/gm, (_, names, spec) => `const {${names.replace(/\bas\b/g, ':')}} = __mods.${dep(spec)};`);
+  src = src.replace(/^export (async function|function|class|const|let)\s+([\w$]+)/gm, (_, kw, n) => { exported.push(n); return `${kw} ${n}`; });
   if (/^\s*(import|export)\b/m.test(src)) throw new Error(`Unsupported import/export form in ${name}.js`);
-  bundle += `__mods.${name} = (() => {\n${src}\nreturn { ${exported.join(', ')} };\n})();\n`;
+  bundle += `__mods.${key(name)} = (() => {\n${src}\nreturn { ${exported.join(', ')} };\n})();\n`;
 }
 const peerjs = read('vendor/peerjs-1.5.5.min.js');
 const sha = (s) => `'sha256-${crypto.createHash('sha256').update(s, 'utf8').digest('base64')}'`;

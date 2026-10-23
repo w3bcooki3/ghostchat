@@ -53,6 +53,12 @@ Post-quantum key exchange. No accounts. Nothing stored. Close the tab and it's g
 - **QR invite:** "Show QR" on the share screen, so someone next to you can join with their camera.
 - Wide screens get a real workspace: the session panel is docked on the right. Everything honours *reduce motion* and is tested with it on.
 
+**Safety in the conversation**
+- **Instant, authenticated goodbye.** Panic, closing or reloading the tab ends the session for the other person at once, instead of leaving them waiting to reconnect. The goodbye uses a secret token each side gave the other inside the encrypted channel, so nobody else can forge one; network drops still reconnect as before.
+- **Nothing opens by itself.** Received photos are decoded only when you tap **View** (image decoders are a classic attack surface). Files are recognised by their bytes, not their name or declared type, and always saved as opaque bytes. Programs, scripts, HTML and SVG, including disguised ones like `invoice.pdf.exe` or an `.exe` renamed `.jpg`, ask before saving. Share uses the device's share sheet.
+- **Links show where they really go** before opening, with look-alike Unicode domains shown as `xn--…` and flagged. Invisible text-direction characters are stripped, so a link can't display one address and point to another.
+- A peer flooding messages can't exhaust your tab: the conversation keeps the latest 2,000.
+
 **Connectivity**
 - **Same-device link:** two tabs or windows of the same browser profile (for example two incognito windows, which share one incognito session) connect over a `BroadcastChannel`. It needs no network, STUN, relay or even the signaling server. It's only a pipe: the same room-code handshake and per-message encryption run on top, and a wrong code is refused exactly as over WebRTC. Separate browsers, separate profiles, or a normal window plus an incognito window still use WebRTC.
 - **Specific failure diagnosis:** when WebRTC can't connect, the app says why (no relay reachable, strict NAT, WebRTC blocked) instead of a generic timeout, and fails as soon as ICE gives up.
@@ -60,11 +66,15 @@ Post-quantum key exchange. No accounts. Nothing stored. Close the tab and it's g
 - **Bring your own TURN relay** (Privacy → Customize): kept in memory for that tab only, never stored or sent to the other person.
 
 ### Making PC ↔ phone work on any network: relays
+**Recommended: the WebSocket relay** ([`relay/ws-relay.js`](relay/ws-relay.js)), a Cloudflare Worker on the **free plan, no card needed**. When a direct connection isn't possible, both browsers talk through it over ordinary HTTPS on port 443, which passes VPNs, phone networks and strict firewalls. It carries only end-to-end-encrypted frames, and rooms on it are named by a hash of the full room code, so nobody without the code can find or block one. Deploy it (5 minutes, steps in [`relay/README.md`](relay/README.md)), set `RELAY_URL` in `js/config.js`, add it to `connect-src`, and rebuild. Joiners try direct first and bring the relay in after 2.5 s, or at once if the direct attempt fails or "Hide my IP" is on.
+
+TURN relays (below) are the other option, and the one WebRTC itself uses.
+
 Browsers try to connect directly first. That fails between many real networks: phones on mobile data (carrier NAT), VPNs, corporate Wi-Fi and symmetric NAT. Then the only thing that works is a **TURN relay**, a server that forwards the already-encrypted frames. It can't read them.
 
 Ghost Chat ships with the free, shared [Open Relay](https://www.metered.ca/tools/openrelay/) project as a fallback (`PUBLIC_RELAY` in `js/config.js`), reachable over TLS on port 443 so it passes most VPNs and firewalls. It's best-effort: it's shared by everyone and has limited monthly capacity. **For a site people rely on, add your own relay. It's free at small scale and takes about ten minutes:**
 
-- **Cloudflare (recommended, 1,000 GB/month free):** create a TURN key under *Realtime → TURN*, deploy [`relay/cloudflare-worker.js`](relay/cloudflare-worker.js) as a Worker (setup steps are at the top of the file), then set `TURN_ENDPOINT` in `js/config.js` to the Worker's URL.
+- **Cloudflare (recommended, 1,000 GB/month free):** create a TURN key under *Realtime → TURN*, deploy [`relay/turn-credentials.js`](relay/turn-credentials.js) as a Worker (Cloudflare asks for a card on file for TURN, even within the free 1,000 GB) (setup steps are at the top of the file), then set `TURN_ENDPOINT` in `js/config.js` to the Worker's URL.
 - **Metered (free tier):** create an app, and set `TURN_ENDPOINT` to `https://<app>.metered.live/api/v1/turn/credentials?apiKey=<key>`.
 
 Either way, add the endpoint's origin to `connect-src` in `index.html`'s Content-Security-Policy, then rebuild (`npm run build`). The in-app **Check my network** button (Privacy → Customize) shows whether a relay is reachable from wherever you are.
@@ -147,7 +157,9 @@ The end-to-end suite covers:
 - wrong codes refused over both transports, and a locked room refusing a correct code;
 - a dropped link resuming with the safety number kept;
 - relay-only with no relay failing with a specific diagnosis, plus the network check;
-- byte-exact 3 MB file transfer over both transports, and 200-message ordering;
+- byte-exact file transfer over WebRTC, the same-device link and the WebSocket relay, and 200-message ordering;
+- two browsers with no signaling and no direct path connecting through the relay; wrong codes finding nothing there; "Hide my IP" over the relay;
+- panic and closing the tab ending the session for the other person at once, and a forged goodbye being ignored;
 - `index.html` opened from disk explaining itself, and `dist/ghostchat.html` working from disk.
 
 > **Opening `index.html` by double-clicking it won't work:** browsers block module scripts on `file://`. The page now says so. Use `dist/ghostchat.html` (one self-contained file) or `npm run serve`.
@@ -158,12 +170,18 @@ index.html             app markup + Content-Security-Policy
 security.html          "Who can read your conversation?" (css/security.css, js/security.js)
 css/app.css            styles (desktop + phone layer)
 js/protocol.js         crypto protocol v3: codes, hybrid handshake, lock/resume, ratchet, padding (no DOM)
-js/session.js          transport: PeerJS, reconnection, delivery, constant-rate traffic, files (no DOM)
+js/session.js          session engine: transports, handshake, reconnection, delivery, goodbye, files (no DOM)
+js/relay.js            WebSocket relay transport (a byte pipe; no crypto of its own)
 js/local.js            same-device transport over BroadcastChannel (a byte pipe; no crypto of its own)
 js/netcheck.js         network check: candidates, NAT type, relay reachability, loopback
 js/ice.js              which STUN/TURN servers to use (your endpoint, fixed list, public relay)
-relay/                 Cloudflare Worker that issues TURN credentials (optional, recommended)
-js/app.js              interface
+relay/ws-relay.js      WebSocket relay: Cloudflare Worker + Durable Object (free plan); see relay/README.md
+relay/turn-credentials.js  optional TURN credential Worker
+js/app.js              interface controller (screens, chat, settings), built on js/ui/*
+js/ui/sanitize.js      input hygiene: names, text, links, file risk and safe file names (pure, unit-tested)
+js/ui/dom.js           DOM helpers, toast, confirmation dialog
+js/ui/media.js         received files: view-on-demand, save as opaque bytes, risk prompts, share
+js/ui/handshake.js     the connecting screen's handshake animation, driven by real frames
 js/fog.js              home-screen WebGL atmosphere
 js/fx.js               motion effects (decrypt text, eyes, ciphertext strip) and the QR renderer
 js/config.js           signaling, ICE servers, limits

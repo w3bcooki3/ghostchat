@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startServers } from './servers.mjs';
+import { startRelayMock } from './relay-mock.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const results = [];
@@ -16,6 +17,9 @@ const live = await startServers();
 const dead = await startServers({ deadSignal: true });
 const short = await startServers({ inviteMs: 4000 });
 const noRelay = await startServers({ deadRelay: true });
+const relay = process.env.RELAY_TEST_URL ? { url: process.env.RELAY_TEST_URL, close() {} } : await startRelayMock();
+const viaRelay = await startServers({ deadSignal: true, relayUrl: relay.url });   // no signaling, no STUN/TURN: only the relay works
+const liveRelay = await startServers({ relayUrl: relay.url });
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 
 async function page(ctx) {
@@ -158,6 +162,80 @@ T('relay-only with an unreachable relay fails within seconds, with a diagnosis',
   await a.close(); await b.close();
 });
 
+T('two separate browsers with no signaling and no direct path connect through the WebSocket relay', async () => {
+  const a = await fresh(), b = await fresh();
+  const { A, B } = await pair(a, b, viaRelay.url);
+  assert(await route(A) === 'relay-ws' && await route(B) === 'relay-ws', 'expected the relay route, got ' + await route(B));
+  await say(A, B, 'through the relay');
+  await say(B, A, 'and back');
+  const digest = await A.evaluate(async () => {
+    const buf = crypto.getRandomValues(new Uint8Array(65536)); const big = new Uint8Array(2 * 1024 * 1024 + 7);
+    for (let i = 0; i < big.length; i += buf.length) big.set(buf.subarray(0, Math.min(buf.length, big.length - i)), i);
+    window.__ghost.session.sendFile(new File([big], 'r.bin'));
+    return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', big))).join(',');
+  });
+  await B.waitForFunction(() => Object.keys(window.__ghost.files).length > 0, null, { timeout: 30000 });
+  const got = await B.evaluate(async () => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', await Object.values(window.__ghost.files)[0].arrayBuffer()))).join(','));
+  assert(got === digest, 'file corrupted over the relay');
+  await a.close(); await b.close();
+});
+
+T('a wrong code finds nothing on the relay (rooms there are keyed by the full code)', async () => {
+  const a = await fresh(), b = await fresh();
+  const A = await page(a), B = await page(b);
+  const code = await host(A, viaRelay.url);
+  const c = code.split('-'); c[3] = c[3] === 'EEEEE' ? 'FFFFF' : 'EEEEE';
+  await join(B, viaRelay.url, c.join('-'));
+  await B.waitForFunction(() => window.__ghost.session.state === 'failed', null, { timeout: 20000 });
+  assert(/No room with this code/.test(await B.textContent('#connectErrorText')), 'wrong message: ' + await B.textContent('#connectErrorText'));
+  await a.close(); await b.close();
+});
+
+T('"Hide my IP" connects through the relay straight away', async () => {
+  const a = await fresh(), b = await fresh();
+  const A = await page(a), B = await page(b);
+  const code = await host(A, liveRelay.url, { relayOnly: true });
+  await join(B, liveRelay.url, code, { relayOnly: true });
+  await Promise.all([inChat(A), inChat(B)]);
+  assert(await route(B) === 'relay-ws', 'expected relay route');
+  await say(B, A, 'ip hidden');
+  await a.close(); await b.close();
+});
+
+T('panic on one side ends the session on the other at once (authenticated goodbye)', async () => {
+  for (const sameProfile of [false, true]) {
+    const a = await fresh(), b = sameProfile ? a : await fresh();
+    await a.route(/google\.com/, (r) => r.fulfill({ body: 'elsewhere', contentType: 'text/html' }));
+    if (b !== a) await b.route(/google\.com/, (r) => r.fulfill({ body: 'elsewhere', contentType: 'text/html' }));
+    const { A, B } = await pair(a, b, live.url);
+    const t0 = Date.now();
+    await A.evaluate(() => document.getElementById('panicBtn').click());
+    await B.waitForFunction(() => window.__ghost.session.state === 'ended', null, { timeout: 5000 });
+    assert(Date.now() - t0 < 4000, 'peer took too long to notice');
+    assert(/ended the session/.test(await B.textContent('#messages')), 'peer not told the session ended');
+    assert(await B.isHidden('#banner') || !/Waiting for the other person to reconnect/.test(await B.textContent('#banner')), 'peer still waiting to reconnect');
+    await a.close(); if (b !== a) await b.close();
+  }
+});
+
+T('closing the tab ends the session for the other person', async () => {
+  const a = await fresh(), b = await fresh();
+  const { A, B } = await pair(a, b, live.url);
+  await A.close({ runBeforeUnload: true });
+  await B.waitForFunction(() => window.__ghost.session.state === 'ended', null, { timeout: 6000 });
+  await a.close(); await b.close();
+});
+
+T('a forged goodbye (wrong token) is ignored', async () => {
+  const a = await fresh(), b = await fresh();
+  const { A, B } = await pair(a, b, live.url);
+  await A.evaluate(() => { const l = window.__ghost.session.active; const f = new Uint8Array(34); f[0] = 0x47; f[1] = 0x05; crypto.getRandomValues(f.subarray(2)); l.conn.send(f); });
+  await B.waitForTimeout(1500);
+  assert(await B.evaluate(() => window.__ghost.session.state) === 'ready', 'forged goodbye ended the session');
+  await say(A, B, 'still here');
+  await a.close(); await b.close();
+});
+
 T('files transfer byte-exact over WebRTC and over the same-device link', async () => {
   for (const sameProfile of [false, true]) {
     const a = await fresh(), b = sameProfile ? a : await fresh();
@@ -257,5 +335,5 @@ for (const { name, fn } of results) {
   catch (e) { failed++; console.log(`  FAIL ${name}\n       ${e.message.split('\n')[0]}`); }
 }
 console.log(`\n${results.length - failed}/${results.length} passed`);
-await browser.close(); live.close(); dead.close(); short.close(); noRelay.close();
+await browser.close(); live.close(); dead.close(); short.close(); noRelay.close(); viaRelay.close(); liveRelay.close(); relay.close();
 process.exit(failed ? 1 : 0);

@@ -23,6 +23,7 @@ http.createServer((req, res) => {
       body = buf.toString()
         .replace(/host: '0\.peerjs\.com',\s*port: 443,\s*path: '\/',\s*secure: true,/, `host: '127.0.0.1', port: ${sig}, path: '/gc', secure: false,`)
         .replace('export const ICE_SERVERS = null;', 'export const ICE_SERVERS = [];').replace('export const PUBLIC_RELAY = true;', 'export const PUBLIC_RELAY = false;')
+        .replace(/export const RELAY_URL = [^;]+;/, 'export const RELAY_URL = null;')
         .replace('reconnectWindowMs: 3 * 60_000', `reconnectWindowMs: ${process.env.TEST_RECONNECT_MS || 180000}`)
         .replace('deadAfterMs: 25_000', `deadAfterMs: ${process.env.TEST_DEAD_MS || 25000}`);
     }

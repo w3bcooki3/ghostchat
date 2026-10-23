@@ -7,6 +7,10 @@ import { checkNetwork, explain } from './netcheck.js';
 import { LIMITS } from './config.js';
 import { initFog } from './fog.js';
 import { scramble, scrambleOverlay, loopScramble, cycleText, followEyes, EtherLine, renderQR, flash, wait, reducedMotion } from './fx.js';
+import { cleanLabel, cleanText, isMid, sniffImage, parseLink } from './ui/sanitize.js';
+import { $, h, fmtSize, fmtTime, fmtSecs, fmtLeft, toast, copy, confirmDialog, closeDialog, dialogOpen, initDialog } from './ui/dom.js';
+import { HandshakeStage } from './ui/handshake.js';
+import { presentReceived } from './ui/media.js';
 
 // Refuse to run inside a frame: prevents click-jacking of the panic/end/verify controls
 // and keeps a hostile embedding page from overlaying the UI.
@@ -15,8 +19,6 @@ if (window.top !== window.self) {
   throw new Error('framed');
 }
 
-const $ = (id) => document.getElementById(id);
-const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
 const AVATARS = ['👻', '🦊', '🐺', '🦉', '🐙', '🦑', '🦈', '🐸', '🦎', '🐝', '🦋', '🐌', '🌚', '🌵', '🍄', '🪐', '🔮', '🗝️', '🕯️', '🧊', '⚡', '🌊', '🎭', '🤖', '👾', '🛸', '🦇', '🐈‍⬛', '🐉', '🦂', '🪼', '🌑'];
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
@@ -46,55 +48,16 @@ const objectUrls = new Set();
 const testHook = document.documentElement.dataset.test === '1' ? (window.__ghost = { get session() { return session; }, msgs, files: {} }) : null;
 
 // ───────────────────────────── helpers ─────────────────────────────
-// Strip control chars and bidi overrides (filename/name spoofing like "photo‮gpj.exe").
-const cleanLabel = (s, max) => String(s ?? '').replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩﻿]/g, '').trim().slice(0, max);
-const fmtSize = (b) => b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
-const fmtTime = (t) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-const fmtSecs = (s) => s >= 3600 ? Math.round(s / 3600) + ' h' : s >= 60 ? Math.round(s / 60) + ' min' : s + ' s';
-const fmtLeft = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return s >= 60 ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') : s + 's'; };
-const isMid = (s) => typeof s === 'string' && /^[0-9a-f]{16}$/.test(s);
 const inviteLink = () => location.href.split('#')[0] + '#' + code;
 
-let toastTimer;
-function toast(text, bad = false) {
-  const t = $('toast');
-  t.textContent = text;
-  t.className = 'toast is-on' + (bad ? ' is-bad' : '');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('is-on'), 2600);
-}
-async function copy(text, label) {
-  try { await navigator.clipboard.writeText(text); toast(label + ' copied'); }
-  catch { toast("Couldn't access the clipboard", true); }
-}
 let fog = null; // home-screen atmosphere; created once the DOM helpers below exist
 function show(id) {
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('is-on', s.id === id);
   fog?.setActive(id === 'home' || id === 'joinScreen');
 }
 
-let dialogResolve = null;
-function confirmDialog(title, body, okLabel) {
-  $('dialogTitle').textContent = title;
-  $('dialogBody').textContent = body;
-  $('dialogOk').textContent = okLabel;
-  $('dialog').hidden = false;
-  $('dialogCancel').focus();
-  return new Promise((r) => { dialogResolve = r; });
-}
-function closeDialog(v) { $('dialog').hidden = true; dialogResolve?.(v); dialogResolve = null; }
-$('dialogCancel').onclick = () => closeDialog(false);
-$('dialogOk').onclick = () => closeDialog(true);
-$('dialog').addEventListener('click', (e) => { if (e.target === $('dialog')) closeDialog(false); });
+initDialog();
 
-// Magic-byte sniffing: only raster formats render inline. Peer-declared MIME types are ignored.
-function sniffImage(b) {
-  if (b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image/png';
-  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
-  if (b.length >= 6 && b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return 'image/gif';
-  if (b.length >= 12 && b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return 'image/webp';
-  return null;
-}
 async function imageTypeOf(blob) { return sniffImage(new Uint8Array(await blob.slice(0, 16).arrayBuffer())); }
 function track(url) { objectUrls.add(url); return url; }
 function release(url) { if (url) { URL.revokeObjectURL(url); objectUrls.delete(url); } }
@@ -316,6 +279,7 @@ function timeoutAdvice(d) {
   if (d.noRelayConfigured) return '"Hide my IP" needs a relay server, and none is configured. Add one under Privacy → Customize, or switch to Standard.';
   if (d.relayOnly && !d.relay) return '"Hide my IP" needs a relay server, and none answered from your network. Add your own relay under Privacy → Customize, or switch to Standard.';
   if (!d.relay && !d.srflx && !d.host) return 'WebRTC found no network paths at all. A browser setting, an extension or a firewall is blocking it.';
+  if (d.relayTried) return 'Your network blocks direct connections, and the Ghost Chat relay couldn\'t reach the other person either. Check that both of you are online and the relay is deployed (see relay/README.md), then try again.';
   if (!d.relay) return 'Your network blocks direct connections (strict NAT, a VPN or a firewall), and no relay server was reachable. Fixes: add a TURN relay under Privacy → Customize; try without the VPN or on another network; or, to test on one computer, open both windows in the same browser profile (two incognito windows work), which connects without the network.';
   return 'A relay was available but the connection still didn\'t open. The other person\'s network may be blocking it.';
 }
@@ -364,7 +328,7 @@ function startSession(r, c) {
   renderCode();
   setSteps('signal', null);
   $('qrBox').hidden = true; $('qrBox').replaceChildren(); $('qrBtn').textContent = 'Show QR'; $('qrBtn').setAttribute('aria-expanded', 'false');
-  hsReset();
+  stage.reset(role);
   $('expiryRow').hidden = role !== 'host';
   show('connect');
   if (role === 'host') $('copyLinkBtn').focus();
@@ -410,55 +374,8 @@ $('qrBtn').onclick = () => {
 };
 
 // ───────────────────────────── handshake stage ─────────────────────────────
-// Packets are drawn from the REAL handshake frames this browser sends and receives.
-const HS_LABEL = { 'hello-j': 'HELLO · ML-KEM + P-384 keys', 'hello-h': 'HELLO · ciphertext + proof', confirm: 'CONFIRM · proof', locked: 'LOCKED' };
-const hs = { queue: [], running: null, linkedAt: 0 };
-function hsSet(state) {
-  const st = $('hsStage');
-  st.classList.remove('is-waiting', 'is-linking', 'is-sealed', 'is-failed');
-  st.classList.add('is-' + state);
-}
-function hsReset() {
-  hs.queue = []; hs.linkedAt = 0;
-  hsSet('waiting');
-  $('hsThemName').textContent = role === 'host' ? 'Waiting…' : 'The room';
-  $('hsSn').textContent = ''; $('hsSn').classList.remove('is-on');
-  $('keycard').classList.remove('is-spent');
-  $('hsPkt').getAnimations?.().forEach((a) => a.cancel());
-  $('hsPkt').classList.remove('is-on');
-}
-function hsPacket(dir, kind) {
-  if (!HS_LABEL[kind] || hs.queue.length > 6) return;
-  hs.queue.push({ dir, kind });
-  if (!hs.running) hs.running = hsRun();
-}
-async function hsRun() {
-  const pkt = $('hsPkt');
-  while (hs.queue.length) {
-    const { dir, kind } = hs.queue.shift();
-    $('hsPktLabel').textContent = HS_LABEL[kind];
-    if (!reducedMotion() && pkt.animate) {
-      pkt.classList.add('is-on');
-      const from = dir === 'out' ? '0%' : '100%', to = dir === 'out' ? '100%' : '0%';
-      await pkt.animate([{ left: from, opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 1, offset: .85 }, { left: to, opacity: 0 }],
-        { duration: 720, easing: 'cubic-bezier(.45,0,.2,1)' }).finished.catch(() => {});
-      pkt.classList.remove('is-on');
-    }
-  }
-  hs.running = null;
-}
-/** Plays the seal: lock closes, code is spent, safety number decrypts. */
-async function hsSeal(sn) {
-  const minLinked = 1300 - (Date.now() - (hs.linkedAt || Date.now()));
-  if (minLinked > 0) await wait(minLinked);
-  await (hs.running || Promise.resolve());
-  hsSet('sealed');
-  $('keycard').classList.add('is-spent');
-  setSteps(null, 'ready');
-  $('hsSn').classList.add('is-on');
-  await scramble($('hsSn'), (sn || '').split(' ').slice(0, 6).join('  '), { duration: 800 });
-  await wait(700);
-}
+const stage = new HandshakeStage();
+
 $('cancelBtn').onclick = () => { teardown(); show('home'); };
 $('retryBtn').onclick = () => {
   $('connectError').hidden = true;
@@ -477,23 +394,24 @@ function wire(s) {
   s.on('link-open', () => {
     if (s !== session || s.everReady) return;
     setSteps('keys', 'peer');
-    if (!hs.linkedAt) { hs.linkedAt = Date.now(); hsSet('linking'); $('hsThemName').textContent = role === 'host' ? 'Someone with the code' : 'The room'; }
+    stage.linked(role);
   });
-  s.on('hs-frame', ({ dir, kind }) => { if (s === session && !s.everReady && hs.linkedAt) hsPacket(dir, kind); });
+  s.on('hs-frame', ({ dir, kind }) => { if (s === session && !s.everReady) stage.packet(dir, kind); });
   s.on('wire', ({ dir, bytes }) => { if (s === session) onWire(dir, bytes); });
   s.on('failed', ({ code: f, diag }) => {
     if (s !== session) return;
     if (f === 'room-taken' && role === 'host' && roomTakenRetries++ < 3) { teardown(); startSession('host', generateCode()); return; }
     const step = f === 'signaling' ? 'signal' : f === 'auth-failed' || f === 'timeout' ? 'keys' : 'peer';
     setSteps(null, { signal: null, peer: 'signal', keys: 'peer' }[step], step);
-    hsSet('failed');
+    stage.set('failed');
     showConnectError((FAIL_TEXT[f] || 'Connection failed.') + (f === 'timeout' ? ' ' + timeoutAdvice(diag) : ''), f !== 'unsupported', f === 'timeout' || f === 'signaling');
   });
-  s.on('signaling-down', () => {
+  s.on('signaling-down', ({ relay }) => {
     if (s !== session) return;
-    $('peerStepText').textContent = 'Introduction server unreachable. Only another window of this browser can join right now';
-    setSteps('peer', null, 'signal');
+    $('peerStepText').textContent = relay ? 'Introduction server unreachable. Waiting through the relay instead' : 'Introduction server unreachable. Only another window of this browser can join right now';
+    setSteps('peer', null, relay ? null : 'signal');
   });
+  s.on('relay-up', () => { if (s === session && !s.everReady) { $('connectError').hidden = true; setSteps('peer', 'signal'); } });
   s.on('rejected', ({ count, locked }) => {
     if (locked) {
       sys('Someone tried to join this room. It\'s locked to the two of you, so they were refused.', 'is-warn');
@@ -533,7 +451,7 @@ async function onReady({ safetyNumber, resumed, continuity, newPeer }) {
   stopExpiryClock(); $('expiryRow').hidden = true;
   if (!resumed) {
     $('hsThemName').textContent = them.name !== 'Peer' ? them.name : role === 'host' ? 'Them' : 'The room';
-    await hsSeal(session.safetyNumber);
+    await stage.seal(session.safetyNumber, () => setSteps(null, 'ready'));
     if (!session || session.ended) return;
     show('chat');
     applyDock();
@@ -557,11 +475,11 @@ async function onReady({ safetyNumber, resumed, continuity, newPeer }) {
 
 async function refreshRoute() {
   const route = await session?.getRoute();
-  const label = { direct: 'Direct, peer-to-peer', local: 'Direct, same network', relay: 'Relayed via TURN server', device: 'Same browser on this device (no network)' }[route] || 'Unknown';
+  const label = { direct: 'Direct, peer-to-peer', local: 'Direct, same network', relay: 'Relayed via TURN server', 'relay-ws': 'Via the Ghost Chat relay (end-to-end encrypted)', device: 'Same browser on this device (no network)' }[route] || 'Unknown';
   $('kvRoute').textContent = label;
   const chip = $('routeChip');
   chip.hidden = !route;
-  chip.textContent = { direct: 'P2P', local: 'LAN', relay: 'Relay', device: 'This device' }[route] || '';
+  chip.textContent = { direct: 'P2P', local: 'LAN', relay: 'Relay', 'relay-ws': 'Relay', device: 'This device' }[route] || '';
   chip.title = label;
 }
 
@@ -579,7 +497,7 @@ function onEnded(s, reason) {
   const chatOn = $('chat').classList.contains('is-on');
   if (!chatOn) {
     if (reason === 'expired') {
-      hsSet('failed'); setSteps(null, 'signal', 'peer');
+      stage.set('failed'); setSteps(null, 'signal', 'peer');
       $('keycard').classList.add('is-spent');
       showConnectError(`This code expired: nobody joined within ${fmtSecs(Math.round((s.expiresAt - s.createdAt) / 1000))}. It no longer works, even for someone who has it.`, true, false, 'Get a new code');
     } else if (reason !== 'local') showConnectError('The session ended.', false);
@@ -651,7 +569,7 @@ function sysSafety(sn) {
   head.append(h('strong', null, 'Safety number'), h('span', null, 'Read it to the other person by voice. If both screens match, nobody is in the middle.'));
   const grid = h('div', 'sn-card-grid mono');
   for (const g of sn.split(' ')) grid.append(h('span', null, g));
-  const btn = h('button', 'btn btn-ghost btn-sm', 'Compare and verify');
+  const btn = h('button', 'btn btn-ghost btn-sm sn-open', 'Compare and verify');
   btn.type = 'button'; btn.onclick = () => openPanel(true);
   card.append(head, grid, btn);
   $('messages').append(card);
@@ -703,16 +621,28 @@ function fillText(el, text) {
   while ((m = re.exec(text))) {
     let url = m[0].replace(/[).,;:!?]+$/, '');
     if (m.index > last) el.append(text.slice(last, m.index));
-    let ok = false;
-    try { ok = ['http:', 'https:'].includes(new URL(url).protocol); } catch {}
-    if (ok) {
-      const a = h('a', null, url); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer nofollow';
+    const u = parseLink(url);
+    if (u) {
+      const a = h('a', null, url); a.href = u.href; a.target = '_blank'; a.rel = 'noopener noreferrer nofollow';
+      a.addEventListener('click', (e) => { e.preventDefault(); openLink(u); });
       el.append(a);
     } else el.append(url);
     last = m.index + url.length;
     re.lastIndex = last;
   }
   if (last < text.length) el.append(text.slice(last));
+}
+/**
+ * Links never open on a single click: the dialog shows where it really goes (the hostname in
+ * ASCII, so look-alike Unicode domains show as xn--…) and that leaving reveals your IP.
+ */
+async function openLink(u) {
+  const host = u.hostname;
+  const lookalike = host.split('.').some((p) => p.startsWith('xn--'));
+  const ok = await confirmDialog('Open this link?',
+    (lookalike ? 'Careful: this address uses look-alike characters and may imitate another site. ' : '') +
+    'It opens in a new tab outside Ghost Chat, and that site will see your IP address.', 'Open link', { danger: lookalike, detail: u.href });
+  if (ok) window.open(u.href, '_blank', 'noopener,noreferrer');
 }
 const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|\p{Emoji_Component}|‍|️|\s){1,12}$/u;
 
@@ -721,8 +651,11 @@ function newRecord(id, side, ts, extra = {}) {
   el.dataset.id = id;
   const r = { id, side, ts, el, reacts: { me: null, them: null }, delivered: side !== 'me', read: false, seen: false, ttl: 0, burnAt: 0, urls: [], ...extra };
   msgs.set(id, r);
+  // A flooding peer can't grow the page without bound: the oldest messages drop off.
+  if (msgs.size > MAX_RECORDS) { const oldest = msgs.values().next().value; if (oldest && oldest !== r) removeRecord(oldest, false); }
   return r;
 }
+const MAX_RECORDS = 2000;
 
 function placeRecord(r, body) {
   const prev = [...$('messages').children].reverse().find((n) => n.classList.contains('msg') || n.classList.contains('sys'));
@@ -914,7 +847,9 @@ function onMessage(o) {
       const ttl = Number.isInteger(o.ttl) && o.ttl > 0 && o.ttl <= 86400 ? o.ttl : 0;
       // Quotes are resolved from our own copy of the conversation; the peer only names the message.
       const reply = o.reply && isMid(o.reply.mid) ? quoteFor(o.reply.mid) : null;
-      addText('them', { id: o.mid, text: o.text.slice(0, LIMITS.maxText), ts: Date.now(), ttl, reply });
+      const text = cleanText(o.text, LIMITS.maxText);
+      if (!text.trim()) return;
+      addText('them', { id: o.mid, text, ts: Date.now(), ttl, reply });
       $('typing').hidden = true;
       notifyIncoming();
       return;
@@ -1194,30 +1129,13 @@ async function onFileReceived({ fid, name, size, blob }) {
   if (testHook) testHook.files[name] = blob;
   if (!r) return;
   r.cancelBtn?.remove(); r.el.classList.remove('show-meta');
-  const clean = cleanLabel(name, 255) || 'file';
-  const imgType = await imageTypeOf(blob);
-  if (imgType) {
-    const url = track(URL.createObjectURL(new Blob([blob], { type: imgType })));
-    r.urls.push(url);
-    const ok = await new Promise((res) => { const t = new Image(); t.onload = () => res(true); t.onerror = () => res(false); t.src = url; });
-    if (ok) {
-      const btn = h('button', 'img-wrap'); btn.type = 'button';
-      const img = h('img'); img.src = url; img.alt = clean;
-      btn.append(img); btn.onclick = () => openViewer(url, clean);
-      bindMenu(r, btn);
-      r.card.replaceWith(btn);
-      scrollDown();
-      if (r.ttl && !document.hidden) markSeenSoon();
-      return;
-    }
-  }
-  // Everything else is offered as a download only, typed as opaque bytes so the browser never renders it.
-  const url = track(URL.createObjectURL(new Blob([blob], { type: 'application/octet-stream' })));
-  r.urls.push(url);
-  r.sub.textContent = fmtSize(size) + ' · ';
-  const a = h('a', null, 'Save file'); a.href = url; a.download = clean; a.rel = 'noopener';
-  r.sub.append(a);
-  r.bar?.remove();
+  // Nothing opens by itself: see js/ui/media.js.
+  await presentReceived(r, { name: cleanLabel(name, 255) || 'file', size, blob }, {
+    track,
+    openViewer,
+    onSeen: () => { if (r.ttl && !document.hidden) markSeenSoon(); },
+  });
+  scrollDown();
 }
 
 function onFileFailed({ fid, reason }) {
@@ -1394,12 +1312,15 @@ function teardown() {
 
 function panic() {
   $('wipe').hidden = false;
-  try { session?.destroy('local'); } catch {}
+  const s = session;
   session = null; code = null;
+  try { s?.quickBye(); } catch {}            // the other side ends the session at once
+  s?._h?.clear();                             // nothing may touch the page after this point
   for (const url of objectUrls) URL.revokeObjectURL(url);
   document.body.replaceChildren();
   navigator.clipboard?.writeText('').catch(() => {});
-  location.replace('https://www.google.com/');
+  // Let the goodbye frame leave the transport before tearing it down (the screen is already blank).
+  setTimeout(() => { try { s?.destroy('local'); } catch {} location.replace('https://www.google.com/'); }, 150);
 }
 $('panicBtn').onclick = panic;
 $('panicSheetBtn').onclick = panic;
@@ -1429,7 +1350,9 @@ document.addEventListener('keydown', (e) => {
   if (replyTo) clearReply();
 });
 
-window.addEventListener('pagehide', () => { try { session?.destroy('local'); } catch {} });
+// Closing or reloading the tab: tell the other side immediately (our keys die with the page,
+// so a reconnection could never succeed), then wipe.
+window.addEventListener('pagehide', () => { try { session?.quickBye(); session?.destroy('local'); } catch {} });
 
 // Expose a tiny hook for automated tests only when explicitly served in test mode.
 
