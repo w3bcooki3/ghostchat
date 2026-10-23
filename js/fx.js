@@ -1,7 +1,7 @@
 // Motion and visual effects. Purely presentational: nothing here touches keys or plaintext
 // beyond writing already-decrypted text into the DOM with textContent. Everything honours
 // prefers-reduced-motion (effects resolve instantly) and stops when its element leaves the page.
-import { encode } from '../vendor/uqr-0.1.2.mjs';
+import { encode } from '../vendor/uqr-0.1.2.js';
 
 const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
 export const reducedMotion = () => mq.matches;
@@ -35,11 +35,39 @@ export function scramble(el, text, { duration = 700, delay = 0 } = {}) {
   });
 }
 
+/**
+ * Same effect, drawn as a visual layer only: the element keeps its real text (for screen
+ * readers, copy/paste, find-in-page) and a CSS ::after shows the noise on top, with empty
+ * alt text so assistive tech never announces it. See .fx-host in app.css.
+ */
+export function scrambleOverlay(el, text, { duration = 700, delay = 0 } = {}) {
+  if (el._scr) cancelAnimationFrame(el._scr);
+  if (reducedMotion() || !text) { el.classList.remove('is-decrypting'); return Promise.resolve(); }
+  const chars = [...text];
+  const t0 = performance.now() + delay;
+  el.classList.add('fx-host', 'is-decrypting');
+  return new Promise((resolve) => {
+    const step = (now) => {
+      const p = Math.max(0, Math.min(1, (now - t0) / duration));
+      const k = Math.floor(p * chars.length);
+      let s = '';
+      for (let i = 0; i < chars.length; i++) {
+        const c = chars[i];
+        s += i < k || /[\s.,!?'’\-:;()]/.test(c) ? c : GLYPHS[rnd(GLYPHS.length)];
+      }
+      el.dataset.fx = s;
+      if (p < 1 && el.isConnected) el._scr = requestAnimationFrame(step);
+      else { el.classList.remove('is-decrypting'); delete el.dataset.fx; el._scr = 0; resolve(); }
+    };
+    el._scr = requestAnimationFrame(step);
+  });
+}
+
 /** Re-runs a scramble every `period` ms while `isActive()` is true (home headline). */
 export function loopScramble(el, text, period = 9000, isActive = () => true) {
   let timer = 0;
   const run = () => {
-    if (isActive() && !document.hidden) scramble(el, text, { duration: 900 });
+    if (isActive() && !document.hidden) scrambleOverlay(el, text, { duration: 900 });
     timer = setTimeout(run, period);
   };
   el.textContent = text;

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/51UcYAVCDMgBTJSL3dvQcmY+PnXKbGOzweMdOWJZ+Q=' 'sha256-DdtTq3U/2TquJ00ulGjl6e9Q4E+5NqaHPZLO3N0wm1w='; style-src 'sha256-poMNliT14Y79iPWmzbLFqIBBiWVO3NUXSX9jErzDngg='; font-src data:; img-src blob: data:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com; worker-src blob:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/51UcYAVCDMgBTJSL3dvQcmY+PnXKbGOzweMdOWJZ+Q=' 'sha256-IjX/xV9iIL3NL6HtqbEscqhW44ScXo5r4FnB+EIPyxY='; style-src 'sha256-MTazY9cqaCEngppXUhlnzJB8g9QwCbKJx55OOjfEUKU='; font-src data:; img-src blob: data:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com; worker-src blob:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#05080A">
@@ -894,6 +894,42 @@ html.dock .bubble { font-size: 16px; }
   .gone, .ghost-blink, .hs-stage.is-waiting .hs-them, .status-pill, .home-intro .lede, .home-panel { animation: none !important; opacity: 1; filter: none; }
   .hs-stage.is-sealed .hs-lock { transform: none; opacity: 1; }
 }
+.expiry-row { display: inline-flex; align-items: center; gap: 8px; margin: -6px 0 0; padding: 6px 6px 6px 12px; border-radius: 999px; border: 1px solid var(--line-2); font: 500 12.5px var(--f-mono); color: var(--fog); font-variant-numeric: tabular-nums; }
+.expiry-row .ico { width: 15px; height: 15px; }
+.expiry-row.is-soon { color: var(--amber); border-color: rgba(242, 181, 68, .4); }
+.expiry-btn { min-height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--ecto-line); background: var(--ecto-dim); color: var(--ecto); font: 500 12px var(--f-ui); }
+.keycard.is-spent .qr-box { opacity: .2; filter: blur(4px); }
+
+/* ── responsive fixes: small phones, phone landscape ── */
+@media (max-width: 640px) {
+  .hero-word { font-size: clamp(38px, 13.2vw, 64px); }
+  .avatar-grid { gap: 5px; }
+  .avatar-grid button { min-height: 36px; }
+  .expiry-row { font-size: 11.5px; padding-left: 10px; gap: 6px; }
+}
+/* phones held sideways (and other short screens): no room for the stage or a giant headline */
+@media (min-width: 641px) and (max-height: 560px) {
+  #home.is-on { grid-template-columns: minmax(0, 1fr); grid-template-areas: "top" "intro" "panel"; row-gap: 14px; padding-top: 14px; padding-bottom: 16px; }
+  .ghost-stage, .ticker { display: none; }
+  .headline { font-size: min(7vw, 15vh); }
+  .home-intro { gap: 12px; }
+  .home-intro .lede { font-size: 15px; max-width: 46em; }
+  .trust-link { display: none; }
+  .home-panel .btn-xl { min-height: 50px; }
+  .connect-wrap { gap: 14px; }
+  .hs-ghost { width: 48px; }
+  .hs-lane { height: 50px; }
+  .steps { grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; gap: 8px; }
+  .steps li { padding: 8px; font-size: 12.5px; }
+}
+/* decrypt effect as a visual layer: real text stays in the DOM, noise is drawn on top */
+.fx-host { position: relative; }
+.bubble .fx-host { display: block; }
+.fx-host.is-decrypting { color: transparent !important; }
+.fx-host.is-decrypting a { color: transparent !important; text-decoration-color: transparent; }
+.fx-host.is-decrypting::after { content: attr(data-fx); content: attr(data-fx) / ""; position: absolute; inset: 0; color: var(--paper); white-space: pre-wrap; overflow-wrap: anywhere; pointer-events: none; }
+.hl-1.fx-host.is-decrypting::after { white-space: nowrap; color: var(--paper); }
+.hero-word #heroLine.fx-host.is-decrypting::after { white-space: nowrap; text-align: center; }
 </style>
 
 </head>
@@ -915,7 +951,7 @@ html.dock .bubble { font-size: 16px; }
   </section>
 
   <section class="home-intro">
-    <div class="status-pill"><span class="sp-dot"></span><span id="statusPill">BROWSER TO BROWSER</span></div>
+    <div class="status-pill" aria-hidden="true"><span class="sp-dot"></span><span id="statusPill">BROWSER TO BROWSER</span></div>
     <h2 class="headline"><span id="headLine" class="hl-1">Say it once.</span><span class="gone hl-2">Then it's gone.</span></h2>
     <p class="lede">An encrypted conversation between two browsers. No accounts, nothing stored, and the room code is the only way in. Close the tab and every message, file and key is wiped.</p>
     <a class="trust-link" href="security.html"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>Who can read what, and what Ghost Chat can't protect</a>
@@ -1001,6 +1037,7 @@ html.dock .bubble { font-size: 16px; }
         <button id="qrBtn" class="btn btn-ghost" type="button" aria-expanded="false" aria-controls="qrBox">Show QR</button>
       </div>
       <div id="qrBox" class="qr-box" hidden></div>
+      <p id="expiryRow" class="expiry-row" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg><span id="expiryText" aria-live="off"></span><button id="extendBtn" class="expiry-btn" type="button">+10 min</button></p>
       <p id="shareHint" class="share-hint">Send it over a channel you trust. Whoever has this code can join, so share it with one person only.</p>
     </div>
 
@@ -2019,10 +2056,24 @@ const SIGNALING = {
   key: 'peerjs',
 };
 
-// ICE servers. `null` uses PeerJS defaults (Google STUN + PeerJS public TURN).
-// Provide your own TURN for reliable connectivity behind strict NATs, e.g.
+// ── Relays (TURN): what makes PC ↔ phone work across mobile data, VPNs and strict NAT ──
+// A relay only ever sees encrypted frames. See js/ice.js for how these combine.
+//
+// TURN_ENDPOINT: a URL that returns fresh TURN credentials as JSON ({ iceServers: [...] } or
+// [...]). The dependable option for a public site, and free at small scale:
+//   * Cloudflare Realtime TURN (1,000 GB/month free): deploy relay/cloudflare-worker.js and
+//     put its URL here, e.g. 'https://ghostchat-turn.<you>.workers.dev/'
+//   * Metered (free tier): 'https://<app>.metered.live/api/v1/turn/credentials?apiKey=<key>'
+// Then add the URL's origin to connect-src in index.html's Content-Security-Policy.
+const TURN_ENDPOINT = null;
+
+// PUBLIC_RELAY: also use the free, shared Open Relay project as a fallback (no signup;
+// best-effort, limited monthly capacity shared by everyone using it).
+const PUBLIC_RELAY = true;
+
+// ICE_SERVERS: `null` uses Cloudflare + Google STUN. Or list your own, e.g.
 // [{ urls: 'stun:stun.example.org:3478' },
-//  { urls: 'turn:turn.example.org:3478', username: 'u', credential: 'p' }]
+//  { urls: 'turns:turn.example.org:443?transport=tcp', username: 'u', credential: 'p' }]
 const ICE_SERVERS = null;
 
 const LIMITS = {
@@ -2030,12 +2081,14 @@ const LIMITS = {
   maxFile: 100 * 1024 * 1024,    // bytes per file
   maxIncomingFiles: 4,           // concurrent incoming transfers
   reconnectWindowMs: 3 * 60_000, // how long to try restoring a dropped link
-  handshakeTimeoutMs: 15_000,
+  inviteTtlMs: 10 * 60_000,      // an unused room code stops working after this long
+  inviteMaxMs: 60 * 60_000,      // extending can't push it past this (from creation)
+  handshakeTimeoutMs: 30_000,  // relayed connections on phones can take a while to set up
   pingIntervalMs: 4_000,
   deadAfterMs: 25_000,           // no frames for this long → link considered dead
 };
 
-return { SIGNALING, ICE_SERVERS, LIMITS };
+return { SIGNALING, TURN_ENDPOINT, PUBLIC_RELAY, ICE_SERVERS, LIMITS };
 })();
 __mods.protocol = (() => {
 // Ghost Chat wire protocol v3 — pure crypto, no DOM, no network.
@@ -2596,24 +2649,115 @@ class LocalHub {
 
 return { localSupported, LocalHub };
 })();
+__mods.ice = (() => {
+// Which STUN/TURN servers a connection uses. TURN relays are what make a connection work when
+// a direct one can't (phones on mobile data, VPNs, symmetric NAT, strict firewalls). A relay
+// only ever carries Ghost Chat's encrypted frames; it can't read them.
+//
+// Order of preference, all combined so ICE can pick the best path:
+//   1. TURN_ENDPOINT (config.js): your own credential endpoint, e.g. the Cloudflare Worker in
+//      relay/ or a Metered URL. Dependable, and the recommended setup for a public site.
+//   2. ICE_SERVERS (config.js): fixed servers you list yourself.
+//   3. PUBLIC_RELAY (config.js): the free Open Relay project (metered.ca), best-effort and
+//      shared by everyone using it. Short-lived credentials are derived in the browser with
+//      the project's published static-auth secret (standard TURN REST scheme).
+//   4. Any relay the person added in the app (Privacy → Customize).
+const { ICE_SERVERS, TURN_ENDPOINT, PUBLIC_RELAY } = __mods.config;
+
+const DEFAULT_STUN = [
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  { urls: 'stun:stun.l.google.com:19302' },
+];
+
+const OPEN_RELAY_HOST = 'staticauth.openrelay.metered.ca';
+const OPEN_RELAY_SECRET = 'openrelayprojectsecret'; // published by the Open Relay project for public use
+const CACHE_MS = 30 * 60_000;
+let cached = null; // { at, servers } from TURN_ENDPOINT
+
+const validUrl = (u) => typeof u === 'string' && /^(stun|turns?):[^\s]{1,250}$/.test(u) && !/:53(\?|$)/.test(u); // browsers block port 53
+
+/** Keeps only well-formed ICE server entries (anything fetched is treated as untrusted). */
+function sanitizeIce(list) {
+  const out = [];
+  for (const s of Array.isArray(list) ? list.slice(0, 12) : []) {
+    if (!s || typeof s !== 'object') continue;
+    const urls = [].concat(s.urls ?? s.url ?? []).filter(validUrl).slice(0, 8);
+    if (!urls.length) continue;
+    const e = { urls };
+    if (urls.some((u) => u.startsWith('turn'))) {
+      if (typeof s.username !== 'string' || typeof s.credential !== 'string') continue;
+      e.username = s.username.slice(0, 512); e.credential = s.credential.slice(0, 512);
+    }
+    out.push(e);
+  }
+  return out;
+}
+
+/** TURN REST credentials (draft-uberti-behave-turn-rest): user = expiry:name, pass = b64(HMAC-SHA1(secret, user)). */
+async function restCredential(secret, name = 'ghostchat', ttlSec = 6 * 3600) {
+  const username = `${Math.floor(Date.now() / 1000) + ttlSec}:${name}`;
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(username)));
+  return { username, credential: btoa(String.fromCharCode(...mac)) };
+}
+
+async function openRelay() {
+  const { username, credential } = await restCredential(OPEN_RELAY_SECRET);
+  return {
+    urls: [
+      `turn:${OPEN_RELAY_HOST}:80`,
+      `turn:${OPEN_RELAY_HOST}:80?transport=tcp`,
+      `turn:${OPEN_RELAY_HOST}:443`,
+      `turns:${OPEN_RELAY_HOST}:443?transport=tcp`,   // TLS on 443: looks like HTTPS, passes most VPNs/firewalls
+    ],
+    username, credential,
+  };
+}
+
+async function fromEndpoint() {
+  if (!TURN_ENDPOINT) return [];
+  if (cached && Date.now() - cached.at < CACHE_MS) return cached.servers;
+  try {
+    const r = await fetch(TURN_ENDPOINT, { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(5000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    const servers = sanitizeIce(Array.isArray(j) ? j : j?.iceServers);
+    if (!servers.length) throw new Error('no usable servers in the response');
+    cached = { at: Date.now(), servers };
+    return servers;
+  } catch (e) {
+    console.warn('[ghost] TURN_ENDPOINT unavailable (check the URL and connect-src in the CSP):', e.message);
+    return [];
+  }
+}
+
+/** Everything a new connection should try. Never throws. */
+async function resolveIce(extra = []) {
+  const [mine, open] = await Promise.all([
+    fromEndpoint(),
+    PUBLIC_RELAY ? openRelay().catch(() => null) : null,
+  ]);
+  const base = ICE_SERVERS ? sanitizeIce(ICE_SERVERS) : DEFAULT_STUN;
+  return [...mine, ...base, ...(open ? [open] : []), ...extra];
+}
+
+/** Human-readable summary of what's configured (for the network check). */
+function relaySources() {
+  return { endpoint: !!TURN_ENDPOINT, fixed: !!(ICE_SERVERS && ICE_SERVERS.some((s) => [].concat(s.urls).some((u) => /^turns?:/.test(u)))), publicRelay: !!PUBLIC_RELAY };
+}
+
+return { DEFAULT_STUN, sanitizeIce, restCredential, resolveIce, relaySources };
+})();
 __mods.session = (() => {
 // Session layer: PeerJS transport + authenticated handshake + reliable delivery,
 // reconnection, heartbeats and file streaming. No DOM access.
 const P = __mods.protocol;
-const { SIGNALING, ICE_SERVERS, LIMITS } = __mods.config;
+const { SIGNALING, LIMITS } = __mods.config;
 const { LocalHub, localSupported } = __mods.local;
+const { resolveIce } = __mods.ice;
 
-// Defaults when config.js leaves ICE_SERVERS null: two independent STUN servers (two are also
-// what lets the network check detect symmetric NAT) plus PeerJS's free public TURN relay.
-// That relay is best-effort and is unreachable from many networks; for dependable relaying
-// configure your own TURN server (config.js) or add one in the app (Privacy → Customize).
-const DEFAULT_ICE = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun.cloudflare.com:3478' },
-  { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' },
-];
-/** The ICE servers a session uses: configured (or default) servers plus any the user added. */
-function iceServersWith(extra = []) { return [...(ICE_SERVERS || DEFAULT_ICE), ...extra]; }
+/** The ICE servers a session uses (see js/ice.js), plus any the user added. */
+const iceServersWith = (extra = []) => resolveIce(extra);
 /** Validates a user-supplied TURN server. Returns an RTCIceServer or throws Error(message). */
 function parseTurn(url, username = '', credential = '') {
   const urls = String(url || '').split(/[\s,]+/).filter(Boolean);
@@ -2741,6 +2885,16 @@ class Link {
       const t = (/ typ (\w+)/.exec(e.candidate?.candidate || '') || [])[1];
       if (t in this.diag) this.diag[t]++;
     });
+    // No usable path 10 s in (Chrome can sit in "gathering" forever when a relay-only
+    // connection has no reachable relay): fail with a diagnosis instead of waiting it out.
+    const usable = () => (this.s.relayOnly ? this.diag.relay : this.diag.host + this.diag.srflx + this.diag.relay) > 0;
+    this.iceWatch = setTimeout(() => { if (!this.channel && !this.closed && !usable()) this.close('ice-failed'); }, 10_000);
+    // Gathering finished without a single usable path: fail now instead of waiting it out.
+    pc.addEventListener('icegatheringstatechange', () => {
+      if (pc.iceGatheringState !== 'complete' || this.channel) return;
+      const none = this.s.relayOnly ? !this.diag.relay : !(this.diag.host || this.diag.srflx || this.diag.relay);
+      if (none) setTimeout(() => { if (!this.channel && !this.closed && pc.iceConnectionState !== 'connected') this.close('ice-failed'); }, 1500);
+    });
     pc.addEventListener('iceconnectionstatechange', () => {
       this.diag.ice = pc.iceConnectionState;
       if (pc.iceConnectionState === 'failed' && !this.channel) this.close('ice-failed');
@@ -2779,7 +2933,7 @@ class Link {
   close(reason) {
     if (this.closed) return;
     this.closed = true;
-    clearTimeout(this.hsTimer);
+    clearTimeout(this.hsTimer); clearTimeout(this.iceWatch);
     this.channel?.destroy();
     try { this.conn.close(); } catch {}
     this.s._linkClosed(this, reason);
@@ -2798,7 +2952,7 @@ class Link {
  *  rejected {count, locked}            host: refused attempts (wrong code, or right code but room locked)
  *  failed {code}                       not-found | auth-failed | locked | signaling | room-taken | unsupported | timeout
  *  file-in / file-progress / file-received / file-failed / file-sent
- *  ended {reason}                      local | peer-left | lost | resume-failed
+ *  ended {reason}                      local | peer-left | lost | resume-failed | expired (host: nobody joined in time)
  */
 class Session extends Emitter {
   constructor({ code, role, relayOnly = false, extraIce = [], sameDevice = true }) {
@@ -2827,10 +2981,14 @@ class Session extends Emitter {
     if (!window.RTCPeerConnection || !crypto?.subtle) { this.fail('unsupported'); return; }
     this.roomKey = await P.deriveRoomKey(this.code);
     this.setState('signaling');
+    const iceServers = await resolveIce(this.extraIce);
+    if (this.ended) return;
+    this.relayAvailable = iceServers.some((s) => [].concat(s.urls).some((u) => /^turns?:/.test(u)));
+    if (this.relayOnly && !this.relayAvailable) { this.fail('timeout', { relayOnly: true, relay: 0, host: 0, srflx: 0, noRelayConfigured: true }); return; }
     const opts = {
       host: SIGNALING.host, port: SIGNALING.port, path: SIGNALING.path, secure: SIGNALING.secure, key: SIGNALING.key,
       debug: 0,
-      config: { iceServers: iceServersWith(this.extraIce), ...(this.relayOnly ? { iceTransportPolicy: 'relay' } : {}) },
+      config: { iceServers, ...(this.relayOnly ? { iceTransportPolicy: 'relay' } : {}) },
     };
     // Same-device link: starts before (and works without) the signaling server.
     if (this.sameDevice && localSupported()) {
@@ -2853,6 +3011,30 @@ class Session extends Emitter {
     });
     this.peer.on('error', (err) => this.onPeerError(err));
     this.heartbeat = setInterval(() => this.tick(), LIMITS.pingIntervalMs);
+    if (this.role === 'host') {
+      this.createdAt = Date.now();
+      this.expiresAt = this.createdAt + LIMITS.inviteTtlMs;
+      this.armExpiry();
+    }
+  }
+
+  // ── invite expiry (host): an unused code dies, so a code that leaks later is useless ──
+  armExpiry() {
+    clearTimeout(this.expiryTimer);
+    if (this.everReady || this.ended) return;
+    this.expiryTimer = setTimeout(() => {
+      if (this.everReady || this.ended) return;
+      // Someone is mid-handshake right now: give them a moment rather than cutting them off.
+      if ([...this.pending].some((l) => !l.closed) && Date.now() < this.expiresAt + 30_000) { this.expiryTimer = setTimeout(() => this.armExpiry(), 2000); return; }
+      if (Date.now() >= this.expiresAt) this.destroy('expired'); else this.armExpiry();
+    }, Math.max(0, this.expiresAt - Date.now()));
+  }
+  /** Host: extend an unused code by `ms`, up to LIMITS.inviteMaxMs after creation. Returns the new expiry. */
+  extendInvite(ms = LIMITS.inviteTtlMs) {
+    if (this.role !== 'host' || this.everReady || this.ended) return this.expiresAt;
+    this.expiresAt = Math.min(Math.max(this.expiresAt, Date.now()) + ms, this.createdAt + LIMITS.inviteMaxMs);
+    this.armExpiry();
+    return this.expiresAt;
   }
 
   onPeerError(err) {
@@ -2971,6 +3153,7 @@ class Session extends Emitter {
     // holds a secret only the original two had. A fresh join gets a new one.
     if (!continuity) this.safetyNumber = safetyNumber;
     this.everReady = true; this.retryIdx = 0; this.lostAt = 0;
+    clearTimeout(this.expiryTimer);
     clearTimeout(this.retryTimer); clearTimeout(this.lostTimer);
     this.route = link.local ? 'device' : null;
     this.setState('ready');
@@ -3292,7 +3475,7 @@ class Session extends Emitter {
   destroy(reason) {
     if (this.ended) return;
     this.ended = true;
-    clearInterval(this.heartbeat); this.stopClock(); clearTimeout(this.retryTimer); clearTimeout(this.lostTimer);
+    clearInterval(this.heartbeat); this.stopClock(); clearTimeout(this.retryTimer); clearTimeout(this.lostTimer); clearTimeout(this.expiryTimer);
     this.shapeQ = []; this.frag = null;
     this.resumeSecret?.fill(0); this.resumeSecret = null;
     for (const c of this.candidates) c.secret.fill(0);
@@ -3310,7 +3493,7 @@ class Session extends Emitter {
   }
 }
 
-return { DEFAULT_ICE, iceServersWith, parseTurn, uid, Session };
+return { iceServersWith, parseTurn, uid, Session };
 })();
 __mods.netcheck = (() => {
 // Network check: what can WebRTC on this network actually do? Gathers ICE candidates against
@@ -3434,11 +3617,39 @@ function scramble(el, text, { duration = 700, delay = 0 } = {}) {
   });
 }
 
+/**
+ * Same effect, drawn as a visual layer only: the element keeps its real text (for screen
+ * readers, copy/paste, find-in-page) and a CSS ::after shows the noise on top, with empty
+ * alt text so assistive tech never announces it. See .fx-host in app.css.
+ */
+function scrambleOverlay(el, text, { duration = 700, delay = 0 } = {}) {
+  if (el._scr) cancelAnimationFrame(el._scr);
+  if (reducedMotion() || !text) { el.classList.remove('is-decrypting'); return Promise.resolve(); }
+  const chars = [...text];
+  const t0 = performance.now() + delay;
+  el.classList.add('fx-host', 'is-decrypting');
+  return new Promise((resolve) => {
+    const step = (now) => {
+      const p = Math.max(0, Math.min(1, (now - t0) / duration));
+      const k = Math.floor(p * chars.length);
+      let s = '';
+      for (let i = 0; i < chars.length; i++) {
+        const c = chars[i];
+        s += i < k || /[\s.,!?'’\-:;()]/.test(c) ? c : GLYPHS[rnd(GLYPHS.length)];
+      }
+      el.dataset.fx = s;
+      if (p < 1 && el.isConnected) el._scr = requestAnimationFrame(step);
+      else { el.classList.remove('is-decrypting'); delete el.dataset.fx; el._scr = 0; resolve(); }
+    };
+    el._scr = requestAnimationFrame(step);
+  });
+}
+
 /** Re-runs a scramble every `period` ms while `isActive()` is true (home headline). */
 function loopScramble(el, text, period = 9000, isActive = () => true) {
   let timer = 0;
   const run = () => {
-    if (isActive() && !document.hidden) scramble(el, text, { duration: 900 });
+    if (isActive() && !document.hidden) scrambleOverlay(el, text, { duration: 900 });
     timer = setTimeout(run, period);
   };
   el.textContent = text;
@@ -3545,7 +3756,7 @@ function flash(el, cls, ms = 700) {
 
 const wait = (ms) => new Promise((r) => setTimeout(r, reducedMotion() ? 0 : ms));
 
-return { reducedMotion, scramble, loopScramble, cycleText, followEyes, EtherLine, renderQR, flash, wait };
+return { reducedMotion, scramble, scrambleOverlay, loopScramble, cycleText, followEyes, EtherLine, renderQR, flash, wait };
 })();
 __mods.fog = (() => {
 // Ectoplasm — the home-screen atmosphere.
@@ -3909,7 +4120,7 @@ const { Session, uid, iceServersWith, parseTurn } = __mods.session;
 const { checkNetwork, explain } = __mods.netcheck;
 const { LIMITS } = __mods.config;
 const { initFog } = __mods.fog;
-const { scramble, loopScramble, cycleText, followEyes, EtherLine, renderQR, flash, wait, reducedMotion } = __mods.fx;
+const { scramble, scrambleOverlay, loopScramble, cycleText, followEyes, EtherLine, renderQR, flash, wait, reducedMotion } = __mods.fx;
 
 // Refuse to run inside a frame: prevents click-jacking of the panic/end/verify controls
 // and keeps a hostile embedding page from overlaying the UI.
@@ -4204,8 +4415,10 @@ function renderCode() {
   });
   g.setAttribute('aria-label', 'Room code ' + code.split('').join(' '));
 }
-function showConnectError(text, canRetry, canCheck = false) {
+function showConnectError(text, canRetry, canCheck = false, retryLabel = 'Try again') {
   $('connectError').hidden = false;
+  $('retryBtn').textContent = retryLabel;
+  stopExpiryClock();
   $('connectErrorText').textContent = text;
   $('retryBtn').hidden = !canRetry;
   $('netCheckBtn').hidden = !canCheck;
@@ -4214,6 +4427,7 @@ function showConnectError(text, canRetry, canCheck = false) {
 /** Turns what ICE found on this side into specific advice. */
 function timeoutAdvice(d) {
   if (!d) return '';
+  if (d.noRelayConfigured) return '"Hide my IP" needs a relay server, and none is configured. Add one under Privacy → Customize, or switch to Standard.';
   if (d.relayOnly && !d.relay) return '"Hide my IP" needs a relay server, and none answered from your network. Add your own relay under Privacy → Customize, or switch to Standard.';
   if (!d.relay && !d.srflx && !d.host) return 'WebRTC found no network paths at all. A browser setting, an extension or a firewall is blocking it.';
   if (!d.relay) return 'Your network blocks direct connections (strict NAT, a VPN or a firewall), and no relay server was reachable. Fixes: add a TURN relay under Privacy → Customize; try without the VPN or on another network; or, to test on one computer, open both windows in the same browser profile (two incognito windows work), which connects without the network.';
@@ -4223,7 +4437,7 @@ async function runNetCheck(outEl, btn) {
   btn.disabled = true; const label = btn.textContent; btn.textContent = 'Checking…';
   outEl.hidden = false; outEl.className = 'net-result'; outEl.textContent = 'Testing what your network allows. This takes about 5 seconds.';
   try {
-    const r = await checkNetwork(iceServersWith(customRelay ? [customRelay] : []));
+    const r = await checkNetwork(await iceServersWith(customRelay ? [customRelay] : []));
     const v = explain(r);
     outEl.replaceChildren();
     outEl.classList.add(v.ok ? 'is-ok' : 'is-bad');
@@ -4243,7 +4457,7 @@ async function runNetCheck(outEl, btn) {
 $('netCheckBtn').onclick = () => runNetCheck($('netResult'), $('netCheckBtn'));
 
 const FAIL_TEXT = {
-  'not-found': 'No room with this code is open right now. Check the code, or ask the other person to create the room and keep the page open.',
+  'not-found': 'No room with this code is open right now. Check the code. Codes also expire if nobody joins in time, so ask for a fresh invite if it\'s been a while.',
   'auth-failed': 'A room exists, but it didn\'t accept this code. Check every character. If you\'re certain it\'s right, something may be interfering with the connection — don\'t continue.',
   signaling: 'Couldn\'t reach the introduction server. Check your internet connection, or whether a firewall or content blocker is stopping it.',
   timeout: 'Found the room, but your browsers couldn\'t open a connection to each other.',
@@ -4265,13 +4479,14 @@ function startSession(r, c) {
   setSteps('signal', null);
   $('qrBox').hidden = true; $('qrBox').replaceChildren(); $('qrBtn').textContent = 'Show QR'; $('qrBtn').setAttribute('aria-expanded', 'false');
   hsReset();
+  $('expiryRow').hidden = role !== 'host';
   show('connect');
   if (role === 'host') $('copyLinkBtn').focus();
 
   session = new Session({ code, role, relayOnly: $('relayOnly').checked, extraIce: customRelay ? [customRelay] : [] });
   applyPrivacyPreset();
   wire(session);
-  session.start().catch((e) => { console.error(e); showConnectError(FAIL_TEXT.unsupported, false); });
+  session.start().then(() => { if (role === 'host') startExpiryClock(); }).catch((e) => { console.error(e); showConnectError(FAIL_TEXT.unsupported, false); });
 }
 
 $('copyLinkBtn').onclick = () => copy(inviteLink(), 'Invite link');
@@ -4285,6 +4500,20 @@ if (navigator.share && matchMedia('(pointer: coarse)').matches) {
   };
 }
 $('copyCodeBtn').onclick = () => copy(code, 'Room code');
+
+// ── invite expiry countdown (host) ──
+let expiryClock = 0;
+function renderExpiry() {
+  const s = session;
+  if (!s || s.role !== 'host' || s.everReady || s.ended || !s.expiresAt) return stopExpiryClock();
+  const left = Math.max(0, s.expiresAt - Date.now());
+  $('expiryText').textContent = 'Expires in ' + fmtLeft(left);
+  $('expiryRow').classList.toggle('is-soon', left < 60_000);
+  $('extendBtn').hidden = s.expiresAt >= s.createdAt + LIMITS.inviteMaxMs - 1000;
+}
+function startExpiryClock() { stopExpiryClock(); renderExpiry(); expiryClock = setInterval(renderExpiry, 1000); }
+function stopExpiryClock() { clearInterval(expiryClock); expiryClock = 0; }
+$('extendBtn').onclick = () => { session?.extendInvite(); renderExpiry(); toast('Code extended'); };
 $('qrBtn').onclick = () => {
   const box = $('qrBox'), open = box.hidden;
   if (open) { try { renderQR(box, inviteLink()); } catch (e) { console.warn('[ghost] qr', e); return toast('Couldn\'t draw the QR code', true); } }
@@ -4415,6 +4644,7 @@ async function onReady({ safetyNumber, resumed, continuity, newPeer }) {
   $('kvLive').textContent = (session.liveSafetyNumber || '').split(' ').slice(0, 3).join(' ') || '—';
   session.send({ t: 'profile', name: me.name, avatar: me.avatar });
   if (opts.shape) session.send({ t: 'shape', on: true });
+  stopExpiryClock(); $('expiryRow').hidden = true;
   if (!resumed) {
     $('hsThemName').textContent = them.name !== 'Peer' ? them.name : role === 'host' ? 'Them' : 'The room';
     await hsSeal(session.safetyNumber);
@@ -4461,7 +4691,14 @@ function onReconnecting() {
 function onEnded(s, reason) {
   if (s !== session) return;
   const chatOn = $('chat').classList.contains('is-on');
-  if (!chatOn) { if (reason !== 'local') showConnectError('The session ended.', false); return; }
+  if (!chatOn) {
+    if (reason === 'expired') {
+      hsSet('failed'); setSteps(null, 'signal', 'peer');
+      $('keycard').classList.add('is-spent');
+      showConnectError(`This code expired: nobody joined within ${fmtSecs(Math.round((s.expiresAt - s.createdAt) / 1000))}. It no longer works, even for someone who has it.`, true, false, 'Get a new code');
+    } else if (reason !== 'local') showConnectError('The session ended.', false);
+    return;
+  }
   setLink('is-down', 'Ended');
   $('sendBtn').disabled = true; $('input').disabled = true; $('attachBtn').disabled = true;
   $('typing').hidden = true;
@@ -4663,8 +4900,7 @@ function addText(side, { id, text, ts, ttl = 0, reply = null }) {
   // gets in the way of reading.
   const now = performance.now();
   if (side === 'them' && !bubble.classList.contains('emoji-only') && text.length <= 280 && now - lastDecryptAt > 500 && !reducedMotion()) {
-    span.replaceChildren();
-    scramble(span, text, { duration: Math.min(650, 220 + text.length * 10) }).then(() => { span.replaceChildren(); fillText(span, text); });
+    scrambleOverlay(span, text, { duration: Math.min(650, 220 + text.length * 10) });
   }
   if (side === 'them') lastDecryptAt = now;
   return r;

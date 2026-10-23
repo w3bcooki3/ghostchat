@@ -59,6 +59,16 @@ Post-quantum key exchange. No accounts. Nothing stored. Close the tab and it's g
 - **Network check** (Privacy → Customize, or from a failed connection): local paths, public address, NAT type (detects symmetric NAT), relay reachability, and a same-page connection test.
 - **Bring your own TURN relay** (Privacy → Customize): kept in memory for that tab only, never stored or sent to the other person.
 
+### Making PC ↔ phone work on any network: relays
+Browsers try to connect directly first. That fails between many real networks: phones on mobile data (carrier NAT), VPNs, corporate Wi-Fi and symmetric NAT. Then the only thing that works is a **TURN relay**, a server that forwards the already-encrypted frames. It can't read them.
+
+Ghost Chat ships with the free, shared [Open Relay](https://www.metered.ca/tools/openrelay/) project as a fallback (`PUBLIC_RELAY` in `js/config.js`), reachable over TLS on port 443 so it passes most VPNs and firewalls. It's best-effort: it's shared by everyone and has limited monthly capacity. **For a site people rely on, add your own relay. It's free at small scale and takes about ten minutes:**
+
+- **Cloudflare (recommended, 1,000 GB/month free):** create a TURN key under *Realtime → TURN*, deploy [`relay/cloudflare-worker.js`](relay/cloudflare-worker.js) as a Worker (setup steps are at the top of the file), then set `TURN_ENDPOINT` in `js/config.js` to the Worker's URL.
+- **Metered (free tier):** create an app, and set `TURN_ENDPOINT` to `https://<app>.metered.live/api/v1/turn/credentials?apiKey=<key>`.
+
+Either way, add the endpoint's origin to `connect-src` in `index.html`'s Content-Security-Policy, then rebuild (`npm run build`). The in-app **Check my network** button (Privacy → Customize) shows whether a relay is reachable from wherever you are.
+
 ### Why two windows on one computer sometimes couldn't connect
 WebRTC between two windows on the same machine relies on mDNS `.local` candidates, NAT hairpinning, or a TURN relay. On many Windows setups, VPNs and symmetric-NAT networks, mDNS doesn't resolve and hairpinning isn't supported. PeerJS's free public TURN relay is also often unreachable, so every path failed and the joiner timed out after 15 seconds. Two windows of one browser profile now use the same-device link. For real conversations across such networks, configure a TURN relay. A self-hosted [coturn](https://github.com/coturn/coturn) works, or any TURN provider; set it in `js/config.js` (`ICE_SERVERS`) or in the app.
 
@@ -110,25 +120,25 @@ The build is deterministic, so you can also rebuild it yourself and compare: `no
 **Fully offline, on one machine or a LAN** (for development):
 ```bash
 npm install
-npm run serve                # signaling on :9000, app on http://127.0.0.1:8090
+npm run serve:local          # signaling on :9000, app on http://127.0.0.1:8090
 ```
 
 ### Run your own servers
-The default introduction server is the public `0.peerjs.com`, and the default relay is PeerJS's public TURN server. For real metadata privacy, run your own:
+The default introduction server is the public `0.peerjs.com`, and the default relay is the shared Open Relay project (see [relays](#making-pc--phone-work-on-any-network-relays)). For real metadata privacy, run your own:
 ```bash
 npx peerjs --port 9000       # signaling
 # plus a TURN server such as coturn, for relay-only mode
 ```
-Then edit [`js/config.js`](js/config.js) (`SIGNALING`, `ICE_SERVERS`) and the `connect-src` entry of the CSP in `index.html`.
+Then edit [`js/config.js`](js/config.js) (`SIGNALING`, `TURN_ENDPOINT` or `ICE_SERVERS`, and `PUBLIC_RELAY = false`) and the `connect-src` entry of the CSP in `index.html`.
 
 ## Development
 
 ```bash
 npm install
-npm test               # protocol unit tests (Node): codes, handshake, wrong code, lock, resume, ratchet, padding, TURN input
-npm run test:e2e       # end-to-end scenarios in real Chromium over real WebRTC + a local signaling server
-npm run build          # → dist/ghostchat.html + dist/SHA256SUMS (commit both)
-npm run serve          # app on http://127.0.0.1:8090 with its own local signaling server on :9000
+npm test               # unit tests (Node): protocol, plus relay credentials, ICE sanitizing, TURN input
+npm run test:e2e       # both browser suites: the original scenarios + connectivity/motion/expiry
+npm run build          # → dist/ghostchat.html, dist/security.html, dist/SHA256SUMS (commit all three)
+npm run serve:local    # app on http://127.0.0.1:8090 with its own local signaling server on :9000
 ```
 
 The end-to-end suite covers:
@@ -151,6 +161,8 @@ js/protocol.js         crypto protocol v3: codes, hybrid handshake, lock/resume,
 js/session.js          transport: PeerJS, reconnection, delivery, constant-rate traffic, files (no DOM)
 js/local.js            same-device transport over BroadcastChannel (a byte pipe; no crypto of its own)
 js/netcheck.js         network check: candidates, NAT type, relay reachability, loopback
+js/ice.js              which STUN/TURN servers to use (your endpoint, fixed list, public relay)
+relay/                 Cloudflare Worker that issues TURN credentials (optional, recommended)
 js/app.js              interface
 js/fog.js              home-screen WebGL atmosphere
 js/fx.js               motion effects (decrypt text, eyes, ciphertext strip) and the QR renderer

@@ -20,7 +20,7 @@ let css = read('css/app.css').replace(/url\(\.\.\/fonts\/([^)]+)\)/g, (_, f) =>
 const testPort = (process.argv.find((a) => a.startsWith('--test-signal=')) || '').split('=')[1];
 
 // Minimal module linker for our own ES modules plus the vendored ML-KEM build.
-const order = ['config', 'protocol', 'local', 'session', 'netcheck', 'fx', 'fog', 'app'];
+const order = ['config', 'protocol', 'local', 'ice', 'session', 'netcheck', 'fx', 'fog', 'app'];
 let bundle = 'const __mods = {};\n';
 {
   const src = read('vendor/noble-ml-kem1024-0.7.1.min.js');
@@ -29,7 +29,7 @@ let bundle = 'const __mods = {};\n';
   bundle += `__mods.mlkem = (() => {\n${src.slice(0, m.index)}\nreturn { ml_kem1024: ${m[1]} };\n})();\n`;
 }
 {
-  const src = read('vendor/uqr-0.1.2.mjs');
+  const src = read('vendor/uqr-0.1.2.js');
   const m = src.match(/export\s*\{([^}]+)\};?\s*$/);
   if (!m) throw new Error('unexpected uqr vendor format');
   bundle += `__mods.uqr = (() => {\n${src.slice(0, m.index)}\nreturn { ${m[1]} };\n})();\n`;
@@ -38,10 +38,10 @@ for (const name of order) {
   let src = read(`js/${name}.js`);
   if (testPort && name === 'config') src = src
     .replace(/host: '0\.peerjs\.com',\s*port: 443,\s*path: '\/',\s*secure: true,/, `host: '127.0.0.1', port: ${testPort}, path: '/gc', secure: false,`)
-    .replace('export const ICE_SERVERS = null;', 'export const ICE_SERVERS = [];');
+    .replace('export const ICE_SERVERS = null;', 'export const ICE_SERVERS = [];').replace('export const PUBLIC_RELAY = true;', 'export const PUBLIC_RELAY = false;');
   const exported = [];
   src = src.replace(/^import \{ ml_kem1024 \} from '\.\.\/vendor\/noble-ml-kem1024-0\.7\.1\.min\.js';$/m, 'const { ml_kem1024 } = __mods.mlkem;');
-  src = src.replace(/^import \{([^}]+)\} from '\.\.\/vendor\/uqr-0\.1\.2\.mjs';$/m, (_, names) => `const {${names}} = __mods.uqr;`);
+  src = src.replace(/^import \{([^}]+)\} from '\.\.\/vendor\/uqr-0\.1\.2\.js';$/m, (_, names) => `const {${names}} = __mods.uqr;`);
   src = src.replace(/^import \* as (\w+) from '\.\/(\w+)\.js';$/gm, (_, ns, m) => `const ${ns} = __mods.${m};`);
   src = src.replace(/^import \{([^}]+)\} from '\.\/(\w+)\.js';$/gm, (_, names, m) => `const {${names.replace(/\bas\b/g, ':')}} = __mods.${m};`);
   src = src.replace(/^export (async function|function|class|const|let)\s+(\w+)/gm, (_, kw, n) => { exported.push(n); return `${kw} ${n}`; });

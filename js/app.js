@@ -6,7 +6,7 @@ import { Session, uid, iceServersWith, parseTurn } from './session.js';
 import { checkNetwork, explain } from './netcheck.js';
 import { LIMITS } from './config.js';
 import { initFog } from './fog.js';
-import { scramble, loopScramble, cycleText, followEyes, EtherLine, renderQR, flash, wait, reducedMotion } from './fx.js';
+import { scramble, scrambleOverlay, loopScramble, cycleText, followEyes, EtherLine, renderQR, flash, wait, reducedMotion } from './fx.js';
 
 // Refuse to run inside a frame: prevents click-jacking of the panic/end/verify controls
 // and keeps a hostile embedding page from overlaying the UI.
@@ -301,8 +301,10 @@ function renderCode() {
   });
   g.setAttribute('aria-label', 'Room code ' + code.split('').join(' '));
 }
-function showConnectError(text, canRetry, canCheck = false) {
+function showConnectError(text, canRetry, canCheck = false, retryLabel = 'Try again') {
   $('connectError').hidden = false;
+  $('retryBtn').textContent = retryLabel;
+  stopExpiryClock();
   $('connectErrorText').textContent = text;
   $('retryBtn').hidden = !canRetry;
   $('netCheckBtn').hidden = !canCheck;
@@ -311,6 +313,7 @@ function showConnectError(text, canRetry, canCheck = false) {
 /** Turns what ICE found on this side into specific advice. */
 function timeoutAdvice(d) {
   if (!d) return '';
+  if (d.noRelayConfigured) return '"Hide my IP" needs a relay server, and none is configured. Add one under Privacy → Customize, or switch to Standard.';
   if (d.relayOnly && !d.relay) return '"Hide my IP" needs a relay server, and none answered from your network. Add your own relay under Privacy → Customize, or switch to Standard.';
   if (!d.relay && !d.srflx && !d.host) return 'WebRTC found no network paths at all. A browser setting, an extension or a firewall is blocking it.';
   if (!d.relay) return 'Your network blocks direct connections (strict NAT, a VPN or a firewall), and no relay server was reachable. Fixes: add a TURN relay under Privacy → Customize; try without the VPN or on another network; or, to test on one computer, open both windows in the same browser profile (two incognito windows work), which connects without the network.';
@@ -320,7 +323,7 @@ async function runNetCheck(outEl, btn) {
   btn.disabled = true; const label = btn.textContent; btn.textContent = 'Checking…';
   outEl.hidden = false; outEl.className = 'net-result'; outEl.textContent = 'Testing what your network allows. This takes about 5 seconds.';
   try {
-    const r = await checkNetwork(iceServersWith(customRelay ? [customRelay] : []));
+    const r = await checkNetwork(await iceServersWith(customRelay ? [customRelay] : []));
     const v = explain(r);
     outEl.replaceChildren();
     outEl.classList.add(v.ok ? 'is-ok' : 'is-bad');
@@ -340,7 +343,7 @@ async function runNetCheck(outEl, btn) {
 $('netCheckBtn').onclick = () => runNetCheck($('netResult'), $('netCheckBtn'));
 
 const FAIL_TEXT = {
-  'not-found': 'No room with this code is open right now. Check the code, or ask the other person to create the room and keep the page open.',
+  'not-found': 'No room with this code is open right now. Check the code. Codes also expire if nobody joins in time, so ask for a fresh invite if it\'s been a while.',
   'auth-failed': 'A room exists, but it didn\'t accept this code. Check every character. If you\'re certain it\'s right, something may be interfering with the connection — don\'t continue.',
   signaling: 'Couldn\'t reach the introduction server. Check your internet connection, or whether a firewall or content blocker is stopping it.',
   timeout: 'Found the room, but your browsers couldn\'t open a connection to each other.',
@@ -362,13 +365,14 @@ function startSession(r, c) {
   setSteps('signal', null);
   $('qrBox').hidden = true; $('qrBox').replaceChildren(); $('qrBtn').textContent = 'Show QR'; $('qrBtn').setAttribute('aria-expanded', 'false');
   hsReset();
+  $('expiryRow').hidden = role !== 'host';
   show('connect');
   if (role === 'host') $('copyLinkBtn').focus();
 
   session = new Session({ code, role, relayOnly: $('relayOnly').checked, extraIce: customRelay ? [customRelay] : [] });
   applyPrivacyPreset();
   wire(session);
-  session.start().catch((e) => { console.error(e); showConnectError(FAIL_TEXT.unsupported, false); });
+  session.start().then(() => { if (role === 'host') startExpiryClock(); }).catch((e) => { console.error(e); showConnectError(FAIL_TEXT.unsupported, false); });
 }
 
 $('copyLinkBtn').onclick = () => copy(inviteLink(), 'Invite link');
@@ -382,6 +386,20 @@ if (navigator.share && matchMedia('(pointer: coarse)').matches) {
   };
 }
 $('copyCodeBtn').onclick = () => copy(code, 'Room code');
+
+// ── invite expiry countdown (host) ──
+let expiryClock = 0;
+function renderExpiry() {
+  const s = session;
+  if (!s || s.role !== 'host' || s.everReady || s.ended || !s.expiresAt) return stopExpiryClock();
+  const left = Math.max(0, s.expiresAt - Date.now());
+  $('expiryText').textContent = 'Expires in ' + fmtLeft(left);
+  $('expiryRow').classList.toggle('is-soon', left < 60_000);
+  $('extendBtn').hidden = s.expiresAt >= s.createdAt + LIMITS.inviteMaxMs - 1000;
+}
+function startExpiryClock() { stopExpiryClock(); renderExpiry(); expiryClock = setInterval(renderExpiry, 1000); }
+function stopExpiryClock() { clearInterval(expiryClock); expiryClock = 0; }
+$('extendBtn').onclick = () => { session?.extendInvite(); renderExpiry(); toast('Code extended'); };
 $('qrBtn').onclick = () => {
   const box = $('qrBox'), open = box.hidden;
   if (open) { try { renderQR(box, inviteLink()); } catch (e) { console.warn('[ghost] qr', e); return toast('Couldn\'t draw the QR code', true); } }
@@ -512,6 +530,7 @@ async function onReady({ safetyNumber, resumed, continuity, newPeer }) {
   $('kvLive').textContent = (session.liveSafetyNumber || '').split(' ').slice(0, 3).join(' ') || '—';
   session.send({ t: 'profile', name: me.name, avatar: me.avatar });
   if (opts.shape) session.send({ t: 'shape', on: true });
+  stopExpiryClock(); $('expiryRow').hidden = true;
   if (!resumed) {
     $('hsThemName').textContent = them.name !== 'Peer' ? them.name : role === 'host' ? 'Them' : 'The room';
     await hsSeal(session.safetyNumber);
@@ -558,7 +577,14 @@ function onReconnecting() {
 function onEnded(s, reason) {
   if (s !== session) return;
   const chatOn = $('chat').classList.contains('is-on');
-  if (!chatOn) { if (reason !== 'local') showConnectError('The session ended.', false); return; }
+  if (!chatOn) {
+    if (reason === 'expired') {
+      hsSet('failed'); setSteps(null, 'signal', 'peer');
+      $('keycard').classList.add('is-spent');
+      showConnectError(`This code expired: nobody joined within ${fmtSecs(Math.round((s.expiresAt - s.createdAt) / 1000))}. It no longer works, even for someone who has it.`, true, false, 'Get a new code');
+    } else if (reason !== 'local') showConnectError('The session ended.', false);
+    return;
+  }
   setLink('is-down', 'Ended');
   $('sendBtn').disabled = true; $('input').disabled = true; $('attachBtn').disabled = true;
   $('typing').hidden = true;
@@ -760,8 +786,7 @@ function addText(side, { id, text, ts, ttl = 0, reply = null }) {
   // gets in the way of reading.
   const now = performance.now();
   if (side === 'them' && !bubble.classList.contains('emoji-only') && text.length <= 280 && now - lastDecryptAt > 500 && !reducedMotion()) {
-    span.replaceChildren();
-    scramble(span, text, { duration: Math.min(650, 220 + text.length * 10) }).then(() => { span.replaceChildren(); fillText(span, text); });
+    scrambleOverlay(span, text, { duration: Math.min(650, 220 + text.length * 10) });
   }
   if (side === 'them') lastDecryptAt = now;
   return r;

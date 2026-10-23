@@ -882,3 +882,39 @@ html.dock .bubble { font-size: 16px; }
   .gone, .ghost-blink, .hs-stage.is-waiting .hs-them, .status-pill, .home-intro .lede, .home-panel { animation: none !important; opacity: 1; filter: none; }
   .hs-stage.is-sealed .hs-lock { transform: none; opacity: 1; }
 }
+.expiry-row { display: inline-flex; align-items: center; gap: 8px; margin: -6px 0 0; padding: 6px 6px 6px 12px; border-radius: 999px; border: 1px solid var(--line-2); font: 500 12.5px var(--f-mono); color: var(--fog); font-variant-numeric: tabular-nums; }
+.expiry-row .ico { width: 15px; height: 15px; }
+.expiry-row.is-soon { color: var(--amber); border-color: rgba(242, 181, 68, .4); }
+.expiry-btn { min-height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--ecto-line); background: var(--ecto-dim); color: var(--ecto); font: 500 12px var(--f-ui); }
+.keycard.is-spent .qr-box { opacity: .2; filter: blur(4px); }
+
+/* ── responsive fixes: small phones, phone landscape ── */
+@media (max-width: 640px) {
+  .hero-word { font-size: clamp(38px, 13.2vw, 64px); }
+  .avatar-grid { gap: 5px; }
+  .avatar-grid button { min-height: 36px; }
+  .expiry-row { font-size: 11.5px; padding-left: 10px; gap: 6px; }
+}
+/* phones held sideways (and other short screens): no room for the stage or a giant headline */
+@media (min-width: 641px) and (max-height: 560px) {
+  #home.is-on { grid-template-columns: minmax(0, 1fr); grid-template-areas: "top" "intro" "panel"; row-gap: 14px; padding-top: 14px; padding-bottom: 16px; }
+  .ghost-stage, .ticker { display: none; }
+  .headline { font-size: min(7vw, 15vh); }
+  .home-intro { gap: 12px; }
+  .home-intro .lede { font-size: 15px; max-width: 46em; }
+  .trust-link { display: none; }
+  .home-panel .btn-xl { min-height: 50px; }
+  .connect-wrap { gap: 14px; }
+  .hs-ghost { width: 48px; }
+  .hs-lane { height: 50px; }
+  .steps { grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; gap: 8px; }
+  .steps li { padding: 8px; font-size: 12.5px; }
+}
+/* decrypt effect as a visual layer: real text stays in the DOM, noise is drawn on top */
+.fx-host { position: relative; }
+.bubble .fx-host { display: block; }
+.fx-host.is-decrypting { color: transparent !important; }
+.fx-host.is-decrypting a { color: transparent !important; text-decoration-color: transparent; }
+.fx-host.is-decrypting::after { content: attr(data-fx); content: attr(data-fx) / ""; position: absolute; inset: 0; color: var(--paper); white-space: pre-wrap; overflow-wrap: anywhere; pointer-events: none; }
+.hl-1.fx-host.is-decrypting::after { white-space: nowrap; color: var(--paper); }
+.hero-word #heroLine.fx-host.is-decrypting::after { white-space: nowrap; text-align: center; }

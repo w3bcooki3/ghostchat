@@ -1,20 +1,12 @@
 // Session layer: PeerJS transport + authenticated handshake + reliable delivery,
 // reconnection, heartbeats and file streaming. No DOM access.
 import * as P from './protocol.js';
-import { SIGNALING, ICE_SERVERS, LIMITS } from './config.js';
+import { SIGNALING, LIMITS } from './config.js';
 import { LocalHub, localSupported } from './local.js';
+import { resolveIce } from './ice.js';
 
-// Defaults when config.js leaves ICE_SERVERS null: two independent STUN servers (two are also
-// what lets the network check detect symmetric NAT) plus PeerJS's free public TURN relay.
-// That relay is best-effort and is unreachable from many networks; for dependable relaying
-// configure your own TURN server (config.js) or add one in the app (Privacy → Customize).
-export const DEFAULT_ICE = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun.cloudflare.com:3478' },
-  { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' },
-];
-/** The ICE servers a session uses: configured (or default) servers plus any the user added. */
-export function iceServersWith(extra = []) { return [...(ICE_SERVERS || DEFAULT_ICE), ...extra]; }
+/** The ICE servers a session uses (see js/ice.js), plus any the user added. */
+export const iceServersWith = (extra = []) => resolveIce(extra);
 /** Validates a user-supplied TURN server. Returns an RTCIceServer or throws Error(message). */
 export function parseTurn(url, username = '', credential = '') {
   const urls = String(url || '').split(/[\s,]+/).filter(Boolean);
@@ -142,6 +134,16 @@ class Link {
       const t = (/ typ (\w+)/.exec(e.candidate?.candidate || '') || [])[1];
       if (t in this.diag) this.diag[t]++;
     });
+    // No usable path 10 s in (Chrome can sit in "gathering" forever when a relay-only
+    // connection has no reachable relay): fail with a diagnosis instead of waiting it out.
+    const usable = () => (this.s.relayOnly ? this.diag.relay : this.diag.host + this.diag.srflx + this.diag.relay) > 0;
+    this.iceWatch = setTimeout(() => { if (!this.channel && !this.closed && !usable()) this.close('ice-failed'); }, 10_000);
+    // Gathering finished without a single usable path: fail now instead of waiting it out.
+    pc.addEventListener('icegatheringstatechange', () => {
+      if (pc.iceGatheringState !== 'complete' || this.channel) return;
+      const none = this.s.relayOnly ? !this.diag.relay : !(this.diag.host || this.diag.srflx || this.diag.relay);
+      if (none) setTimeout(() => { if (!this.channel && !this.closed && pc.iceConnectionState !== 'connected') this.close('ice-failed'); }, 1500);
+    });
     pc.addEventListener('iceconnectionstatechange', () => {
       this.diag.ice = pc.iceConnectionState;
       if (pc.iceConnectionState === 'failed' && !this.channel) this.close('ice-failed');
@@ -180,7 +182,7 @@ class Link {
   close(reason) {
     if (this.closed) return;
     this.closed = true;
-    clearTimeout(this.hsTimer);
+    clearTimeout(this.hsTimer); clearTimeout(this.iceWatch);
     this.channel?.destroy();
     try { this.conn.close(); } catch {}
     this.s._linkClosed(this, reason);
@@ -199,7 +201,7 @@ class Link {
  *  rejected {count, locked}            host: refused attempts (wrong code, or right code but room locked)
  *  failed {code}                       not-found | auth-failed | locked | signaling | room-taken | unsupported | timeout
  *  file-in / file-progress / file-received / file-failed / file-sent
- *  ended {reason}                      local | peer-left | lost | resume-failed
+ *  ended {reason}                      local | peer-left | lost | resume-failed | expired (host: nobody joined in time)
  */
 export class Session extends Emitter {
   constructor({ code, role, relayOnly = false, extraIce = [], sameDevice = true }) {
@@ -228,10 +230,14 @@ export class Session extends Emitter {
     if (!window.RTCPeerConnection || !crypto?.subtle) { this.fail('unsupported'); return; }
     this.roomKey = await P.deriveRoomKey(this.code);
     this.setState('signaling');
+    const iceServers = await resolveIce(this.extraIce);
+    if (this.ended) return;
+    this.relayAvailable = iceServers.some((s) => [].concat(s.urls).some((u) => /^turns?:/.test(u)));
+    if (this.relayOnly && !this.relayAvailable) { this.fail('timeout', { relayOnly: true, relay: 0, host: 0, srflx: 0, noRelayConfigured: true }); return; }
     const opts = {
       host: SIGNALING.host, port: SIGNALING.port, path: SIGNALING.path, secure: SIGNALING.secure, key: SIGNALING.key,
       debug: 0,
-      config: { iceServers: iceServersWith(this.extraIce), ...(this.relayOnly ? { iceTransportPolicy: 'relay' } : {}) },
+      config: { iceServers, ...(this.relayOnly ? { iceTransportPolicy: 'relay' } : {}) },
     };
     // Same-device link: starts before (and works without) the signaling server.
     if (this.sameDevice && localSupported()) {
@@ -254,6 +260,30 @@ export class Session extends Emitter {
     });
     this.peer.on('error', (err) => this.onPeerError(err));
     this.heartbeat = setInterval(() => this.tick(), LIMITS.pingIntervalMs);
+    if (this.role === 'host') {
+      this.createdAt = Date.now();
+      this.expiresAt = this.createdAt + LIMITS.inviteTtlMs;
+      this.armExpiry();
+    }
+  }
+
+  // ── invite expiry (host): an unused code dies, so a code that leaks later is useless ──
+  armExpiry() {
+    clearTimeout(this.expiryTimer);
+    if (this.everReady || this.ended) return;
+    this.expiryTimer = setTimeout(() => {
+      if (this.everReady || this.ended) return;
+      // Someone is mid-handshake right now: give them a moment rather than cutting them off.
+      if ([...this.pending].some((l) => !l.closed) && Date.now() < this.expiresAt + 30_000) { this.expiryTimer = setTimeout(() => this.armExpiry(), 2000); return; }
+      if (Date.now() >= this.expiresAt) this.destroy('expired'); else this.armExpiry();
+    }, Math.max(0, this.expiresAt - Date.now()));
+  }
+  /** Host: extend an unused code by `ms`, up to LIMITS.inviteMaxMs after creation. Returns the new expiry. */
+  extendInvite(ms = LIMITS.inviteTtlMs) {
+    if (this.role !== 'host' || this.everReady || this.ended) return this.expiresAt;
+    this.expiresAt = Math.min(Math.max(this.expiresAt, Date.now()) + ms, this.createdAt + LIMITS.inviteMaxMs);
+    this.armExpiry();
+    return this.expiresAt;
   }
 
   onPeerError(err) {
@@ -372,6 +402,7 @@ export class Session extends Emitter {
     // holds a secret only the original two had. A fresh join gets a new one.
     if (!continuity) this.safetyNumber = safetyNumber;
     this.everReady = true; this.retryIdx = 0; this.lostAt = 0;
+    clearTimeout(this.expiryTimer);
     clearTimeout(this.retryTimer); clearTimeout(this.lostTimer);
     this.route = link.local ? 'device' : null;
     this.setState('ready');
@@ -693,7 +724,7 @@ export class Session extends Emitter {
   destroy(reason) {
     if (this.ended) return;
     this.ended = true;
-    clearInterval(this.heartbeat); this.stopClock(); clearTimeout(this.retryTimer); clearTimeout(this.lostTimer);
+    clearInterval(this.heartbeat); this.stopClock(); clearTimeout(this.retryTimer); clearTimeout(this.lostTimer); clearTimeout(this.expiryTimer);
     this.shapeQ = []; this.frag = null;
     this.resumeSecret?.fill(0); this.resumeSecret = null;
     for (const c of this.candidates) c.secret.fill(0);
