@@ -1,48 +1,80 @@
-# Ghost Chat relays
+# The Ghost Chat relay
 
-Browsers try to connect directly first. On many real networks that's impossible: phones on mobile data, VPNs, symmetric NAT, offices, and networks that block TURN servers. Then a relay forwards Ghost Chat's frames, which are **already end-to-end encrypted**. A relay can't read, change or forge anything; tampering is detected and closes the chat.
+Sometimes two browsers can't reach each other directly. This is common on mobile data, behind VPNs, on office and school networks, and on many home routers. When that happens, Ghost Chat sends its traffic through a **relay**, a small server that passes packets from one browser to the other.
 
-## 1. WebSocket relay (recommended, free, no card)
+The relay is a go-between, not a participant. Everything it handles has already been sealed by Ghost Chat's end-to-end encryption before it leaves your device.
 
-`ws-relay.js` is a Cloudflare Worker with a Durable Object. It runs on the **Workers Free plan**, which doesn't ask for payment details. Traffic is ordinary HTTPS/WebSocket on port 443, so it gets through VPNs and phone networks.
+## When is it used?
 
-**What it sees:** IP addresses, timing, message sizes, and ciphertext. **What it never sees:** the room code, keys, names or content. Rooms on the relay are named by a 128-bit hash of the room key (derived from the full 20-character code), so nobody without the code can find, squat or watch a room, and the relay can't link a room to the public signaling ID.
+- **Usually never.** Your browsers first try to connect directly. If that works, which is the case on most home networks, the relay isn't involved.
+- **When a direct connection fails**, or hasn't opened within two and a half seconds, the relay takes over. This usually takes a few seconds and you don't need to do anything.
+- **Always, with Maximum privacy.** Choosing *Maximum privacy* (or *Hide my IP address*) before connecting skips the direct attempt entirely, so the other person never learns your IP address.
 
-### Deploy from the dashboard (no tools needed)
-1. Sign in at dash.cloudflare.com and go to **Workers & Pages → Create → Create Worker**. Name it `ghostchat-relay`, then **Deploy**.
-2. Click **Edit code**, replace everything with the contents of `ws-relay.js`, then **Deploy**.
-3. **Settings → Bindings → Add → Durable Object**. Set the variable name to `ROOMS` and the class to `Room` (from this Worker).
-4. **Settings → Variables and secrets → Add**. Name: `ALLOWED_ORIGINS`, type: text, value: your site's origin, e.g. `https://<you>.github.io` (comma-separate several).
-5. Open `https://ghostchat-relay.<your-subdomain>.workers.dev/health`. It should say `ghostchat relay ok`.
+The relay uses an ordinary secure web connection (HTTPS on port 443), the same as any website. That's why it gets through VPNs and phone networks that block other kinds of connections.
 
-### Or deploy with Wrangler
+## What the relay can and can't see
+
+| | |
+|---|---|
+| **Your messages, files, names, reactions** | ✗ Can't see them. They're encrypted before they reach it. |
+| **Your encryption keys** | ✗ Never sent to it. They exist only in your two browsers. |
+| **The room code** | ✗ Never sent to it. The relay knows a room only by a scrambled 128-bit fingerprint of the full code, which it can't reverse or link to anything else. |
+| **Your IP address** | ✓ Yes, like any website you visit. |
+| **When you connect, and roughly how much you send** | ✓ Yes. Sizes are rounded up to fixed steps, and *constant-rate traffic* also hides when you talk. |
+
+The relay **can't read, change or fake** anything. If a single packet were altered, Ghost Chat would notice and close the conversation rather than show it.
+
+## What it keeps
+
+Nothing. A room exists on the relay only while someone is connected to it. The relay's code doesn't log rooms or traffic, and logging is switched off for it on Cloudflare. Cloudflare, which runs the servers, still handles connection details on its network under [its own privacy policy](https://www.cloudflare.com/privacypolicy/).
+
+## When the other person isn't there
+
+The relay also helps Ghost Chat tell you what's going on instead of leaving you waiting:
+
+- **If nobody holds the room** (the creator ended the chat, left, or the code expired), you'll see *"This room isn't open"* within a few seconds.
+- **If the creator's phone has locked, or the browser was put in the background**, their page can't answer. You'll see *"The room exists, but the person who made it isn't answering"* within about ten seconds. Ask them to open Ghost Chat again, then try again.
+
+---
+
+## Running your own relay
+
+The relay is a [Cloudflare Worker](https://workers.cloudflare.com/) that runs on Cloudflare's **free plan, with no payment card needed**. The code is [`ws-relay.js`](ws-relay.js), and you can read it in a few minutes.
+
+**What it enforces:** only the sites you list may use it; each room is limited to one creator and a few joiners; frames over 66 KB are rejected; each connection is rate-limited. A creator whose page has gone silent for over two minutes is removed.
+
+### Deploy it from GitHub (recommended)
+1. Sign in at [dash.cloudflare.com](https://dash.cloudflare.com) and go to **Workers & Pages → Create → Import a repository**.
+2. Choose your Ghost Chat repository, and under advanced settings set the **path** to `/relay`.
+3. Deploy. Cloudflare reads [`wrangler.toml`](wrangler.toml), which sets up the room storage and your site's address, and redeploys automatically whenever you push.
+4. Open `https://ghostchat-relay.<your-subdomain>.workers.dev/health`. It should say `ghostchat relay ok`.
+
+### Or deploy from your computer
 ```bash
 cd relay
-npx wrangler deploy          # uses wrangler.toml: Durable Object binding + SQLite migration
+npx wrangler deploy
 ```
 
-### Point Ghost Chat at it
-In `js/config.js`:
-```js
-export const RELAY_URL = 'wss://ghostchat-relay.<your-subdomain>.workers.dev';
-```
-In `index.html`, add the same origin to `connect-src` in the Content-Security-Policy:
-```
-connect-src https://0.peerjs.com wss://0.peerjs.com wss://ghostchat-relay.<your-subdomain>.workers.dev
-```
-Then `npm run build` and push.
+### Point Ghost Chat at your relay
+1. In `wrangler.toml`, set `ALLOWED_ORIGINS` to your site's address, for example `https://<you>.github.io`. Separate several addresses with commas.
+2. In `js/config.js`, set:
+   ```js
+   export const RELAY_URL = 'wss://ghostchat-relay.<your-subdomain>.workers.dev';
+   ```
+3. In `index.html`, add the same address to `connect-src` in the Content-Security-Policy.
+4. Run `npm run build`, then push.
 
-**Dead hosts:** a joiner is told "ready" only after the host's page accepts it, so a host whose phone locked or killed the browser can't swallow a handshake: the joiner is told within seconds that the host isn't answering. A host silent for over two minutes is evicted. Deploy this Worker together with the site; an older Worker still works with the new site.
+**Deploy the relay and the site together.** The relay and the app were updated together so a joiner is let in only once the creator's page answers. An older relay still works with the new app, but stuck-host detection needs both updated.
 
-**Limits on the free plan:** 100,000 requests per day. Each connection is one request, and incoming messages count 20:1, so an hour of chatting costs a few hundred. Keep-alive pings are free. The Worker also enforces a 66 KB frame cap, a per-socket rate limit and an origin check.
+**Free plan limits:** 100,000 requests a day. Each connection counts once, and incoming messages count about 20 to 1, so an hour of chatting uses a few hundred. Keep-alive pings are free.
 
-## 2. TURN credentials (optional)
-
-`turn-credentials.js` hands browsers short-lived credentials for Cloudflare Realtime TURN (1,000 GB/month free, but Cloudflare asks for a payment method on file). TURN lets WebRTC itself relay. Set `TURN_ENDPOINT` in `js/config.js` to the Worker's URL. Setup steps are at the top of the file.
-
-## Testing locally
+### Testing it locally
 ```bash
 cd relay && npx wrangler dev --var ALLOWED_ORIGINS:'*'
-RELAY_TEST_URL=ws://127.0.0.1:8787 node tests/e2e-connectivity.mjs   # against the real Worker
-node tests/e2e-connectivity.mjs                                      # against tests/relay-mock.mjs
+RELAY_TEST_URL=ws://127.0.0.1:8787 node tests/e2e-connectivity.mjs   # test against your Worker
+node tests/e2e-connectivity.mjs                                      # or against the built-in stand-in
 ```
+
+## Optional: TURN
+
+[`turn-credentials.js`](turn-credentials.js) is an alternative that lets WebRTC relay traffic itself, through Cloudflare's TURN service. It has a large free allowance, but Cloudflare asks for a payment card on file. Setup steps are at the top of that file. Most people don't need it: the WebSocket relay above is enough.
