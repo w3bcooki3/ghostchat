@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-R5Z0AafMhe9Dk/H4aokj31Ek+LDVjKwOrlqAtmLWxhc='; style-src 'sha256-eo91bkx/6IFUjRTU4s0n+QkfX1eBB56b1MRhJU2VR78='; font-src data:; img-src data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-QzE6bSZJaSIwSkls+StT3qnLDhZdoldjWoZDC2apJ9o='; style-src 'sha256-eo91bkx/6IFUjRTU4s0n+QkfX1eBB56b1MRhJU2VR78='; font-src data:; img-src data:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#05080A">
@@ -408,7 +408,7 @@ tr:last-child td { border-bottom: 0; }
     <div class="grid g3">
       <div class="card"><h3>Room key</h3><p>The full code is stretched with HKDF into a 384-bit room key. It salts the handshake, so only someone holding all 20 characters can prove themselves.</p></div>
       <div class="card"><h3>Relay room</h3><p>On the relay, the room is named by a 128-bit hash of the room key. The relay can't reverse it, and can't link it to the public room name.</p></div>
-      <div class="card"><h3>Expiry</h3><p>An unused code expires after 10 minutes (you can extend it to an hour). Once someone joins, the code stops working altogether: the room locks.</p></div>
+      <div class="card"><h3>Expiry</h3><p>An unused code expires after 10 minutes (you can extend it to an hour). The first person in joins straight away. After that, anyone using the code waits until the host lets them in, so a leaked code can't sneak anyone into the room.</p></div>
     </div>
   </section>
 
@@ -456,7 +456,7 @@ tr:last-child td { border-bottom: 0; }
           <g class="n" data-n="n7"><rect x="20" y="480" width="280" height="62" rx="14"/><text class="d-t" x="160" y="506" text-anchor="middle">First pipe to open wins</text><text class="d-s" x="160" y="527" text-anchor="middle">the other is closed</text></g>
           <g class="n" data-n="n8"><rect x="20" y="570" width="280" height="62" rx="14"/><text class="d-t" x="160" y="596" text-anchor="middle">Three-message handshake</text><text class="d-s" x="160" y="617" text-anchor="middle">both prove they hold the code</text></g>
           <g class="n" data-n="n9"><path class="shape" d="M160 660 L280 705 L160 750 L40 705Z"/><text class="d-t" x="160" y="710" text-anchor="middle">Proofs match?</text></g>
-          <g class="n" data-n="n10"><rect x="20" y="780" width="280" height="52" rx="14"/><text class="d-t" x="160" y="812" text-anchor="middle">Room locks. Chat opens.</text></g>
+          <g class="n" data-n="n10"><rect x="20" y="780" width="280" height="52" rx="14"/><text class="d-t" x="160" y="812" text-anchor="middle">Host lets them in. Chat opens.</text></g>
           <g class="n is-bad" data-n="n11"><rect x="340" y="680" width="200" height="52" rx="14"/><text class="d-t" x="440" y="711" text-anchor="middle">Refused</text></g>
         </svg>
         <div>
@@ -465,7 +465,7 @@ tr:last-child td { border-bottom: 0; }
             <li><b>Host opens a room</b>Your browser registers the room name with the introduction server and keeps a door open on the relay.</li>
             <li><b>Joiner tries direct</b>WebRTC asks STUN servers for each side's public address and opens a peer-to-peer pipe.</li>
             <li><b>Handshake</b>Three messages trade fresh keys and prove both sides hold the code.</li>
-            <li><b>Locked</b>The room accepts no one else. Messages flow directly between you.</li>
+            <li><b>Connected</b>Anyone else needs the host's approval. Messages flow directly between you.</li>
           </ol>
         </div>
       </div>
@@ -594,7 +594,7 @@ tr:last-child td { border-bottom: 0; }
     <div class="states" aria-label="Session states">
       <span class="state">Waiting for a join</span><span class="arrow">→</span>
       <span class="state">Handshake</span><span class="arrow">→</span>
-      <span class="state s-ok">Locked &amp; chatting</span><span class="arrow">⇄</span>
+      <span class="state s-ok">Connected &amp; chatting</span><span class="arrow">⇄</span>
       <span class="state s-warn">Reconnecting</span><span class="arrow">→</span>
       <span class="state s-end">Ended &amp; wiped</span>
     </div>
@@ -647,11 +647,11 @@ tr:last-child td { border-bottom: 0; }
     <div class="kicker">10 · FAQ</div>
     <h2 id="faqTitle">Questions people ask</h2>
     <div class="faq">
-      <details><summary>Can I add a third person to a chat?</summary><p>Not into the same room. Each room's keys and safety number belong to one pair, and it locks once both are in. To talk to someone else, use "New room for someone else" in the session panel: it opens a separate private room in a new tab. True group rooms need a bigger protocol (keys and safety numbers for every pair) and aren't built yet.</p></details>
+      <details><summary>Can I add more people to a chat?</summary><p>Yes, up to six people per room. Share the same invite (the host can also let members share it). Each newcomer waits until the host lets them in. Every pair of people then gets its own keys and its own safety number, so messages between two people are encrypted between them only, and the host can't read or fake them unnoticed. The host can remove anyone.</p></details>
       <details><summary>Does it work with a VPN, on mobile data or at work?</summary><p>Yes. If a direct link can't open, Ghost Chat uses the relay over an ordinary HTTPS WebSocket on port 443, which those networks allow. The relay only sees sealed bytes.</p></details>
       <details><summary>Are my messages saved anywhere?</summary><p>No. Not on a server, and not in your browser: there are no cookies, no localStorage, no IndexedDB. Close the tab and they're gone on your side.</p></details>
       <details><summary>Can the other person see my IP address?</summary><p>On a direct link, yes, as with any peer-to-peer call. Choose Maximum privacy before connecting to go through the relay instead; then only the relay sees it.</p></details>
-      <details><summary>What can I do with a message after sending it?</summary><p>Edit it (the other side sees it marked "edited"), delete it for both of you, or delete it only from your screen. Only the author can edit or delete for both; the other browser checks that.</p></details>
+      <details><summary>What can I do with a message after sending it?</summary><p>Edit it (the other side sees it marked "edited"), delete it for everyone, or delete it only from your screen. "Unsend all mine" removes everything you sent from every screen, and the host can clear the whole chat for everyone. Only the author can edit or unsend a message; the other browsers check that.</p></details>
       <details><summary>How do I know the page itself wasn't tampered with?</summary><p>You're trusting whoever serves the page, as with any web app. The build prints a SHA-256 of the single-file version; you can rebuild it from the source and compare, or host that file yourself.</p></details>
     </div>
   </section>
@@ -707,7 +707,7 @@ tr:last-child td { border-bottom: 0; }
         ['Host opens a room', 'Your browser registers the room name with the introduction server and keeps a door open on the relay.'],
         ['Joiner tries direct', 'WebRTC asks STUN servers for each side\'s public address and opens a peer-to-peer pipe.'],
         ['Handshake', 'Three messages trade fresh keys and prove both sides hold the code.'],
-        ['Locked', 'The room accepts no one else. Messages flow directly between you.'],
+        ['Connected', 'Anyone else needs the host\'s approval. Messages flow directly between you.'],
       ],
     },
     vpn: {
@@ -717,7 +717,7 @@ tr:last-child td { border-bottom: 0; }
         ['Direct attempt stalls', 'The VPN or carrier network hides a usable address, so no peer-to-peer path opens.'],
         ['Relay dialled', 'A WebSocket on port 443, the same as any website, so it gets through.'],
         ['Same handshake', 'The relay forwards the three handshake messages it can\'t read or fake.'],
-        ['Locked', 'Messages flow through the relay, sealed end to end. It sees sizes and timing, never content.'],
+        ['Connected', 'Messages flow through the relay, sealed end to end. It sees sizes and timing, never content.'],
       ],
     },
     max: {
@@ -727,7 +727,7 @@ tr:last-child td { border-bottom: 0; }
         ['No direct attempt', 'WebRTC is never asked for your address, so it never reaches the other person.'],
         ['Relay only', 'Traffic goes through the relay, with steady 4 KB packets that hide when you type.'],
         ['Same handshake', 'Keys and proofs are identical; only the route differs.'],
-        ['Locked', 'Slower, and about 60 MB an hour, in exchange for hiding your address and your rhythm.'],
+        ['Connected', 'Slower, and about 60 MB an hour, in exchange for hiding your address and your rhythm.'],
       ],
     },
     wrong: {

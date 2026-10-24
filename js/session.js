@@ -50,7 +50,7 @@ const unhex = (s) => Uint8Array.from(s.match(/../g), (h) => parseInt(h, 16));
 export const uid = () => hex(crypto.getRandomValues(new Uint8Array(8)));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-class Emitter {
+export class Emitter {
   constructor() { this._h = new Map(); }
   on(t, f) { if (!this._h.has(t)) this._h.set(t, new Set()); this._h.get(t).add(f); return () => this._h.get(t).delete(f); }
   emit(t, d) { for (const f of this._h.get(t) || []) { try { f(d); } catch (e) { console.error('[ghost] handler', t, e); } } }
@@ -210,8 +210,12 @@ class Link {
  *  ended {reason}                      local | peer-left | lost | resume-failed | expired (host: nobody joined in time)
  */
 export class Session extends Emitter {
-  constructor({ code, role, relayOnly = false, extraIce = [], sameDevice = true }) {
+  constructor({ code, role, relayOnly = false, extraIce = [], sameDevice = true, lobby = false }) {
     super();
+    // Lobby (host only): the room's front door. Every browser that proves the room code becomes
+    // a separate waiting link ('knock') instead of replacing the conversation; Room decides who
+    // gets in. Lobby links never resume: an admitted member moves to its own pair session.
+    this.lobby = !!lobby && role === 'host'; this.lobbyLinks = new Set();
     this.extraIce = extraIce; this.sameDevice = sameDevice;
     const c = P.normalizeCode(code);
     if (!c) throw new Error('Invalid room code');
@@ -404,11 +408,15 @@ export class Session extends Emitter {
     else if (this.peer && !this.peer.destroyed) { try { this.peer.reconnect(); } catch {} }
   }
 
+  /** Lobby: someone was let in, so the code no longer expires (the host can still lock the room). */
+  lobbyUsed() { if (!this.lobby) return; this.everReady = true; clearTimeout(this.expiryTimer); }
+
   /** Host: let one more first-time join in with the room code (e.g. the peer reloaded and lost its keys). */
   unlock() { if (this.role === 'host') this.locked = false; }
 
   /** Host policy, evaluated when a HELLO arrives. Returns copies the handshake may wipe. */
   policy() {
+    if (this.lobby) return { locked: this.locked, secrets: [] };
     const secrets = [];
     if (this.resumeSecret) secrets.push({ secret: this.resumeSecret.slice(), continuity: true });
     for (const c of this.candidates) secrets.push({ secret: c.secret.slice(), continuity: c.continuity });
@@ -423,6 +431,12 @@ export class Session extends Emitter {
   _linkReady(link) {
     if (this.ended) return link.close('ended');
     this.pending.delete(link);
+    if (this.lobby) {
+      link.isLobby = true; link.done.resumeSecret?.fill(0); link.done = { safetyNumber: link.done.safetyNumber };
+      this.lobbyLinks.add(link);
+      this.emit('knock', { link });
+      return;
+    }
     const old = this.active;
     this.active = link;
     if (old && old !== link) {
@@ -462,6 +476,7 @@ export class Session extends Emitter {
   _linkClosed(link, reason) {
     if (link.refused) reason = link.refused;
     this.pending.delete(link);
+    if (link.isLobby) { this.lobbyLinks.delete(link); if (!this.ended) this.emit('knock-gone', { link, reason }); return; }
     if (this.ended) return;
     if (reason === 'alt-unavailable' || reason === 'superseded') {   // no host in this browser or on the relay / lost a race
       if (link.relay && link.conn.nohost) this.relayNoHost = true;
@@ -526,6 +541,10 @@ export class Session extends Emitter {
   }
 
   tick() {
+    for (const w of this.lobbyLinks) {
+      if (Date.now() - w.lastRx > LIMITS.deadAfterMs) w.close('timeout');
+      else w.sendJSON({ t: 'ping', k: 0 }).catch(() => {});
+    }
     const l = this.active;
     if (!l || l.closed || !l.channel) return;
     if (Date.now() - l.lastRx > LIMITS.deadAfterMs) return l.close('timeout');
@@ -606,6 +625,15 @@ export class Session extends Emitter {
 
   // ── inbound ──
   _onFrame(link, kind, payload) {
+    if (link.isLobby) {
+      if (kind !== P.KIND_JSON) return link.close('protocol');
+      let o;
+      try { o = P.decodeJSON(payload); } catch { return link.close('protocol'); }
+      if (o.t === 'ping') link.sendJSON({ t: 'pong', k: o.k }).catch(() => {});
+      else if (o.t === 'bye') link.close('bye');
+      else if (o.t !== 'pong' && o.t !== 'ack' && o.t !== 'bye-key' && o.t !== '_') this.emit('lobby-message', { link, o });
+      return;
+    }
     if (link !== this.active) return;
     if (kind === P.KIND_BIN) return this.onChunk(payload);
     if (kind === P.KIND_FRAG) { const whole = this.onFragment(link, payload); if (whole) this._onFrame(link, P.KIND_JSON, whole); return; }
@@ -817,8 +845,8 @@ export class Session extends Emitter {
     this.byeOut?.fill(0); this.byeIn?.fill(0); this.byeOut = this.byeIn = null;
     for (const c of this.candidates) c.secret.fill(0);
     this.candidates = [];
-    for (const l of [...this.pending, this.active]) if (l) { try { l.close('ended'); } catch {} }
-    this.pending.clear(); this.active = null;
+    for (const l of [...this.pending, ...this.lobbyLinks, this.active]) if (l) { try { l.close('ended'); } catch {} }
+    this.pending.clear(); this.lobbyLinks.clear(); this.active = null;
     try { this.peer?.destroy(); } catch {}
     this.peer = null;
     try { this.hub?.close(); } catch {}

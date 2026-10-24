@@ -23,7 +23,7 @@ This document says exactly what Ghost Chat protects, how, and where its limits a
 ## What it does **not** protect against
 
 - **A compromised device or browser:** malware, malicious extensions, screen capture, someone looking over your shoulder. No app can fix this.
-- **A room code that leaks before your peer joins.** Until the room locks, whoever holds the code can join. Share codes over a channel you trust, with one person, and compare safety numbers when it matters.
+- **A room code that leaks before your peer joins.** The first person to prove the code is let in automatically (that's who the invite was for), so whoever holds a leaked code could get there first. After that, everyone who proves the code waits until the host admits them. Share codes over a channel you trust and compare safety numbers when it matters.
 - **Someone who steals a resumption secret from memory.** A device or memory compromise mid-conversation could let the attacker reconnect as either side later. The stable safety number would not reveal that. The panel's **Live keys** fingerprint shows the keys of the current connection.
 - **Metadata at the signaling server.** The default PeerJS server (`0.peerjs.com`) sees both IP addresses, the 5-character room ID, and when browsers connect. Run your own signaling server, and a VPN or Tor, to reduce this.
 - **That you're connected at all.** Relays and your network see that a conversation exists, between which addresses, and for how long. Constant-rate mode hides the timing and amount of activity, not the session itself.
@@ -116,3 +116,22 @@ git clone https://github.com/w3bcooki3/ghostchat && cd ghostchat && node tools/b
 
 ## Reporting a vulnerability
 Please open a private security advisory on the repository rather than a public issue.
+
+
+## Group rooms (up to 6 people)
+
+A room can hold up to six browsers. It is built from the same two-party protocol, one instance per pair of people, so nothing above changes for any single pair.
+
+**Admission.** The creator's browser (the host) listens on the room code with a *lobby*. Anyone who completes the code-authenticated handshake against the lobby has proved they hold the full code, and gets an encrypted channel to the host, but is not yet in the room. The first such browser is admitted automatically. Every later one waits ("knocks") until the host taps *Let in* or *Deny*; an unanswered knock is turned away after 3 minutes. The lobby refuses new handshakes with `LOCKED` once the room is full. Lobby links never resume.
+
+**Pairs.** On admission the host generates a fresh random 20-character *pair code* for the newcomer and itself, and one for the newcomer and each existing member. Pair codes travel only inside existing end-to-end encrypted channels (the lobby link to the newcomer, and each member's pair session with the host). Each pair then runs an independent session on its own code: its own hybrid handshake, its own ratchet, its own resumption secret and its own **safety number**. Messages, files, receipts and typing between two members are encrypted between those two browsers only; the host's browser never relays or decrypts them.
+
+**What the host could do.** The host chooses every pair code, so a malicious host could try to place itself in the middle of a pair it introduced. It cannot do so silently: the two members' safety number for each other would then differ. Verify each person you share sensitive things with. A host also sees who is in the room, and can remove people.
+
+**Identity.** A message's author is the pair session it arrived on, never a field in the message, so one member cannot pose as another. Only the author can edit or unsend a message. Room-control messages (introductions, settings, removals, "clear for everyone") are accepted only from the host's pair session.
+
+**Removing someone.** The host tells every member to hang up on that person, then hangs up itself. Each member's browser closes its pair with them, so they receive nothing more. A modified client could ignore the instruction; a member who keeps talking to a removed person is choosing to.
+
+**Unsend all / clear for everyone.** These ask the other browsers to delete messages from their screens. An unmodified Ghost Chat honours them. They can't reach copies someone already made (screenshots, copied text, saved files).
+
+**Invites.** The invite is the same room code. By default only the host can see and share it from the session panel; the host can let members share it too. Either way, the host admits each newcomer.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/51UcYAVCDMgBTJSL3dvQcmY+PnXKbGOzweMdOWJZ+Q=' 'sha256-lYG6/h6TINzZ7RRVuaXsxKgp+NomNnDcMgE1cJvjozo='; style-src 'sha256-Y3+rbC1N3cyzfvz6tHlkW8QcelFzN2sbyxizAnuOycY='; font-src data:; img-src blob: data:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com wss://ghostchat-relay.mrsaini281-678.workers.dev; worker-src blob:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/51UcYAVCDMgBTJSL3dvQcmY+PnXKbGOzweMdOWJZ+Q=' 'sha256-s++ef6KVy/zs5OdzwBcS87EjfzgwNS8GwuuoFCwS3qI='; style-src 'sha256-6ptPp1Udvn6aodF90/I1iYX2DIf0evb2Cbh5iCuBmpo='; font-src data:; img-src blob: data:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com wss://ghostchat-relay.mrsaini281-678.workers.dev; worker-src blob:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F1F0EC">
@@ -1430,6 +1430,102 @@ html.dock .panel { background: color-mix(in srgb, var(--ink) 92%, transparent); 
   .hero-word { font-size: clamp(26px, 8.6vw, 38px) !important; letter-spacing: .01em !important; line-height: 1.05 !important; }
 }
 @media (max-width: 640px) and (max-height: 700px) { .hero-word { font-size: clamp(24px, 7.6vw, 32px) !important; } }
+
+/* ── theme names fit their tiles in every text style ── */
+.th { min-width: 0; }
+.th-name { font: 650 11px/1.25 var(--f-ui); letter-spacing: 0; text-transform: none; padding: 0 2px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── quick actions: two-by-two command tiles ── */
+.panel-id { position: relative; }
+.pid-trust { margin-left: auto; flex: none; align-self: flex-start; padding: 4px 9px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--amber) 55%, transparent); color: var(--amber); background: color-mix(in srgb, var(--amber) 9%, transparent); font: 700 10px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.pid-trust::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: currentColor; vertical-align: 1px; }
+.pid-trust.is-verified { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.qa-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.qa { flex-direction: row; align-items: center; gap: 11px; min-height: 58px; padding: 10px 12px; border-radius: 13px; text-align: left; text-transform: none; letter-spacing: 0; font: inherit; transition: border-color .15s, background .15s, transform .1s; }
+.qa:active { transform: scale(.98); }
+.qa[hidden] { display: none; }
+.qa-ico { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--hull-2); border: 1px solid var(--line-2); color: var(--paper); }
+.qa-ico svg { width: 17px; height: 17px; }
+.qa-txt { display: grid; gap: 2px; min-width: 0; }
+.qa-txt b { font: 750 13.5px/1.15 var(--f-ui); color: var(--paper); }
+.qa-txt small { font: 500 11px/1.25 var(--f-ui); color: var(--fog); }
+.qa-row.is-odd > .qa:last-child { grid-column: 1 / -1; }
+.qa:hover { border-color: color-mix(in srgb, var(--paper) 55%, transparent); background: var(--hull-2); }
+.qa-verify .qa-ico { color: var(--amber); border-color: color-mix(in srgb, var(--amber) 45%, transparent); background: color-mix(in srgb, var(--amber) 12%, transparent); }
+.qa-verify.is-done .qa-ico { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.qa-danger { background: var(--hull); border-color: color-mix(in srgb, var(--red) 55%, transparent); color: var(--paper); }
+.qa-danger .qa-ico { background: var(--red); border-color: var(--red); color: var(--red-ink); }
+.qa-danger .qa-txt b { color: var(--red-text); }
+.qa-danger:hover { background: color-mix(in srgb, var(--red) 10%, var(--hull)); border-color: var(--red); }
+.qa:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
+/* ── people ── */
+.people-list { display: grid; gap: 2px; margin-bottom: 4px; }
+.pp-row { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 6px 0; }
+.pp-row + .pp-row { border-top: 1px dashed var(--line-2); }
+.pp-av { flex: none; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: var(--hull-2); border: 1px solid var(--line-2); font-size: 17px; }
+.pp-text { flex: 1; display: grid; gap: 1px; min-width: 0; }
+.pp-text b { font: 700 13.5px/1.2 var(--f-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pp-text small { font: 500 11.5px var(--f-ui); color: var(--fog); }
+.pp-row.is-verified .pp-text small { color: var(--ok); }
+.pp-row.is-knock .pp-text small { color: var(--amber); }
+.pp-tag { margin-left: 6px; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line-2); font: 700 9.5px var(--f-mono); font-style: normal; letter-spacing: .08em; text-transform: uppercase; color: var(--fog); vertical-align: 1px; }
+.pp-btn { flex: none; min-height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line-2); background: none; color: var(--paper); font: 650 11.5px var(--f-ui); }
+.pp-btn:hover { border-color: var(--paper); }
+.pp-btn.is-danger { color: var(--red-text); border-color: color-mix(in srgb, var(--red) 40%, transparent); }
+.pp-btn.is-primary { background: var(--ecto); border-color: var(--ecto); color: var(--ecto-ink); }
+#canInviteRow { border-top: 1px dashed var(--line-2); margin-top: 6px; }
+
+/* ── someone wants to join (in the conversation) ── */
+.knock-card { align-self: center; width: min(460px, 100%); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 12px; align-items: center; margin: 8px 0; padding: 12px 14px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--amber) 55%, transparent); background: color-mix(in srgb, var(--amber) 8%, var(--hull)); }
+.kn-av { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 11px; background: var(--hull-2); font-size: 22px; }
+.kn-text { display: grid; gap: 2px; }
+.kn-text b { font: 750 14px var(--f-ui); }
+.kn-text small { font: 500 12px/1.35 var(--f-ui); color: var(--fog); }
+.kn-acts { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ── safety number per person ── */
+.sn-pick { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.sn-who { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px 0 6px; border-radius: 999px; border: 1px solid var(--line-2); background: var(--hull-2); color: var(--paper); font: 650 12px var(--f-ui); }
+.sn-who b { font-weight: 650; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sn-who[aria-checked="true"] { border-color: var(--paper); box-shadow: inset 0 0 0 1px var(--paper); }
+.sn-who.is-verified::after { content: '✓'; color: var(--ok); font-weight: 800; }
+.sn-with { margin: 6px 2px 0; font: 600 11.5px var(--f-ui); color: var(--fog); }
+.sn-with:empty { display: none; }
+
+/* ── messages tools ── */
+.msg-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.btn-danger-ghost { color: var(--red-text); border-color: color-mix(in srgb, var(--red) 45%, transparent); }
+.btn-danger-ghost:hover { background: color-mix(in srgb, var(--red) 10%, transparent); }
+.h3-sub { margin-top: 16px !important; }
+.sheet-h3 { margin: 18px 0 8px; font: 600 10.5px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--fog); }
+.type-seg { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.type-seg button { text-transform: none; letter-spacing: 0; font-family: var(--f-ui); font-size: 12px; }
+.type-seg button[data-ty="terminal"] { font-family: 'Doto', var(--f-mono); font-weight: 900; font-size: 12.5px; }
+.type-seg button[data-ty="mono"] { font-family: 'JetBrains Mono', monospace; }
+.type-seg button[data-ty="clean"] { font-family: 'Manrope', sans-serif; font-weight: 700; }
+
+/* ── invite sheet ── */
+.inv-code { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 14px; padding: 12px 8px 12px 14px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--hull-2); font: 600 15px var(--f-mono); letter-spacing: .06em; overflow-wrap: anywhere; }
+.inv-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.inv-qr { margin: 14px auto 0; }
+
+/* ── text styles: Terminal (dot-matrix + mono labels) is the default ── */
+html[data-type="clean"] { --f-display: 'Manrope', system-ui, sans-serif; }
+html[data-type="clean"] :is(.sys, .link-state, .btn-sm, .typing, .pid-sub, .pb-lbl, .seg button, .toast, .file-act, .panel-head h2, .panel-sec h3, .sheet-h3, .tb-action, .route-chip, .kv, .kv dt, .meta, .status-pill, .wm-by, .pid-trust, .pp-tag, .bubble .edited, .file-sub, #input) {
+  font-family: var(--f-ui); letter-spacing: .02em;
+}
+html[data-type="clean"] :is(.panel-head h2, .panel-sec h3, .sheet-h3, .kv dt, .wm-by) { letter-spacing: .08em; }
+html[data-type="clean"] :is(.peer-name, .pid-name, .brand, .headline, .hero-word, .wm-word) { letter-spacing: -.01em !important; }
+html[data-type="clean"] :is(.peer-name, .pid-name) { text-transform: none; font-weight: 800; }
+html[data-type="clean"] :is(.safety-number, .sn-card-grid, .code-group, .code-sep) { font-family: var(--f-mono) !important; font-weight: 500 !important; letter-spacing: .04em; }
+html[data-type="clean"] .panel-sec h3::before { content: none; }
+html[data-type="clean"] .composer-field::before { content: none; }
+html[data-type="clean"] #input { padding-left: 2px; font-size: 15px; }
+html[data-type="mono"] { --f-ui: 'JetBrains Mono', ui-monospace, monospace; --f-display: 'JetBrains Mono', ui-monospace, monospace; }
+html[data-type="mono"] :is(.peer-name, .pid-name, .brand, .headline, .hero-word, .wm-word, .code-group, .code-sep, .safety-number, .sn-card-grid) { font-weight: 500 !important; letter-spacing: -.01em !important; }
+html[data-type="mono"] :is(.headline, .hero-word) { letter-spacing: -.03em !important; }
+html[data-type="mono"] :is(.qa-txt b, .pp-text b, .kn-text b, .sn-who) { font-weight: 500; }
 </style>
 
 </head>
@@ -1647,23 +1743,32 @@ html.dock .panel { background: color-mix(in srgb, var(--ink) 92%, transparent); 
 
     <div class="panel-id">
       <span id="panelAvatar" class="pid-av" aria-hidden="true">👤</span>
-      <div class="pid-text"><b id="panelName" class="pid-name">Peer</b><small class="pid-sub">Nothing stored on this device</small></div>
+      <div class="pid-text"><b id="panelName" class="pid-name">Peer</b><small id="pidSub" class="pid-sub">Nothing stored on this device</small></div>
+      <span id="pidTrust" class="pid-trust">Not verified</span>
     </div>
     <div class="qa-row">
-      <button id="qaVerify" class="qa qa-warn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Verify</button>
-      <button id="inviteNewBtn" class="qa" type="button" title="Open a separate private room for someone else, in a new tab"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/></svg>Invite</button>
-      <button id="endBtn" class="qa" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>End</button>
-      <button id="panicSheetBtn" class="qa qa-danger" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>Wipe</button>
+      <button id="qaVerify" class="qa qa-verify" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="qa-txt"><b>Verify</b><small id="qaVerifySub">Compare safety numbers</small></span></button>
+      <button id="qaInvite" class="qa" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/></svg></span><span class="qa-txt"><b>Invite</b><small>Link, QR or code</small></span></button>
+      <button id="endBtn" class="qa" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg></span><span class="qa-txt"><b id="qaEndLbl">Leave</b><small id="qaEndSub">Others are told</small></span></button>
+      <button id="panicSheetBtn" class="qa qa-danger" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></svg></span><span class="qa-txt"><b>Wipe</b><small>Instant, no undo</small></span></button>
     </div>
-    <p class="panel-note qa-note">Rooms are for two: Invite opens a separate private room in a new tab. Wipe destroys everything at once, with no confirmation (<kbd>Esc</kbd> three times on a keyboard).</p>
+    <p class="panel-note qa-note">Wipe destroys this tab's copy of everything at once, with no confirmation (<kbd>Esc</kbd> three times on a keyboard). To remove your messages from everyone's screens, use <em>Unsend all</em> below.</p>
+
+    <section class="panel-sec">
+      <h3 id="peoplesTitle">People</h3>
+      <div id="peopleList" class="people-list"></div>
+      <label id="canInviteRow" class="toggle" hidden><input id="optCanInvite" type="checkbox"><span class="toggle-ui" aria-hidden="true"></span><span>Members can invite <em>(off: only you can share the invite; you always decide who comes in)</em></span></label>
+    </section>
 
     <section id="snSec" class="panel-sec sn-sec">
+      <div id="snPick" class="sn-pick" role="radiogroup" aria-label="Whose safety number" hidden></div>
     <div id="trustBadge" class="trust-badge">
       <span class="tb-orb"><i></i><i></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
       <div class="tb-text"><b id="trustTitle">Not verified yet</b><small id="trustSub">Compare the safety number by voice to rule out anyone in the middle.</small></div>
       <button id="markVerified" class="tb-action" type="button" aria-pressed="false">Mark as verified</button>
     </div>
       <div id="safetyNumber" class="safety-number" aria-label="Safety number"></div>
+      <p id="snWith" class="sn-with"></p>
       <p class="panel-note">Compare it with the other person by voice or in person. If it matches, nobody is in the middle. It stays the same across reconnects, because the returning browser has to prove it's the same one.</p>
       <div class="panel-row">
         <button id="copySafety" class="btn btn-ghost btn-sm" type="button">Copy number</button>
@@ -1671,9 +1776,13 @@ html.dock .panel { background: color-mix(in srgb, var(--ink) 92%, transparent); 
     </section>
 
     <section class="panel-sec">
-      <h3>Disappearing messages</h3>
-      <p class="panel-note">Applies to both of you. The countdown starts when a message is delivered (for you) or shown (for them).</p>
+      <h3>Messages</h3>
+      <p class="panel-note">Disappearing messages apply to everyone in the room. The countdown starts when a message is delivered (for you) or shown (for them).</p>
       <div id="timerOptions" class="seg" role="radiogroup" aria-label="Disappearing timer"></div>
+      <div class="msg-tools">
+        <button id="unsendAllBtn" class="btn btn-ghost btn-sm" type="button">Unsend all mine</button>
+        <button id="clearAllBtn" class="btn btn-ghost btn-sm btn-danger-ghost" type="button" hidden>Clear for everyone</button>
+      </div>
     </section>
 
     <section class="panel-sec">
@@ -1688,6 +1797,8 @@ html.dock .panel { background: color-mix(in srgb, var(--ink) 92%, transparent); 
     <section class="panel-sec">
       <h3>Theme</h3>
       <div class="theme-grid" role="radiogroup" aria-label="Colour theme" data-theme-picker></div>
+      <h3 class="h3-sub">Text style</h3>
+      <div class="seg type-seg" role="radiogroup" aria-label="Text style" data-type-picker></div>
     </section>
 
     <section class="panel-sec">
@@ -1697,7 +1808,7 @@ html.dock .panel { background: color-mix(in srgb, var(--ink) 92%, transparent); 
         <dt>Route</dt><dd id="kvRoute">—</dd>
         <dt>Latency</dt><dd id="kvLatency" class="mono">—</dd>
         <dt>Encryption</dt><dd>AES-256-GCM, a new key per message</dd>
-        <dt>Access</dt><dd>Locked to the two of you</dd>
+        <dt>Access</dt><dd id="kvAccess">—</dd>
         <dt>Message keys used</dt><dd id="kvKeys" class="mono">0</dd>
         <dt>Live keys</dt><dd id="kvLive" class="mono">—</dd>
         <dt>Key exchange</dt><dd>ECDH P-384 + ML-KEM-1024 (post-quantum), authenticated by the room code</dd>
@@ -1724,9 +1835,26 @@ html.dock .panel { background: color-mix(in srgb, var(--ink) 92%, transparent); 
 <section id="themeSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="themeTitle" hidden>
   <div class="sheet-grip" aria-hidden="true"></div>
   <h2 id="themeTitle" class="sheet-title">Theme</h2>
-  <p class="sheet-sub">Colours only; everything works the same. Your choice lasts for this tab and isn't saved anywhere.</p>
+  <p class="sheet-sub">Looks only; everything works the same. Your choice lasts for this tab and isn't saved anywhere.</p>
   <div class="theme-grid" role="radiogroup" aria-label="Colour theme" data-theme-picker></div>
+  <h3 class="sheet-h3">Text style</h3>
+  <div class="seg type-seg" role="radiogroup" aria-label="Text style" data-type-picker></div>
   <button class="btn btn-primary btn-xl" type="button" data-close-sheet>Done</button>
+</section>
+
+<section id="inviteSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="invTitle" hidden>
+  <div class="sheet-grip" aria-hidden="true"></div>
+  <h2 id="invTitle" class="sheet-title">Invite to this room</h2>
+  <p id="invNote" class="sheet-sub"></p>
+  <div class="inv-code mono" aria-label="Room code"><span id="invCode"></span><button id="invCopyCode" class="icon-btn icon-sm" type="button" aria-label="Copy the room code"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button></div>
+  <div class="inv-acts">
+    <button id="invCopy" class="btn btn-primary" type="button">Copy invite link</button>
+    <button id="invShare" class="btn btn-ghost" type="button" hidden>Share…</button>
+    <button id="invQrBtn" class="btn btn-ghost" type="button">Show QR</button>
+  </div>
+  <div id="invQr" class="qr-box inv-qr" hidden></div>
+  <p class="help">Send it over something you trust. The link holds the full code after the <span class="mono">#</span>, which never reaches any server.</p>
+  <button class="btn btn-text btn-xl" type="button" data-close-sheet>Done</button>
 </section>
 
 <section id="privSheet" class="sheet privacy" role="dialog" aria-modal="true" aria-labelledby="privTitle" hidden>
@@ -3658,8 +3786,12 @@ class Link {
  *  ended {reason}                      local | peer-left | lost | resume-failed | expired (host: nobody joined in time)
  */
 class Session extends Emitter {
-  constructor({ code, role, relayOnly = false, extraIce = [], sameDevice = true }) {
+  constructor({ code, role, relayOnly = false, extraIce = [], sameDevice = true, lobby = false }) {
     super();
+    // Lobby (host only): the room's front door. Every browser that proves the room code becomes
+    // a separate waiting link ('knock') instead of replacing the conversation; Room decides who
+    // gets in. Lobby links never resume: an admitted member moves to its own pair session.
+    this.lobby = !!lobby && role === 'host'; this.lobbyLinks = new Set();
     this.extraIce = extraIce; this.sameDevice = sameDevice;
     const c = P.normalizeCode(code);
     if (!c) throw new Error('Invalid room code');
@@ -3852,11 +3984,15 @@ class Session extends Emitter {
     else if (this.peer && !this.peer.destroyed) { try { this.peer.reconnect(); } catch {} }
   }
 
+  /** Lobby: someone was let in, so the code no longer expires (the host can still lock the room). */
+  lobbyUsed() { if (!this.lobby) return; this.everReady = true; clearTimeout(this.expiryTimer); }
+
   /** Host: let one more first-time join in with the room code (e.g. the peer reloaded and lost its keys). */
   unlock() { if (this.role === 'host') this.locked = false; }
 
   /** Host policy, evaluated when a HELLO arrives. Returns copies the handshake may wipe. */
   policy() {
+    if (this.lobby) return { locked: this.locked, secrets: [] };
     const secrets = [];
     if (this.resumeSecret) secrets.push({ secret: this.resumeSecret.slice(), continuity: true });
     for (const c of this.candidates) secrets.push({ secret: c.secret.slice(), continuity: c.continuity });
@@ -3871,6 +4007,12 @@ class Session extends Emitter {
   _linkReady(link) {
     if (this.ended) return link.close('ended');
     this.pending.delete(link);
+    if (this.lobby) {
+      link.isLobby = true; link.done.resumeSecret?.fill(0); link.done = { safetyNumber: link.done.safetyNumber };
+      this.lobbyLinks.add(link);
+      this.emit('knock', { link });
+      return;
+    }
     const old = this.active;
     this.active = link;
     if (old && old !== link) {
@@ -3910,6 +4052,7 @@ class Session extends Emitter {
   _linkClosed(link, reason) {
     if (link.refused) reason = link.refused;
     this.pending.delete(link);
+    if (link.isLobby) { this.lobbyLinks.delete(link); if (!this.ended) this.emit('knock-gone', { link, reason }); return; }
     if (this.ended) return;
     if (reason === 'alt-unavailable' || reason === 'superseded') {   // no host in this browser or on the relay / lost a race
       if (link.relay && link.conn.nohost) this.relayNoHost = true;
@@ -3974,6 +4117,10 @@ class Session extends Emitter {
   }
 
   tick() {
+    for (const w of this.lobbyLinks) {
+      if (Date.now() - w.lastRx > LIMITS.deadAfterMs) w.close('timeout');
+      else w.sendJSON({ t: 'ping', k: 0 }).catch(() => {});
+    }
     const l = this.active;
     if (!l || l.closed || !l.channel) return;
     if (Date.now() - l.lastRx > LIMITS.deadAfterMs) return l.close('timeout');
@@ -4054,6 +4201,15 @@ class Session extends Emitter {
 
   // ── inbound ──
   _onFrame(link, kind, payload) {
+    if (link.isLobby) {
+      if (kind !== P.KIND_JSON) return link.close('protocol');
+      let o;
+      try { o = P.decodeJSON(payload); } catch { return link.close('protocol'); }
+      if (o.t === 'ping') link.sendJSON({ t: 'pong', k: o.k }).catch(() => {});
+      else if (o.t === 'bye') link.close('bye');
+      else if (o.t !== 'pong' && o.t !== 'ack' && o.t !== 'bye-key' && o.t !== '_') this.emit('lobby-message', { link, o });
+      return;
+    }
     if (link !== this.active) return;
     if (kind === P.KIND_BIN) return this.onChunk(payload);
     if (kind === P.KIND_FRAG) { const whole = this.onFragment(link, payload); if (whole) this._onFrame(link, P.KIND_JSON, whole); return; }
@@ -4265,8 +4421,8 @@ class Session extends Emitter {
     this.byeOut?.fill(0); this.byeIn?.fill(0); this.byeOut = this.byeIn = null;
     for (const c of this.candidates) c.secret.fill(0);
     this.candidates = [];
-    for (const l of [...this.pending, this.active]) if (l) { try { l.close('ended'); } catch {} }
-    this.pending.clear(); this.active = null;
+    for (const l of [...this.pending, ...this.lobbyLinks, this.active]) if (l) { try { l.close('ended'); } catch {} }
+    this.pending.clear(); this.lobbyLinks.clear(); this.active = null;
     try { this.peer?.destroy(); } catch {}
     this.peer = null;
     try { this.hub?.close(); } catch {}
@@ -4280,7 +4436,417 @@ class Session extends Emitter {
   }
 }
 
-return { iceServersWith, parseTurn, uid, Session };
+return { iceServersWith, parseTurn, uid, Emitter, Session };
+})();
+__mods.room = (() => {
+// Room layer: a conversation between up to MAX_MEMBERS browsers, built from one pairwise
+// end-to-end encrypted Session per pair of people. No DOM access.
+//
+// How people get in:
+//  1. The creator (host) listens on the room code with a lobby Session. A newcomer runs the
+//     normal code-authenticated handshake against it, which proves they hold the full code.
+//  2. The first newcomer is let in straight away (that's who the invite was for). After that
+//     the host admits or denies each one.
+//  3. On admission the host hands out fresh random pair codes, over encrypted channels only:
+//     one for host <-> newcomer, and one for each existing member <-> newcomer. Every pair then
+//     runs its own Session (own keys, own safety number, own reconnection) on its own code.
+//
+// What that gives: messages between two members are encrypted end to end between them; the
+// host's browser never relays or decrypts them. The host does learn each pair code (it's the
+// introducer), so a malicious host could try to sit in the middle of a pair — the two people's
+// safety number for each other would then differ, which is what verifying catches.
+const { Session, Emitter, uid } = __mods.session;
+const { generateCode, normalizeCode } = __mods.protocol;
+
+const MAX_MEMBERS = 6;                 // including yourself
+const ADMIT_TIMEOUT_MS = 3 * 60_000;          // a knock nobody answers is turned away
+const PAIR_RETRIES = 10;                      // a pair's host may register a moment after we dial
+const ID = /^[0-9a-f]{16}$/;
+
+/**
+ * Events (in addition to the ones the app already knows from Session, now carrying `from`):
+ *  state {state}            signaling|waiting|dialing|knocking|ready|reconnecting|alone|failed|ended
+ *  joined {}                the first pair connected: show the conversation
+ *  waiting-admit {host}     joiner: the code was right; the host has to let you in
+ *  denied {reason}          joiner: denied | full | timeout
+ *  knock {kid,name,avatar}  host: someone with the code wants in
+ *  knock-gone {kid}
+ *  member-join {id,isHost}  a pair session was created (connecting)
+ *  member-ready {id, safetyNumber, resumed, continuity, newPeer, first}
+ *  member-state {id, state}
+ *  member-left {id, reason, isHost}
+ *  settings {canInvite}
+ *  kicked {}                the host removed you
+ *  message {from, …}        app messages; `from` is the pair the message arrived on (unforgeable)
+ */
+class Room extends Emitter {
+  constructor({ code, role, relayOnly = false, extraIce = [], sameDevice = true }) {
+    super();
+    const c = normalizeCode(code);
+    if (!c) throw new Error('Invalid room code');
+    this.code = c; this.role = role; this.isHost = role === 'host';
+    this.pairOpts = { relayOnly, extraIce, sameDevice };
+    this.myId = this.isHost ? uid() : null;
+    this.hostId = this.myId;
+    this.members = new Map();        // id → member
+    this.knocks = new Map();         // host: kid → { kid, link, name, avatar, timer }
+    this.canInvite = false;
+    this.joined = false; this.ended = false; this.everAdmitted = false;
+    this.state = 'idle'; this.shaping = false;
+    this.profile = { name: '', avatar: '' };
+    this.outFiles = new Map();       // afid → { size, per: Map<memberId, {fid, done, st}> }
+    this.outFid = new Map();         // `${memberId}:${fid}` → afid
+    this.inFiles = new Map();        // fid → memberId
+    this.lobby = new Session({ code: c, role, relayOnly, extraIce, sameDevice, lobby: this.isHost });
+    this.wireLobby();
+  }
+
+  // ── compatibility with code (and tests) written against a single Session ──
+  get everReady() { return this.joined; }
+  get expiresAt() { return this.lobby?.expiresAt; }
+  get createdAt() { return this.lobby?.createdAt; }
+  get roomKey() { return this.lobby?.roomKey; }
+  get first() { for (const m of this.members.values()) if (m.everReady) return m; return this.members.values().next().value || null; }
+  get active() { const m = [...this.members.values()].find((x) => x.s.active) ; return m ? m.s.active : null; }
+  get safetyNumber() { return this.first?.s.safetyNumber; }
+  get liveSafetyNumber() { return this.first?.s.liveSafetyNumber; }
+  get locked() { return !!this.lobby?.locked; }
+  memberIds() { return [...this.members.keys()]; }
+  readyIds() { return [...this.members.values()].filter((m) => m.ready).map((m) => m.id); }
+  count() { return this.members.size + 1; }
+
+  setState(s) { if (this.state !== s) { this.state = s; this.emit('state', { state: s }); } }
+  recalc() {
+    if (this.ended) return this.setState('ended');
+    if (!this.joined) return;
+    if ([...this.members.values()].some((m) => m.ready)) return this.setState('ready');
+    if (this.members.size) return this.setState('reconnecting');
+    this.setState('alone');
+  }
+
+  async start() { await this.lobby.start(); }
+
+  // ── the lobby: the room code's front door ──
+  wireLobby() {
+    const L = this.lobby;
+    const pre = (ev) => L.on(ev, (d) => { if (!this.joined || ev === 'rejected') this.emit(ev, d); });
+    for (const ev of ['link-open', 'hs-frame', 'signaling-down', 'relay-up', 'rejected']) pre(ev);
+    L.on('wire', (d) => { if (!this.joined) this.emit('wire', d); });
+    L.on('state', ({ state }) => { if (!this.joined && state !== 'ready') this.setState(state); });
+    L.on('failed', (d) => { if (!this.joined && !this.lobbyDone) { this.setState('failed'); this.emit('failed', d); } });
+    L.on('ended', ({ reason }) => {
+      if (this.lobbyDone || this.ended) return;
+      if (!this.joined && !this.members.size) this.destroy(reason === 'peer-left' ? 'host-left' : reason);
+    });
+    if (this.isHost) {
+      L.on('knock', ({ link }) => this.onKnock(link));
+      L.on('lobby-message', ({ link, o }) => this.onLobbyMessage(link, o));
+      L.on('knock-gone', ({ link }) => {
+        const k = link.kid && this.knocks.get(link.kid);
+        if (k && !k.admitted) { clearTimeout(k.timer); this.knocks.delete(k.kid); this.emit('knock-gone', { kid: k.kid }); }
+      });
+    } else {
+      L.on('ready', () => {
+        this.setState('knocking');
+        L.send({ t: 'knock', name: this.profile.name, avatar: this.profile.avatar });
+      });
+      L.on('message', (o) => this.onLobbyReply(o));
+    }
+  }
+
+  // host
+  onKnock(link) {
+    const kid = uid();
+    link.kid = kid;
+    const k = { kid, link, name: '', avatar: '', admitted: false };
+    k.timer = setTimeout(() => this.deny(kid, 'timeout'), ADMIT_TIMEOUT_MS);
+    this.knocks.set(kid, k);
+  }
+  onLobbyMessage(link, o) {
+    const k = link.kid && this.knocks.get(link.kid);
+    if (!k || o.t !== 'knock' || k.announced) return;
+    k.announced = true;
+    k.name = typeof o.name === 'string' ? o.name : ''; k.avatar = typeof o.avatar === 'string' ? o.avatar : '';
+    if (this.count() + this.admitting() >= MAX_MEMBERS) return this.deny(k.kid, 'full');
+    if (!this.everAdmitted) return this.admit(k.kid);   // the person the invite was for
+    link.sendJSON({ t: 'wait', host: this.profile.name }).catch(() => {});
+    this.emit('knock', { kid: k.kid, name: k.name, avatar: k.avatar });
+  }
+  admitting() { return [...this.knocks.values()].filter((k) => k.admitted).length; }
+
+  /** Host: let a waiting person in. */
+  admit(kid) {
+    const k = this.knocks.get(kid);
+    if (!k || k.admitted || this.ended) return false;
+    if (this.members.size + 1 >= MAX_MEMBERS) { this.deny(kid, 'full'); return false; }
+    clearTimeout(k.timer);
+    k.admitted = true;
+    this.everAdmitted = true;
+    this.lobby.lobbyUsed();
+    const id = uid(), code = generateCode();
+    const others = [...this.members.values()];
+    const m = this.addMember(id, { code, role: 'host', isHost: false });
+    m.knockKid = kid;
+    k.link.sendJSON({ t: 'admit', id, host: this.myId, code, canInvite: this.canInvite }).catch(() => {});
+    // Introduce the newcomer to everyone already here: one fresh code per pair. The existing
+    // member hosts (they're already online); the newcomer dials once it's connected to us.
+    for (const o of others) {
+      const pc = generateCode();
+      o.s.send({ t: 'room', op: 'pair', id, code: pc, role: 'host' });
+      m.s.send({ t: 'room', op: 'pair', id: o.id, code: pc, role: 'joiner' });
+    }
+    this.syncLock();
+    return true;
+  }
+  /** Host: turn someone away. */
+  deny(kid, reason = 'denied') {
+    const k = this.knocks.get(kid);
+    if (!k || k.admitted) return;
+    clearTimeout(k.timer);
+    this.knocks.delete(kid);
+    k.link.sendJSON({ t: 'deny', reason }).catch(() => {});
+    setTimeout(() => k.link.close('denied'), 400);
+    this.emit('knock-gone', { kid, reason });
+  }
+  /** Host: remove someone from the room. Everyone else hangs up on them too. */
+  remove(id) {
+    const m = this.members.get(id);
+    if (!this.isHost || !m) return;
+    for (const o of this.members.values()) if (o !== m) o.s.send({ t: 'room', op: 'remove', id });
+    m.s.sendVolatile({ t: 'room', op: 'kicked' });
+    this.dropMember(id, 'removed', true);
+  }
+  setCanInvite(on) {
+    if (!this.isHost) return;
+    this.canInvite = !!on;
+    for (const m of this.members.values()) m.s.send({ t: 'room', op: 'settings', canInvite: this.canInvite });
+    this.emit('settings', { canInvite: this.canInvite });
+  }
+  syncLock() { if (this.isHost && this.lobby) this.lobby.locked = this.members.size + 1 >= MAX_MEMBERS; }
+
+  // joiner
+  onLobbyReply(o) {
+    if (this.joined && this.lobbyDone) return;
+    if (o.t === 'wait') { this.setState('knocking'); this.emit('waiting-admit', { host: typeof o.host === 'string' ? o.host : '' }); return; }
+    if (o.t === 'deny') { this.emit('denied', { reason: ['full', 'timeout'].includes(o.reason) ? o.reason : 'denied' }); this.destroy('denied'); return; }
+    if (o.t === 'admit') {
+      if (this.myId || !ID.test(o.id) || !ID.test(o.host) || !normalizeCode(o.code)) return;
+      this.myId = o.id; this.hostId = o.host; this.canInvite = o.canInvite === true;
+      this.setState('dialing');
+      this.addMember(o.host, { code: o.code, role: 'joiner', isHost: true });
+    }
+  }
+
+  // ── pairs ──
+  addMember(id, { code, role, isHost }) {
+    const s = new Session({ code, role, ...this.pairOpts });
+    const m = { id, s, role, isHost, ready: false, everReady: false, attempts: 0 };
+    this.members.set(id, m);
+    if (this.shaping) s.setShaping(true);
+    s.on('ready', (d) => {
+      if (this.members.get(id) !== m) return;
+      m.ready = true;
+      const first = !this.joined;
+      m.everReady = true;
+      if (first) this.joined = true;
+      this.recalc();
+      // Joiner: connected to the host, so the lobby link has done its job.
+      if (!this.isHost && isHost) this.closeLobby();
+      if (this.isHost && m.knockKid) { const k = this.knocks.get(m.knockKid); if (k) { this.knocks.delete(m.knockKid); setTimeout(() => k.link.close('admitted'), 300); } m.knockKid = null; }
+      if (first) this.emit('joined', {});
+      this.emit('member-ready', { id, ...d, first });
+    });
+    s.on('state', ({ state }) => {
+      if (this.members.get(id) !== m) return;
+      if (state === 'reconnecting') m.ready = false;
+      this.emit('member-state', { id, state });
+      this.recalc();
+    });
+    s.on('failed', ({ code: f }) => {
+      if (this.members.get(id) !== m || this.ended) return;
+      // The other side may not have registered yet, or the network needs another go.
+      if (role === 'joiner' && !m.everReady && m.attempts++ < PAIR_RETRIES && f !== 'auth-failed' && f !== 'unsupported') {
+        setTimeout(() => { if (this.members.get(id) === m && !s.ended) s.retry(); }, 900 + m.attempts * 400);
+        return;
+      }
+      // Joiner who never reached the host: say why and keep the pair for "Try again".
+      if (!this.joined && isHost) { m.attempts = 0; this.setState('failed'); this.emit('failed', { code: f }); return; }
+      this.dropMember(id, 'failed', true);
+    });
+    s.on('ended', ({ reason }) => { if (this.members.get(id) === m) this.dropMember(id, reason, false); });
+    s.on('message', (o) => this.onPairMessage(m, o));
+    s.on('delivered', ({ mid }) => this.emit('delivered', { mid, from: id }));
+    s.on('latency', (d) => this.emit('latency', { ...d, from: id }));
+    s.on('wire', (d) => this.emit('wire', d));
+    s.on('rejected', (d) => this.emit('rejected', { ...d, pair: true }));
+    s.on('file-in', (d) => { this.inFiles.set(d.fid, id); this.emit('file-in', { ...d, from: id }); });
+    s.on('file-received', (d) => { this.inFiles.delete(d.fid); this.emit('file-received', { ...d, from: id }); });
+    s.on('file-progress', (d) => (d.dir === 'out' ? this.outProgress(id, d) : this.emit('file-progress', { ...d, from: id })));
+    s.on('file-sent', ({ fid }) => this.outSettled(id, fid, 'sent'));
+    s.on('file-failed', (d) => {
+      if (d.dir === 'out') return this.outSettled(id, d.fid, 'failed', d.reason);
+      this.inFiles.delete(d.fid);
+      this.emit('file-failed', { ...d, from: id });
+    });
+    this.emit('member-join', { id, isHost });
+    s.start().catch((e) => { console.warn('[ghost] pair start', e); this.dropMember(id, 'failed', true); });
+    this.syncLock();
+    return m;
+  }
+
+  dropMember(id, reason, destroy) {
+    const m = this.members.get(id);
+    if (!m) return;
+    this.members.delete(id);
+    if (destroy && !m.s.ended) { m.s._h?.clear?.(); if (reason === 'removed' || reason === 'local') m.s.end(); else m.s.destroy('local'); }
+    for (const [afid, j] of this.outFiles) if (j.per.has(id) && j.per.get(id).st === 'sending') this.outSettled(id, j.per.get(id).fid, 'failed', 'they left');
+    for (const [fid, from] of this.inFiles) if (from === id) { this.inFiles.delete(fid); this.emit('file-failed', { fid, dir: 'in', reason: 'they left', from: id }); }
+    if (m.knockKid) this.knocks.delete(m.knockKid);
+    this.syncLock();
+    if (this.ended || this.leaving) return;
+    if (this.isHost && !this.joined && !this.members.size) this.everAdmitted = false;   // the first invitee never arrived
+    this.emit('member-left', { id, reason, isHost: m.isHost, wasReady: m.everReady });
+    if (!this.joined) {
+      // Joiner never got through to the host: nothing to stay for.
+      if (!this.isHost && m.isHost) this.destroy(reason === 'peer-left' ? 'host-left' : 'lost');
+      return;
+    }
+    // A member with nobody left can't do anything; the host stays so others can still ask in.
+    if (!this.isHost && !this.members.size) return this.destroy(reason === 'removed' ? 'kicked' : 'peer-left');
+    this.recalc();
+  }
+
+  closeLobby() {
+    if (this.lobbyDone) return;
+    this.lobbyDone = true;
+    const L = this.lobby;
+    this.lobby = null;
+    try { L._h.clear(); L.destroy('local'); } catch {}
+  }
+
+  onPairMessage(m, o) {
+    if (o.t === 'room') {
+      if (!m.isHost || this.isHost) return;          // only the host directs the room
+      switch (o.op) {
+        case 'pair': {
+          const code = normalizeCode(o.code);
+          if (!ID.test(o.id) || !code || (o.role !== 'host' && o.role !== 'joiner')) return;
+          if (o.id === this.myId || this.members.has(o.id) || this.members.size + 1 >= MAX_MEMBERS) return;
+          this.addMember(o.id, { code, role: o.role, isHost: false });
+          return;
+        }
+        case 'settings':
+          this.canInvite = o.canInvite === true;
+          this.emit('settings', { canInvite: this.canInvite });
+          return;
+        case 'remove':
+          if (ID.test(o.id) && this.members.has(o.id)) this.dropMember(o.id, 'removed', true);
+          return;
+        case 'kicked':
+          this.emit('kicked', {});
+          this.destroy('kicked');
+          return;
+        case 'end':
+          this.destroy('room-ended');
+          return;
+      }
+      return;
+    }
+    this.emit('message', { ...o, from: m.id });
+  }
+
+  // ── outbound: one copy per pair ──
+  /** Reliable: each pair queues it while disconnected. Returns the message id. */
+  send(obj) {
+    const mid = obj.mid || uid();
+    for (const m of this.members.values()) m.s.send({ ...obj, mid });
+    return mid;
+  }
+  sendTo(id, obj) { return this.members.get(id)?.s.send(obj); }
+  sendVolatile(obj) { for (const m of this.members.values()) m.s.sendVolatile(obj); }
+  isQueued(mid) { return [...this.members.values()].some((m) => m.s.isQueued(mid)); }
+  setShaping(on) { this.shaping = !!on; for (const m of this.members.values()) m.s.setShaping(on); }
+  async getRoute(id) {
+    const m = id ? this.members.get(id) : [...this.members.values()].find((x) => x.ready);
+    return m ? m.s.getRoute() : null;
+  }
+  extendInvite(ms) { return this.lobby?.extendInvite(ms); }
+  retry() {
+    const host = !this.isHost && this.hostId && this.members.get(this.hostId);
+    if (host && !host.everReady) { this.setState('dialing'); host.s.retry(); return; }
+    if (this.lobby && !this.joined) this.lobby.retry();
+  }
+
+  // files
+  sendFile(file, meta = {}) {
+    const ready = [...this.members.values()].filter((m) => m.s.state === 'ready');
+    if (!ready.length) throw new Error('not connected');
+    const afid = uid();
+    const job = { size: file.size, per: new Map() };
+    this.outFiles.set(afid, job);
+    for (const m of ready) {
+      const fid = m.s.sendFile(file, meta);
+      job.per.set(m.id, { fid, done: 0, st: 'sending' });
+      this.outFid.set(m.id + ':' + fid, afid);
+    }
+    return afid;
+  }
+  cancelFile(id) {
+    const job = this.outFiles.get(id);
+    if (job) { for (const [mid, p] of job.per) this.members.get(mid)?.s.cancelFile(p.fid); return; }
+    const from = this.inFiles.get(id);
+    if (from) this.members.get(from)?.s.cancelFile(id);
+  }
+  outProgress(memberId, { fid, done, size }) {
+    const afid = this.outFid.get(memberId + ':' + fid);
+    const job = afid && this.outFiles.get(afid);
+    if (!job) return;
+    job.per.get(memberId).done = done;
+    const live = [...job.per.values()].filter((p) => p.st !== 'failed');
+    const avg = live.length ? live.reduce((a, p) => a + p.done, 0) / live.length : 0;
+    this.emit('file-progress', { fid: afid, dir: 'out', done: Math.round(avg), size });
+  }
+  outSettled(memberId, fid, st, reason) {
+    const key = memberId + ':' + fid;
+    const afid = this.outFid.get(key);
+    const job = afid && this.outFiles.get(afid);
+    if (!job) return;
+    const p = job.per.get(memberId);
+    if (!p || p.st !== 'sending') return;
+    p.st = st; p.reason = reason;
+    this.outFid.delete(key);
+    const all = [...job.per.values()];
+    if (all.some((x) => x.st === 'sending')) return;
+    this.outFiles.delete(afid);
+    const sent = all.filter((x) => x.st === 'sent').length;
+    if (sent) this.emit('file-sent', { fid: afid, sent, total: all.length });
+    else this.emit('file-failed', { fid: afid, dir: 'out', reason: all.find((x) => x.reason)?.reason || 'failed' });
+  }
+
+  // ── teardown ──
+  quickBye() { for (const m of this.members.values()) m.s.quickBye(); }
+  /** Leave. The host can end the room for everyone instead. */
+  async end({ forAll = false } = {}) {
+    if (this.ended) return;
+    this.leaving = true;
+    if (forAll && this.isHost) for (const m of this.members.values()) m.s.send({ t: 'room', op: 'end' });
+    await Promise.all([...this.members.values()].map((m) => m.s.end().catch(() => {})));
+    this.destroy('local');
+  }
+  destroy(reason) {
+    if (this.ended) return;
+    this.ended = true;
+    for (const k of this.knocks.values()) clearTimeout(k.timer);
+    this.knocks.clear();
+    try { this.lobby?.destroy('local'); } catch {}
+    for (const m of this.members.values()) { try { m.s.destroy('local'); } catch {} }
+    this.members.clear(); this.outFiles.clear(); this.outFid.clear(); this.inFiles.clear();
+    this.setState('ended');
+    this.emit('ended', { reason });
+  }
+}
+
+return { MAX_MEMBERS, Room };
 })();
 __mods.netcheck = (() => {
 // Network check: what can WebRTC on this network actually do? Gathers ICE candidates against
@@ -4851,7 +5417,8 @@ __mods.app = (() => {
 // All peer-supplied strings reach the DOM through textContent / attribute
 // setters only; nothing from the network is ever parsed as HTML.
 const { generateCode, normalizeCode, roomIdFromCode } = __mods.protocol;
-const { Session, uid, iceServersWith, parseTurn } = __mods.session;
+const { uid, iceServersWith, parseTurn } = __mods.session;
+const { Room, MAX_MEMBERS } = __mods.room;
 const { checkNetwork, explain } = __mods.netcheck;
 const { LIMITS } = __mods.config;
 const { scramble, scrambleOverlay, loopScramble, cycleText, followEyes, EtherLine, renderQR, flash, wait, reducedMotion } = __mods.fx;
@@ -4875,29 +5442,43 @@ const GROUP_GAP_MS = 3 * 60_000;
 
 // ───────────────────────────── state ─────────────────────────────
 const me = { name: '', avatar: AVATARS[crypto.getRandomValues(new Uint8Array(1))[0] % AVATARS.length] };
-const them = { name: 'Peer', avatar: '👤' };
-let session = null;
+// Everyone else in the room, by member id. Entries stay after someone leaves (marked gone) so
+// their old messages keep a name.
+const people = new Map();
+let session = null;            // the Room
+let selPerson = null;          // whose safety number the panel shows
 let code = null;
 let role = null;
 let burnSecs = 0;
-let verified = false;
 let replyTo = null;
 let editing = null;           // the message being edited in the composer
 let unread = 0;
 let menuFor = null;
 let lastTypingSent = 0;
 let typingIdle = null;
-let typingHide = null;
 let roomTakenRetries = 0;
 const opts = { receipts: true, typing: true, veil: false, notify: false, shape: false };
 let privacy = 'standard'; // 'standard' | 'max' — chosen on the home screen
 const msgs = new Map(); // id → record
 const objectUrls = new Set();
 // Automation hook, only present when the test server marks the page (never in production builds).
-const testHook = document.documentElement.dataset.test === '1' ? (window.__ghost = { get session() { return session; }, msgs, files: {} }) : null;
+const testHook = document.documentElement.dataset.test === '1' ? (window.__ghost = { get session() { return session; }, msgs, people, files: {} }) : null;
 
 // ───────────────────────────── helpers ─────────────────────────────
 const inviteLink = () => location.href.split('#')[0] + '#' + code;
+
+// ── people ──
+function person(id) {
+  let p = people.get(id);
+  if (!p) { p = { id, name: '', avatar: '👤', verified: false, sn: null, ready: false, gone: false, state: 'connecting' }; people.set(id, p); }
+  return p;
+}
+const isHostId = (id) => !!session && id === session.hostId;
+const nameOf = (id) => people.get(id)?.name || (isHostId(id) ? 'The host' : 'Someone');
+const present = () => [...people.values()].filter((p) => !p.gone);
+const inGroup = () => present().length > 1 || (!!session && session.count() > 2);
+const allVerified = () => { const ps = present().filter((p) => p.sn); return ps.length > 0 && ps.every((p) => p.verified); };
+const canInviteNow = () => !!session && !session.ended && (role === 'host' || session.canInvite);
 
 function show(id) {
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('is-on', s.id === id);
@@ -4912,7 +5493,7 @@ function release(url) { if (url) { URL.revokeObjectURL(url); objectUrls.delete(u
 // ───────────────────────────── home ─────────────────────────────
 
 // ── home motion: decrypting headline, status line, ghosts whose eyes follow you ──
-const homeOn = () => $('home').classList.contains('is-on');
+const homeOn = () => !!$('home')?.classList.contains('is-on');   // false once a panic wipe emptied the page
 loopScramble($('headLine'), 'Say it once.', 9000, homeOn);
 loopScramble($('heroLine'), 'Say it once.', 9000, homeOn);
 cycleText($('statusPill'), ['BROWSER TO BROWSER', 'POST-QUANTUM KEY EXCHANGE', 'NO ACCOUNT · NOTHING STORED', 'THE CODE IS THE ONLY WAY IN'], 3400, homeOn);
@@ -4984,6 +5565,7 @@ const THEMES = [
   ['vault', 'Vault', ['#0A0C10', '#7AA2FF', '#E6E9EF']],
 ];
 let theme = 'auto';
+let typeStyle;
 function applyTheme(t) {
   theme = THEMES.some(([id]) => id === t) ? t : 'auto';
   if (theme === 'auto') delete document.documentElement.dataset.theme;
@@ -4991,6 +5573,29 @@ function applyTheme(t) {
   const chrome = getComputedStyle(document.documentElement).getPropertyValue('--chrome').trim();
   for (const m of document.querySelectorAll('meta[name="theme-color"]')) m.content = chrome;
   for (const b of document.querySelectorAll('[data-theme-picker] button')) b.setAttribute('aria-checked', String(b.dataset.t === theme));
+  applyType(typeStyle);
+}
+// ── text style: separate from colour. Auto picks what suits the theme (dot-matrix for the
+// hacker palettes, clean type for the softer ones). Also lasts for this tab only. ──
+const TYPES = [['auto', 'Auto'], ['terminal', 'Terminal'], ['clean', 'Clean'], ['mono', 'Mono']];
+const THEME_TYPE = { signal: 'terminal', phosphor: 'terminal', graphite: 'terminal', vault: 'mono', aurora: 'clean', daylight: 'clean', ledger: 'clean' };
+typeStyle = 'auto';
+function applyType(t) {
+  typeStyle = TYPES.some(([id]) => id === t) ? t : 'auto';
+  const eff = typeStyle === 'auto' ? THEME_TYPE[theme] || 'terminal' : typeStyle;
+  if (eff === 'terminal') delete document.documentElement.dataset.type; else document.documentElement.dataset.type = eff;
+  for (const b of document.querySelectorAll('[data-type-picker] button')) {
+    b.setAttribute('aria-checked', String(b.dataset.ty === typeStyle));
+    if (b.dataset.ty === 'auto') b.title = 'Matches the theme: ' + eff[0].toUpperCase() + eff.slice(1);
+  }
+}
+for (const grid of document.querySelectorAll('[data-type-picker]')) {
+  for (const [id, label] of TYPES) {
+    const b = h('button', null, label);
+    b.type = 'button'; b.dataset.ty = id; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(id === 'auto'));
+    b.onclick = () => applyType(id);
+    grid.append(b);
+  }
 }
 for (const grid of document.querySelectorAll('[data-theme-picker]')) {
   for (const [id, label, [bg, a, b]] of THEMES) {
@@ -5201,7 +5806,7 @@ const FAIL_TEXT = {
   timeout: 'Found the room, but your browsers couldn\'t open a connection to each other.',
   unsupported: 'This browser lacks WebRTC or Web Crypto support. Use a current version of Firefox, Chrome, Edge or Safari.',
   'room-taken': 'Couldn\'t reserve a room. Try again.',
-  locked: 'This room already has its two people and is locked. A room code can\'t be used again once a conversation has started. Ask for a new invite, or ask the person who created the room to unlock it.',
+  locked: `This room is full (${MAX_MEMBERS} people), so it isn't taking anyone new right now.`,
 };
 
 function startSession(r, c) {
@@ -5221,7 +5826,8 @@ function startSession(r, c) {
   show('connect');
   if (role === 'host') $('copyLinkBtn').focus();
 
-  session = new Session({ code, role, relayOnly: $('relayOnly').checked, extraIce: customRelay ? [customRelay] : [] });
+  session = new Room({ code, role, relayOnly: $('relayOnly').checked, extraIce: customRelay ? [customRelay] : [] });
+  session.profile = { name: me.name, avatar: me.avatar };
   applyPrivacyPreset();
   wire(session);
   session.start().then(() => { if (role === 'host') startExpiryClock(); }).catch((e) => { console.error(e); showConnectError(FAIL_TEXT.unsupported, false); });
@@ -5275,9 +5881,10 @@ $('retryBtn').onclick = () => {
 function wire(s) {
   s.on('state', ({ state }) => {
     if (s !== session) return;
-    if (state === 'waiting') setSteps('peer', 'signal');
-    if (state === 'dialing') setSteps('peer', 'signal');
+    if (state === 'waiting' || state === 'dialing') setSteps('peer', 'signal');
     if (state === 'reconnecting') onReconnecting();
+    if (state === 'ready' && $('chat').classList.contains('is-on')) { hideBanner(); setLink('is-good', 'Encrypted'); enableComposer(); }
+    if (state === 'alone') onAlone();
   });
   s.on('link-open', () => {
     if (s !== session || s.everReady) return;
@@ -5300,70 +5907,194 @@ function wire(s) {
     setSteps('peer', null, relay ? null : 'signal');
   });
   s.on('relay-up', () => { if (s === session && !s.everReady) { $('connectError').hidden = true; setSteps('peer', 'signal'); } });
-  s.on('rejected', ({ count, locked }) => {
-    if (locked) {
-      sys('Someone tried to join this room. It\'s locked to the two of you, so they were refused.', 'is-warn');
-      if (s.state === 'reconnecting') offerUnlock();
-      return;
-    }
+  s.on('rejected', ({ count, locked, pair }) => {
+    if (s !== session || pair) return;
+    if (locked) { sys(`Someone tried to join, but the room is full (${MAX_MEMBERS} people), so they were turned away.`, 'is-warn'); return; }
     const msg = count === 1 ? 'A connection attempt was refused because it couldn\'t prove it had the room code.' : `${count} connection attempts were refused because they couldn't prove they had the room code.`;
     if (!s.everReady) toast(msg, true);
     else sys(msg, 'is-warn');
   });
-  s.on('ready', onReady);
-  s.on('latency', ({ ms }) => {
+  s.on('waiting-admit', ({ host }) => {
+    if (s !== session) return;
+    const who = cleanLabel(host, 24) || 'the host';
+    $('connectTitle').textContent = 'Waiting to be let in';
+    $('peerStepText').textContent = `The code is right. Waiting for ${who} to let you in`;
+    setSteps('peer', 'signal');
+  });
+  s.on('denied', ({ reason }) => {
+    if (s !== session) return;
+    stage.set('failed');
+    setSteps(null, 'signal', 'peer');
+    showConnectError({
+      full: `This room is full (${MAX_MEMBERS} people). Ask the host for a new invite later.`,
+      timeout: 'Nobody let you in within 3 minutes. Ask the host to try again while you wait.',
+    }[reason] || 'The host didn\'t let you in.', false);
+  });
+  s.on('joined', onJoined);
+  s.on('member-join', ({ id }) => { if (s === session) { person(id); renderHead(); } });
+  s.on('member-ready', onMemberReady);
+  s.on('member-state', ({ id, state }) => {
+    if (s !== session) return;
+    const p = person(id);
+    p.state = state; if (state !== 'ready') p.ready = false;
+    renderHead();
+  });
+  s.on('member-left', onMemberLeft);
+  s.on('knock', onKnock);
+  s.on('knock-gone', ({ kid, reason }) => { if (s === session) knockGone(kid, reason); });
+  s.on('settings', ({ canInvite }) => {
+    if (s !== session) return;
+    $('optCanInvite').checked = canInvite;
+    if (role !== 'host' && $('chat').classList.contains('is-on')) sys(canInvite ? 'The host lets everyone invite people. The host still lets each newcomer in.' : 'Only the host can invite people now.');
+    renderHead();
+  });
+  s.on('latency', ({ ms, from }) => {
+    if (selPerson && from !== selPerson) return;
     $('kvLatency').textContent = ms + ' ms';
     setLink(ms < 250 ? 'is-good' : 'is-fair', `${ms} ms`);
   });
-  s.on('delivered', ({ mid }) => {
+  s.on('delivered', ({ mid, from }) => {
     const r = msgs.get(mid);
-    if (r && r.side === 'me') { r.delivered = true; updateStatus(r); if (r.ttl) startBurn(r); }
+    if (r && r.side === 'me') { r.deliveredTo.add(from); r.delivered = true; updateStatus(r); if (r.ttl) startBurn(r); }
   });
   s.on('message', onMessage);
   s.on('file-in', onFileIn);
   s.on('file-progress', onFileProgress);
   s.on('file-received', onFileReceived);
   s.on('file-failed', onFileFailed);
-  s.on('file-sent', ({ fid }) => { const r = msgs.get(fid); if (r) { r.sub.textContent = fmtSize(r.size) + ' · sent'; r.cancelBtn?.remove(); if (r.ttl) startBurn(r); } });
+  s.on('file-sent', ({ fid, sent, total }) => {
+    const r = msgs.get(fid);
+    if (r) { r.sub.textContent = fmtSize(r.size) + (total > 1 ? (sent === total ? ` · sent to all ${total}` : ` · sent to ${sent} of ${total}`) : ' · sent'); r.cancelBtn?.remove(); if (r.ttl) startBurn(r); }
+  });
   s.on('ended', ({ reason }) => onEnded(s, reason));
 }
 
-async function onReady({ safetyNumber, resumed, continuity, newPeer }) {
-  if (!continuity) verified = false;   // a proven resume keeps your verification
-  renderSafety(safetyNumber);
-  // The stable safety number identifies the conversation; the live fingerprint shows the
-  // keys this particular connection negotiated (it changes on every reconnect).
-  $('kvLive').textContent = (session.liveSafetyNumber || '').split(' ').slice(0, 3).join(' ') || '—';
-  session.send({ t: 'profile', name: me.name, avatar: me.avatar });
-  if (opts.shape) session.send({ t: 'shape', on: true });
+/** The first pair connected: open the conversation. */
+async function onJoined() {
+  const s = session;
   stopExpiryClock(); $('expiryRow').hidden = true;
-  if (!resumed) {
-    $('hsThemName').textContent = them.name !== 'Peer' ? them.name : role === 'host' ? 'Them' : 'The room';
-    await stage.seal(session.safetyNumber, () => setSteps(null, 'ready'));
-    if (!session || session.ended) return;
-    show('chat');
-    applyDock();
-    etherOut.clear(); etherIn.clear();
-    $('kvRoom').textContent = roomIdFromCode(code).replace(/^ghostchat-v\d+-/, '').toUpperCase();
-    $('phRoom').textContent = '· ' + $('kvRoom').textContent;
-    sys('End-to-end encrypted with post-quantum protection. Only someone holding the room code could have joined, and the room is now locked to the two of you.', 'is-good');
-    sysSafety(safetyNumber);
-    if (privacy === 'max') sys('Maximum privacy: relayed connection, constant-rate traffic, no typing indicator or read receipts.', 'is-good');
-    if (role === 'host' && burnSecs) session.send({ t: 'timer', secs: burnSecs });
-    $('input').focus();
-  } else {
-    hideBanner();
-    if (newPeer) sys('A new browser joined after you unlocked the room. The safety number changed, so verify it again before sharing anything sensitive.', 'is-warn');
-    else sys('Reconnected with fresh keys. Their browser proved it\'s the same one as before, so the safety number hasn\'t changed.', 'is-good');
-  }
-  $('sendBtn').disabled = !$('input').value.trim();
+  const first = s.first && people.get(s.first.id);
+  $('hsThemName').textContent = first?.name || (role === 'host' ? 'Them' : 'The room');
+  await stage.seal(s.safetyNumber, () => setSteps(null, 'ready'));
+  if (!session || session !== s || s.ended) return;
+  show('chat');
+  applyDock();
+  etherOut.clear(); etherIn.clear();
+  $('kvRoom').textContent = roomIdFromCode(code).replace(/^ghostchat-v\d+-/, '').toUpperCase();
+  $('phRoom').textContent = '· ' + $('kvRoom').textContent;
+  sys(role === 'host'
+    ? 'End-to-end encrypted with post-quantum protection. Only someone holding the room code could have joined, and anyone else who uses it has to wait for you to let them in.'
+    : 'End-to-end encrypted with post-quantum protection. Only someone holding the room code could have joined. Every pair of people in this room has its own keys.', 'is-good');
+  if (s.first) sysSafety(s.first.id);
+  if (privacy === 'max') sys('Maximum privacy: relayed connection, constant-rate traffic, no typing indicator or read receipts.', 'is-good');
+  $('optCanInvite').checked = s.canInvite;
+  enableComposer();
   setLink('is-good', 'Encrypted');
+  renderHead();
+  refreshRoute();
+  $('input').focus();
+}
+
+function onMemberReady({ id, safetyNumber, resumed, continuity, newPeer, first }) {
+  if (!session) return;
+  const p = person(id);
+  const wasReady = p.everReady;
+  p.ready = true; p.state = 'ready'; p.gone = false; p.everReady = true;
+  if (!continuity) p.verified = false;   // a proven resume keeps your verification
+  p.sn = safetyNumber;
+  if (!selPerson || !people.get(selPerson) || people.get(selPerson).gone) selPerson = id;
+  session.sendTo(id, { t: 'profile', name: me.name, avatar: me.avatar });
+  if (opts.shape) session.sendTo(id, { t: 'shape', on: true });
+  if (!resumed && burnSecs && (role === 'host' || !first)) session.sendTo(id, { t: 'timer', secs: burnSecs });
+  if (resumed && wasReady) {
+    if (newPeer) sys(`A new browser took ${nameOf(id)}'s place. The safety number changed, so verify it again before sharing anything sensitive.`, 'is-warn');
+    else sys(present().length > 1 ? `Reconnected to ${nameOf(id)} with fresh keys. Their browser proved it's the same one as before, so the safety number hasn't changed.` : 'Reconnected with fresh keys. Their browser proved it\'s the same one as before, so the safety number hasn\'t changed.', 'is-good');
+  } else if (!first) {
+    // Their name arrives a moment later, with their profile.
+    p.announce = setTimeout(() => announce(p), 1500);
+  }
+  $('kvLive').textContent = (session.members.get(id)?.s.liveSafetyNumber || '').split(' ').slice(0, 3).join(' ') || '—';
+  renderHead(); renderSafety();
   refreshRoute();
   for (const r of msgs.values()) if (r.side === 'me' && !r.delivered) updateStatus(r);
 }
+function announce(p) {
+  if (!p.announce || !session) return;
+  clearTimeout(p.announce); p.announce = null;
+  sys(`${nameOf(p.id)} joined. Your connection with them has its own keys and safety number.`, 'is-good');
+  sysSafety(p.id);
+}
+
+function onMemberLeft({ id, reason, isHost, wasReady }) {
+  if (!session) return;
+  const p = person(id);
+  const name = nameOf(id);
+  p.gone = true; p.ready = false; clearTimeout(p.announce); p.announce = null;
+  typers.delete(id); renderTyping();
+  lastLeft = name;
+  if (session.ended) return;
+  const text = !wasReady ? `Couldn't connect to ${name}.`
+    : reason === 'removed' ? (role === 'host' ? `You removed ${name} from the room.` : `The host removed ${name} from the room.`)
+    : reason === 'peer-left' ? `${name} left.`
+    : reason === 'resume-failed' ? `${name}'s browser couldn't prove it was the same one after reconnecting, so that connection was closed.`
+    : `Lost the connection to ${name}.`;
+  sys(text, reason === 'peer-left' || reason === 'removed' ? '' : 'is-warn');
+  if (isHost && role !== 'host') sys('The host has left, so nobody new can join this room.', 'is-warn');
+  if (selPerson === id) selPerson = present()[0]?.id || null;
+  renderHead(); renderSafety();
+  for (const r of msgs.values()) if (r.side === 'me') updateStatus(r);
+}
+let lastLeft = '';
+
+function onAlone() {
+  if (!$('chat').classList.contains('is-on')) return;
+  setLink('is-down', 'Alone');
+  $('sendBtn').disabled = true; $('attachBtn').disabled = true;
+  showBanner('Everyone else has left. The room is still open: anyone with the code can ask to join, and you decide who comes in.', false, 'Leave');
+}
+function enableComposer() {
+  $('input').disabled = false; $('attachBtn').disabled = false;
+  $('sendBtn').disabled = !$('input').value.trim();
+}
+
+// ── knocks (host): someone with the code wants in ──
+const knockCards = new Map();
+function onKnock({ kid, name, avatar }) {
+  const n = cleanLabel(name, 24) || 'Someone';
+  const av = AVATARS.includes(avatar) ? avatar : '👤';
+  const stick = atBottom();
+  const card = h('div', 'knock-card');
+  card.append(h('span', 'kn-av', av));
+  const txt = h('div', 'kn-text');
+  txt.append(h('b', null, `${n} wants to join`), h('small', null, 'They have the room code. Only let them in if you know who they are.'));
+  const acts = h('div', 'kn-acts');
+  const deny = h('button', 'btn btn-ghost btn-sm', 'Deny'); deny.type = 'button';
+  const ok = h('button', 'btn btn-primary btn-sm', 'Let in'); ok.type = 'button';
+  deny.onclick = () => { session?.deny(kid); };
+  ok.onclick = () => { if (session?.admit(kid)) { knockGone(kid, 'admitted'); sys(`You let ${n} in. Connecting…`); } };
+  acts.append(deny, ok);
+  card.append(txt, acts);
+  $('messages').append(card);
+  knockCards.set(kid, { card, name: n, avatar: av });
+  scrollDown(stick);
+  toast(`${n} wants to join`);
+  notifyIncoming('Someone wants to join');
+  renderPeople();
+}
+function knockGone(kid, reason) {
+  const k = knockCards.get(kid);
+  if (!k) return;
+  knockCards.delete(kid);
+  k.card.remove();
+  if (reason === 'denied') sys(`You turned ${k.name} away.`);
+  else if (reason === 'timeout') sys(`${k.name} wasn't let in within 3 minutes, so they were turned away.`);
+  else if (reason === 'full') sys(`${k.name} couldn't join: the room is full.`);
+  else if (reason !== 'admitted') sys(`${k.name} stopped waiting.`);
+  renderPeople();
+}
 
 async function refreshRoute() {
-  const route = await session?.getRoute();
+  const route = await session?.getRoute(selPerson);
   const label = { direct: 'Direct, peer-to-peer', local: 'Direct, same network', relay: 'Relayed via TURN server', 'relay-ws': 'Via the Ghost Chat relay (end-to-end encrypted)', device: 'Same browser on this device (no network)' }[route] || 'Unknown';
   $('kvRoute').textContent = label;
   const chip = $('routeChip');
@@ -5376,8 +6107,8 @@ function onReconnecting() {
   setLink('is-down', 'Reconnecting');
   showBanner(role === 'joiner'
     ? 'Connection dropped. Reconnecting… Messages you send now are queued and delivered when it\'s back.'
-    : 'Connection dropped. Waiting for the other person to reconnect… Messages you send now are queued.');
-  $('typing').hidden = true;
+    : 'Connection dropped. Waiting for the others to reconnect… Messages you send now are queued.');
+  typers.clear(); renderTyping();
   for (const r of msgs.values()) if (r.side === 'me' && !r.delivered) updateStatus(r);
 }
 
@@ -5389,17 +6120,22 @@ function onEnded(s, reason) {
       stage.set('failed'); setSteps(null, 'signal', 'peer');
       $('keycard').classList.add('is-spent');
       showConnectError(`This code expired: nobody joined within ${fmtSecs(Math.round((s.expiresAt - s.createdAt) / 1000))}. It no longer works, even for someone who has it.`, true, false, 'Get a new code');
-    } else if (reason !== 'local') showConnectError('The session ended.', false);
+    } else if (reason === 'host-left') showConnectError('The person who made this room left before letting you in. Ask them for a new invite.', false);
+    else if (reason !== 'local' && reason !== 'denied' && s.state !== 'failed') showConnectError('The session ended.', false);
     return;
   }
   setLink('is-down', 'Ended');
   $('sendBtn').disabled = true; $('input').disabled = true; $('attachBtn').disabled = true;
-  $('typing').hidden = true;
-  const text = reason === 'peer-left' ? `${them.name} ended the session.`
+  typers.clear(); renderTyping();
+  for (const k of [...knockCards.keys()]) knockGone(k, 'admitted');
+  const text = reason === 'kicked' ? 'The host removed you from this room.'
+    : reason === 'room-ended' ? 'The host ended the session for everyone.'
+    : reason === 'peer-left' ? (lastLeft && !inGroup() ? `${lastLeft} ended the session.` : 'Everyone else has left, so the session ended.')
     : reason === 'resume-failed' ? 'The other side couldn\'t prove it was the same conversation after reconnecting, so the session was closed.'
     : 'The connection couldn\'t be restored.';
   sys(text, 'is-bad');
   showBanner(text + ' Messages stay on screen until you leave.', true, 'Leave');
+  renderHead();
 }
 
 // ───────────────────────────── chat rendering ─────────────────────────────
@@ -5415,31 +6151,12 @@ function showBanner(text, bad = false, actionLabel) {
   if (actionLabel) {
     const btn = h('button', 'btn btn-ghost btn-sm', actionLabel);
     btn.type = 'button'; btn.style.marginLeft = '12px';
-    btn.onclick = () => { teardown(); show('home'); };
+    btn.onclick = async () => { if (session && !session.ended) await session.end(); teardown(); show('home'); };
     b.append(btn);
   }
   b.hidden = false;
 }
 function hideBanner() { $('banner').hidden = true; }
-
-// Host only: someone tried to join while the peer was away. If that's the peer after a reload,
-// they lost the resumption secret and can only come back through a fresh join.
-function offerUnlock() {
-  if (role !== 'host' || !session || session.ended || !session.locked) return;
-  showBanner(`Waiting for ${them.name} to reconnect. If they reloaded the page, their browser can't prove it's them any more.`);
-  const btn = h('button', 'btn btn-ghost btn-sm', 'Unlock room once');
-  btn.type = 'button';
-  btn.onclick = async () => {
-    const ok = await confirmDialog('Unlock the room?',
-      `Only do this if ${them.name} told you, some other way, that they reloaded the page. Anyone holding the room code could take their place. You'll get a new safety number, and you should compare it again.`,
-      'Unlock once');
-    if (!ok || !session || session.ended) return;
-    session.unlock();
-    hideBanner();
-    sys('Room unlocked. The next person with the room code can join; you\'ll see a new safety number to verify.', 'is-warn');
-  };
-  $('banner').append(btn);
-}
 
 function atBottom() { const m = $('messages'); return m.scrollHeight - m.scrollTop - m.clientHeight < 80; }
 function scrollDown(force) { const m = $('messages'); if (force || atBottom()) requestAnimationFrame(() => { m.scrollTop = m.scrollHeight; }); }
@@ -5451,37 +6168,136 @@ function sys(text, cls = '') {
   scrollDown(stick);
   return el;
 }
-function sysSafety(sn) {
+function sysSafety(id) {
+  const p = people.get(id);
+  if (!p?.sn) return;
   const stick = atBottom();
   const card = h('div', 'sn-card');
   const head = h('div', 'sn-card-head');
-  head.append(h('strong', null, 'Safety number'), h('span', null, 'Read it to the other person by voice. If both screens match, nobody is in the middle.'));
+  const group = inGroup();
+  head.append(h('strong', null, group ? `Safety number with ${nameOf(id)}` : 'Safety number'),
+    h('span', null, group ? `Only you and ${nameOf(id)} share this number. Compare it by voice; if it matches, nobody is in the middle.` : 'Read it to the other person by voice. If both screens match, nobody is in the middle.'));
   const grid = h('div', 'sn-card-grid mono');
-  for (const g of sn.split(' ')) grid.append(h('span', null, g));
+  for (const g of p.sn.split(' ')) grid.append(h('span', null, g));
   const btn = h('button', 'btn btn-ghost btn-sm sn-open', 'Compare and verify');
-  btn.type = 'button'; btn.onclick = () => openPanel(true);
+  btn.type = 'button'; btn.onclick = () => { selPerson = id; renderSafety(); openPanel(true); setTimeout(() => { $('snSec').scrollIntoView({ block: 'start' }); $('markVerified').focus({ preventScroll: true }); }, 60); };
   card.append(head, grid, btn);
   $('messages').append(card);
   scrollDown(stick);
 }
 
-function renderSafety(sn) {
+/** The panel's safety number: for the selected person (a picker appears in groups). */
+function renderSafety() {
+  const list = present().filter((p) => p.sn);
+  if (selPerson && !list.some((p) => p.id === selPerson)) selPerson = list[0]?.id || null;
+  const p = selPerson && people.get(selPerson);
+  const pick = $('snPick');
+  pick.replaceChildren();
+  pick.hidden = list.length < 2;
+  for (const q of list) {
+    const b = h('button', 'sn-who' + (q.verified ? ' is-verified' : ''));
+    b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(q.id === selPerson));
+    b.append(h('span', null, q.avatar), h('b', null, q.name || '…'));
+    b.onclick = () => { selPerson = q.id; renderSafety(); refreshRoute(); };
+    pick.append(b);
+  }
   const box = $('safetyNumber');
-  box.replaceChildren(...sn.split(' ').map((g) => h('span', null, g)));
-  box.dataset.value = sn;
+  if (!p?.sn) { box.replaceChildren(); delete box.dataset.value; }
+  else { box.replaceChildren(...p.sn.split(' ').map((g) => h('span', null, g))); box.dataset.value = p.sn; }
+  $('snWith').textContent = list.length > 1 && p ? `With ${p.name || 'them'}` : '';
   applyVerified();
 }
 function applyVerified() {
-  $('verifyText').textContent = verified ? 'Verified' : 'Not verified';
-  $('verifyChip').setAttribute('aria-label', verified ? 'Safety number verified' : 'Safety number not verified');
-  $('verifyChip').classList.toggle('is-verified', verified);
-  $('markVerified').setAttribute('aria-pressed', String(verified));
-  $('markVerified').textContent = verified ? 'Verified' : 'Mark as verified';
-  $('safetyNumber').classList.toggle('is-verified', verified);
-  $('trustBadge').classList.toggle('is-verified', verified);
-  $('trustTitle').textContent = verified ? 'Nobody in between' : 'Not verified yet';
-  $('trustSub').textContent = verified ? 'You both confirmed the same safety number.' : 'Compare the safety number by voice to rule out anyone in the middle.';
-  if (verified) flash($('trustBadge'), 'is-pop', 900);
+  const p = selPerson && people.get(selPerson);
+  const v = !!p?.verified;
+  const list = present().filter((q) => q.sn);
+  const nV = list.filter((q) => q.verified).length;
+  const all = allVerified();
+  const label = all ? 'Verified' : list.length > 1 && nV ? `${nV} of ${list.length} verified` : 'Not verified';
+  $('verifyText').textContent = label;
+  $('verifyChip').setAttribute('aria-label', all ? 'Safety numbers verified' : 'Safety number not verified');
+  $('verifyChip').classList.toggle('is-verified', all);
+  $('pidTrust').textContent = label;
+  $('pidTrust').classList.toggle('is-verified', all);
+  $('qaVerify').classList.toggle('is-done', all);
+  $('qaVerifySub').textContent = all ? 'All safety numbers match' : list.length > 1 ? `${list.length - nV} still to compare` : 'Compare safety numbers';
+  $('markVerified').setAttribute('aria-pressed', String(v));
+  $('markVerified').textContent = v ? 'Verified' : 'Mark as verified';
+  $('safetyNumber').classList.toggle('is-verified', v);
+  $('trustBadge').classList.toggle('is-verified', v);
+  const who = list.length > 1 && p ? p.name || 'them' : 'the other person';
+  $('trustTitle').textContent = v ? 'Nobody in between' : 'Not verified yet';
+  $('trustSub').textContent = v ? `You and ${list.length > 1 ? who : 'they'} confirmed the same safety number.` : `Compare the safety number with ${who} by voice to rule out anyone in the middle.`;
+}
+
+/** Header and panel identity: one person, or the group. */
+function renderHead() {
+  const list = present();
+  const names = list.map((p) => p.name || '…');
+  const title = !list.length ? (role === 'host' ? 'Just you' : 'Nobody here')
+    : list.length === 1 ? names[0]
+    : list.length === 2 ? `${names[0]} & ${names[1]}`
+    : `${names[0]}, ${names[1]} +${list.length - 2}`;
+  $('peerName').textContent = title;
+  $('peerAvatar').textContent = list.length === 1 ? list[0].avatar : list.length ? '👥' : '👤';
+  $('panelName').textContent = list.length > 1 ? `${list.length + 1} people` : title;
+  $('panelAvatar').textContent = $('peerAvatar').textContent;
+  $('pidSub').textContent = list.length > 1 ? names.join(' · ') : 'Nothing stored on this device';
+  $('qaInvite').hidden = !canInviteNow();
+  $('qaInvite').parentElement.classList.toggle('is-odd', $('qaInvite').hidden);
+  $('qaEndLbl').textContent = role === 'host' && list.length ? 'End' : 'Leave';
+  $('qaEndSub').textContent = role === 'host' && list.length ? 'For everyone' : 'Others are told';
+  $('peoplesTitle').textContent = `People · ${list.length + 1} of ${MAX_MEMBERS}`;
+  $('canInviteRow').hidden = role !== 'host';
+  $('clearAllBtn').hidden = role !== 'host';
+  $('kvAccess').textContent = role === 'host' ? 'Anyone else with the code waits for you to let them in' : 'Newcomers wait for the host to let them in';
+  for (const n of document.querySelectorAll('.msg-name[data-from]')) n.textContent = nameOf(n.dataset.from);
+  applyVerified();
+  renderPeople();
+  renderTyping();
+}
+
+/** The People section: everyone here, their state, and the host's controls. */
+function renderPeople() {
+  const box = $('peopleList');
+  if (!box) return;
+  box.replaceChildren();
+  const row = (av, name, tag, sub, cls) => {
+    const r = h('div', 'pp-row' + (cls ? ' ' + cls : ''));
+    r.append(h('span', 'pp-av', av));
+    const t = h('div', 'pp-text');
+    const nm = h('b', null, name);
+    if (tag) nm.append(h('em', 'pp-tag', tag));
+    t.append(nm, h('small', null, sub));
+    r.append(t);
+    box.append(r);
+    return r;
+  };
+  row(me.avatar, me.name + ' (you)', role === 'host' ? 'Host' : '', 'This browser', 'is-me');
+  for (const p of present()) {
+    const sub = !p.ready ? (p.state === 'reconnecting' ? 'Reconnecting…' : 'Connecting…') : p.verified ? 'Verified' : 'Not verified';
+    const r = row(p.avatar, p.name || '…', isHostId(p.id) ? 'Host' : '', sub, p.verified ? 'is-verified' : '');
+    if (p.sn) {
+      const b = h('button', 'pp-btn', 'Safety no.'); b.type = 'button';
+      b.onclick = () => { selPerson = p.id; renderSafety(); refreshRoute(); $('snSec').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); };
+      r.append(b);
+    }
+    if (role === 'host') {
+      const b = h('button', 'pp-btn is-danger', 'Remove'); b.type = 'button';
+      b.onclick = async () => {
+        if (!(await confirmDialog(`Remove ${p.name || 'them'}?`, 'Everyone disconnects from them at once. They can only come back if they ask again with the code and you let them in.', 'Remove', { danger: true }))) return;
+        session?.remove(p.id);
+      };
+      r.append(b);
+    }
+  }
+  for (const [kid, k] of knockCards) {
+    const r = row(k.avatar, k.name, '', 'Waiting to be let in', 'is-knock');
+    const no = h('button', 'pp-btn', 'Deny'); no.type = 'button'; no.onclick = () => session?.deny(kid);
+    const yes = h('button', 'pp-btn is-primary', 'Let in'); yes.type = 'button';
+    yes.onclick = () => { if (session?.admit(kid)) { knockGone(kid, 'admitted'); sys(`You let ${k.name} in. Connecting…`); } };
+    r.append(no, yes);
+  }
 }
 
 // ───────────────────────────── ether line: live ciphertext ─────────────────────────────
@@ -5497,8 +6313,10 @@ function onWire(dir, bytes) {
   if (ch) $('kvKeys').textContent = String(ch.tx.n + ch.rx.n);
 }
 $('markVerified').onclick = () => {
-  verified = !verified; applyVerified();
-  if (verified) sys('You marked the safety number as verified.', 'is-good');
+  const p = selPerson && people.get(selPerson);
+  if (!p?.sn) return;
+  p.verified = !p.verified; renderSafety(); renderPeople();
+  if (p.verified) { sys(inGroup() ? `You marked your safety number with ${nameOf(p.id)} as verified.` : 'You marked the safety number as verified.', 'is-good'); flash($('trustBadge'), 'is-pop', 900); }
 };
 $('copySafety').onclick = () => copy($('safetyNumber').dataset.value || '', 'Safety number');
 $('verifyChip').onclick = () => openPanel(true);
@@ -5544,7 +6362,8 @@ const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|\p{Emoji_Component}|‍|️|\s
 function newRecord(id, side, ts, extra = {}) {
   const el = h('div', 'msg ' + side + ' arrive');
   el.dataset.id = id;
-  const r = { id, side, ts, el, reacts: { me: null, them: null }, delivered: side !== 'me', read: false, seen: false, ttl: 0, burnAt: 0, urls: [], ...extra };
+  const r = { id, side, ts, el, reacts: new Map(), delivered: side !== 'me', read: false, seen: false, ttl: 0, burnAt: 0, urls: [],
+    from: null, to: new Set(side === 'me' && session ? session.memberIds() : []), deliveredTo: new Set(), readBy: new Set(), ...extra };
   msgs.set(id, r);
   // A flooding peer can't grow the page without bound: the oldest messages drop off.
   if (msgs.size > MAX_RECORDS) { const oldest = msgs.values().next().value; if (oldest && oldest !== r) removeRecord(oldest, false); }
@@ -5555,10 +6374,10 @@ const MAX_RECORDS = 2000;
 function placeRecord(r, body) {
   const prev = [...$('messages').children].reverse().find((n) => n.classList.contains('msg') || n.classList.contains('sys'));
   const prevRec = prev && prev.classList.contains('msg') ? msgs.get(prev.dataset.id) : null;
-  const grouped = prevRec && prevRec.side === r.side && r.ts - prevRec.ts < GROUP_GAP_MS;
+  const grouped = prevRec && prevRec.side === r.side && prevRec.from === r.from && r.ts - prevRec.ts < GROUP_GAP_MS;
   if (grouped) prevRec.el.classList.remove('last'); else r.el.classList.add('first');
   r.el.classList.add('last');
-  if (!grouped && r.side === 'them') r.el.append(h('div', 'msg-name', them.name));
+  if (!grouped && r.side === 'them') r.el.append(nameTag(r.from));
   r.el.append(body);
   // A visible way into the actions (edit, delete, reply…) for mouse users; touch uses long-press.
   const more = h('button', 'msg-more');
@@ -5583,25 +6402,30 @@ function placeRecord(r, body) {
   if (r.side === 'them') markSeenSoon();
 }
 
+function nameTag(from) {
+  const n = h('div', 'msg-name', nameOf(from));
+  if (from) n.dataset.from = from;
+  return n;
+}
 function regroup() {
   let prev = null;
   for (const n of $('messages').children) {
     if (!n.classList.contains('msg')) { if (prev) prev.el.classList.add('last'); prev = null; continue; }
     const r = msgs.get(n.dataset.id);
     if (!r) continue;
-    const grouped = prev && prev.side === r.side && r.ts - prev.ts < GROUP_GAP_MS;
+    const grouped = prev && prev.side === r.side && prev.from === r.from && r.ts - prev.ts < GROUP_GAP_MS;
     r.el.classList.toggle('first', !grouped);
     if (prev) prev.el.classList.toggle('last', !grouped);
     r.el.classList.add('last');
     const nameEl = r.el.querySelector('.msg-name');
-    if (r.side === 'them' && !grouped && !nameEl) r.el.prepend(h('div', 'msg-name', them.name));
+    if (r.side === 'them' && !grouped && !nameEl) r.el.prepend(nameTag(r.from));
     if (grouped && nameEl) nameEl.remove();
     prev = r;
   }
 }
 
-function addText(side, { id, text, ts, ttl = 0, reply = null }) {
-  const r = newRecord(id, side, ts, { kind: 'text', text, ttl });
+function addText(side, { id, text, ts, ttl = 0, reply = null, from = null }) {
+  const r = newRecord(id, side, ts, { kind: 'text', text, ttl, from });
   const bubble = h('div', 'bubble');
   bubble.dir = 'auto';
   bubble.tabIndex = 0;
@@ -5631,7 +6455,7 @@ let lastDecryptAt = 0;
 function quoteFor(mid) {
   const r = msgs.get(mid);
   if (!r) return { mid, name: '', text: 'Message unavailable' };
-  return { mid, name: r.side === 'me' ? 'You' : them.name, text: (r.kind === 'text' ? r.text : r.name).slice(0, 120) };
+  return { mid, name: r.side === 'me' ? 'You' : nameOf(r.from), text: (r.kind === 'text' ? r.text : r.name).slice(0, 120) };
 }
 
 function applyEdit(r, text) {
@@ -5654,23 +6478,32 @@ function jumpTo(mid) {
 
 function updateStatus(r) {
   if (r.side !== 'me' || !r.statusEl || r.kind !== 'text') return;
+  // Counted against the people who were here when it was sent and haven't left since.
+  const live = [...r.to].filter((id) => people.has(id) && !people.get(id).gone);
+  const nRead = live.filter((id) => r.readBy.has(id)).length;
+  const nDel = live.filter((id) => r.deliveredTo.has(id) || r.readBy.has(id)).length;
+  const many = r.to.size > 1;
   let t = 'Sent', cls = 'status';
-  if (r.read) { t = 'Read'; cls += ' is-read'; }
-  else if (r.delivered) t = 'Delivered';
+  if (live.length && nRead === live.length) { t = 'Read'; cls += ' is-read'; }
+  else if (many && nRead) { t = `Read by ${nRead}`; cls += ' is-read'; }
+  else if (live.length && nDel === live.length) t = 'Delivered';
+  else if (many && nDel) t = `Delivered to ${nDel}`;
   else if (!session || session.state !== 'ready') { t = 'Queued'; cls += ' is-queued'; }
+  r.read = live.length > 0 && nRead === live.length;
   r.statusEl.textContent = t;
   r.statusEl.className = cls;
 }
 
 function renderReacts(r) {
   const counts = new Map();
-  for (const who of ['me', 'them']) {
-    const e = r.reacts[who];
-    if (e) { const c = counts.get(e) || { n: 0, mine: false }; c.n++; if (who === 'me') c.mine = true; counts.set(e, c); }
+  for (const [who, e] of r.reacts) {
+    if (who !== 'me' && people.get(who)?.gone) continue;
+    if (e) { const c = counts.get(e) || { n: 0, mine: false, who: [] }; c.n++; c.who.push(who === 'me' ? 'You' : nameOf(who)); if (who === 'me') c.mine = true; counts.set(e, c); }
   }
   r.reactsEl.replaceChildren();
   for (const [e, c] of counts) {
     const chip = h('span', 'react' + (c.mine ? ' mine' : ''), e);
+    chip.title = c.who.join(', ');
     if (c.n > 1) chip.append(h('small', null, String(c.n)));
     r.reactsEl.append(chip);
   }
@@ -5707,7 +6540,7 @@ function setTimer(secs, by) {
   for (const b of $('timerOptions').children) b.setAttribute('aria-checked', String(Number(b.dataset.secs) === secs));
   $('timerBadge').hidden = !secs;
   $('timerBadge').textContent = secs ? '⏱ ' + fmtSecs(secs) : '';
-  const who = by === 'me' ? 'You' : them.name;
+  const who = by === 'me' ? 'You' : nameOf(by);
   sys(secs ? `${who} set messages to disappear after ${fmtSecs(secs)}.` : `${who} turned off disappearing messages.`, secs ? 'is-warn' : '');
 }
 (function buildTimers() {
@@ -5723,15 +6556,16 @@ function setTimer(secs, by) {
 let seenTimer = null;
 function markSeenSoon() { clearTimeout(seenTimer); seenTimer = setTimeout(markSeen, 150); }
 function markSeen() {
-  if (document.hidden || !$('chat').classList.contains('is-on') || !$('veil').hidden) return;
-  const ids = [];
+  if (document.hidden || !$('chat')?.classList.contains('is-on') || !$('veil').hidden) return;
+  const byAuthor = new Map();
   for (const r of msgs.values()) {
     if (r.side !== 'them' || r.seen) continue;
     r.seen = true;
     if (r.ttl) startBurn(r);
-    if (r.kind === 'text') ids.push(r.id);
+    if (r.kind === 'text' && r.from) { if (!byAuthor.has(r.from)) byAuthor.set(r.from, []); byAuthor.get(r.from).push(r.id); }
   }
-  if (ids.length && opts.receipts && session?.state === 'ready') session.send({ t: 'read', ids: ids.slice(0, 200) });
+  // Each author is told only about their own messages.
+  if (opts.receipts && session?.state === 'ready') for (const [id, ids] of byAuthor) session.sendTo(id, { t: 'read', ids: ids.slice(0, 200) });
   unread = 0; updateTitle();
 }
 function updateTitle() { document.title = unread ? `(${unread}) Ghost Chat` : 'Ghost Chat'; }
@@ -5745,26 +6579,26 @@ $('unveilBtn').onclick = () => { $('veil').hidden = true; markSeen(); $('input')
 
 // ───────────────────────────── inbound ─────────────────────────────
 function onMessage(o) {
+  const from = o.from;
+  if (!from || !session) return;
   switch (o.t) {
     case 'profile': {
-      them.name = cleanLabel(o.name, 24) || 'Peer';
-      them.avatar = AVATARS.includes(o.avatar) ? o.avatar : '👤';
-      $('peerName').textContent = them.name;
-      $('peerAvatar').textContent = them.avatar;
-      $('panelName').textContent = them.name; $('panelAvatar').textContent = them.avatar;
-      $('typingText').textContent = `${them.name} is typing`;
-      for (const n of document.querySelectorAll('.msg.them .msg-name')) n.textContent = them.name;
+      const p = person(from);
+      p.name = cleanLabel(o.name, 24) || 'Someone';
+      p.avatar = AVATARS.includes(o.avatar) ? o.avatar : '👤';
+      renderHead(); renderSafety();
+      if (p.announce) announce(p);
       return;
     }
     case 'msg': {
       if (typeof o.text !== 'string' || !o.text || !isMid(o.mid) || msgs.has(o.mid)) return;
       const ttl = Number.isInteger(o.ttl) && o.ttl > 0 && o.ttl <= 86400 ? o.ttl : 0;
-      // Quotes are resolved from our own copy of the conversation; the peer only names the message.
+      // Quotes are resolved from our own copy of the conversation; the sender only names the message.
       const reply = o.reply && isMid(o.reply.mid) ? quoteFor(o.reply.mid) : null;
       const text = cleanText(o.text, LIMITS.maxText);
       if (!text.trim()) return;
-      addText('them', { id: o.mid, text, ts: Date.now(), ttl, reply });
-      $('typing').hidden = true;
+      addText('them', { id: o.mid, text, ts: Date.now(), ttl, reply, from });
+      typers.delete(from); renderTyping();
       notifyIncoming();
       return;
     }
@@ -5772,19 +6606,20 @@ function onMessage(o) {
       if (!Array.isArray(o.ids)) return;
       for (const id of o.ids.slice(0, 200)) {
         const r = msgs.get(id);
-        if (r && r.side === 'me') { r.read = true; r.delivered = true; updateStatus(r); if (r.ttl) startBurn(r); }
+        if (r && r.side === 'me' && r.to.has(from)) { r.readBy.add(from); r.delivered = true; updateStatus(r); if (r.ttl) startBurn(r); }
       }
       return;
     }
     case 'typing':
-      clearTimeout(typingHide);
-      if (o.on === true) { $('typing').hidden = false; typingHide = setTimeout(() => { $('typing').hidden = true; }, 6000); }
-      else $('typing').hidden = true;
+      clearTimeout(typers.get(from));
+      if (o.on === true) typers.set(from, setTimeout(() => { typers.delete(from); renderTyping(); }, 6000));
+      else typers.delete(from);
+      renderTyping();
       return;
     case 'react': {
       const r = msgs.get(o.target);
       if (!r) return;
-      r.reacts.them = REACTIONS.includes(o.emoji) ? o.emoji : null;
+      r.reacts.set(from, REACTIONS.includes(o.emoji) ? o.emoji : null);
       renderReacts(r);
       return;
     }
@@ -5792,7 +6627,7 @@ function onMessage(o) {
       // Only the author can edit, only text, and the new text passes the same checks as a new message.
       if (!isMid(o.target) || typeof o.text !== 'string') return;
       const r = msgs.get(o.target);
-      if (!r || r.side !== 'them' || r.kind !== 'text') return;
+      if (!r || r.side !== 'them' || r.from !== from || r.kind !== 'text') return;
       const text = cleanText(o.text, LIMITS.maxText);
       if (!text.trim() || text === r.text) return;
       applyEdit(r, text);
@@ -5800,27 +6635,56 @@ function onMessage(o) {
     }
     case 'unsend': {
       const r = msgs.get(o.target);
-      if (r && r.side === 'them') { removeRecord(r); sys(`${them.name} unsent a message.`); }
+      if (r && r.side === 'them' && r.from === from) { removeRecord(r); sys(`${nameOf(from)} unsent a message.`); }
+      return;
+    }
+    case 'unsend-all': {
+      let n = 0;
+      for (const r of [...msgs.values()]) if (r.side === 'them' && r.from === from) { removeRecord(r); n++; }
+      sys(`${nameOf(from)} unsent all their messages${n ? '' : ' (there were none here)'}.`);
+      return;
+    }
+    case 'clear-all': {
+      if (!isHostId(from)) return;   // only the host can clear everyone's screens
+      clearAll();
+      sys(`${nameOf(from)} (the host) cleared the chat for everyone.`, 'is-warn');
       return;
     }
     case 'shape': {
       const on = o.on === true;
-      if (on !== opts.shape) setShape(on, 'them');
+      if (on !== opts.shape) setShape(on, from);
       return;
     }
     case 'timer': {
       const secs = Number(o.secs);
-      if (TIMERS.some(([s]) => s === secs) && secs !== burnSecs) setTimer(secs, 'them');
+      if (TIMERS.some(([t]) => t === secs) && secs !== burnSecs) setTimer(secs, from);
       return;
     }
   }
 }
 
-function notifyIncoming() {
+// ── typing: who is typing right now ──
+const typers = new Map();   // member id → hide timer
+function renderTyping() {
+  const ids = [...typers.keys()].filter((id) => people.has(id) && !people.get(id).gone);
+  $('typing').hidden = !ids.length;
+  if (!ids.length) return;
+  const n = ids.map(nameOf);
+  $('typingText').textContent = n.length === 1 ? `${n[0]} is typing` : n.length === 2 ? `${n[0]} and ${n[1]} are typing` : `${n.length} people are typing`;
+}
+
+/** Removes every message and file from this screen (used by "clear for everyone"). */
+function clearAll() {
+  for (const r of [...msgs.values()]) removeRecord(r, false);
+  for (const n of [...$('messages').querySelectorAll('.sys, .sn-card')]) n.remove();
+  clearReply(); clearEdit();
+}
+
+function notifyIncoming(body = 'New message') {
   if (!document.hidden) return;
   unread++; updateTitle();
   if (opts.notify && 'Notification' in window && Notification.permission === 'granted') {
-    try { new Notification('Ghost Chat', { body: 'New message', tag: 'ghostchat', silent: false }); } catch {}
+    try { new Notification('Ghost Chat', { body, tag: 'ghostchat', silent: false }); } catch {}
   }
 }
 
@@ -5854,6 +6718,7 @@ $('sendBtn').onclick = () => { sendText(); input.focus(); };
 function sendText() {
   const text = input.value.replace(/^\s+|\s+$/g, '');
   if (!text || !session || session.ended) return;
+  if (!session.members.size) return toast('Nobody else is in the room right now', true);
   if (text.length > LIMITS.maxText) return toast(`Messages are limited to ${LIMITS.maxText} characters`, true);
   if (editing) {
     const r = editing;
@@ -5875,7 +6740,7 @@ function sendText() {
 function setReply(r) {
   clearEdit();
   const text = r.kind === 'text' ? r.text : r.name;
-  replyTo = { mid: r.id, name: r.side === 'me' ? 'You' : them.name, text: text.slice(0, 120) };
+  replyTo = { mid: r.id, name: r.side === 'me' ? 'You' : nameOf(r.from), text: text.slice(0, 120) };
   $('replyName').textContent = replyTo.name;
   $('replyText').textContent = replyTo.text;
   $('replyBar').hidden = false;
@@ -5915,9 +6780,10 @@ $('editCancel').onclick = () => { clearEdit(); input.focus(); };
   }
 })();
 function toggleReact(r, e) {
-  r.reacts.me = r.reacts.me === e ? null : e;
+  const mine = r.reacts.get('me') === e ? null : e;
+  r.reacts.set('me', mine);
   renderReacts(r);
-  session?.send({ t: 'react', target: r.id, emoji: r.reacts.me });
+  session?.send({ t: 'react', target: r.id, emoji: mine });
 }
 // Phones and small screens get bottom sheets instead of popovers.
 const sheetMode = () => matchMedia('(max-width: 640px), (pointer: coarse)').matches;
@@ -6063,11 +6929,11 @@ function onFileProgress({ fid, done, size }) {
   if (done >= size) setTimeout(() => r.bar?.remove(), 400);
 }
 
-function onFileIn({ fid, name, size, meta }) {
+function onFileIn({ fid, name, size, meta, from }) {
   if (msgs.has(fid)) { session?.cancelFile(fid); return; } // never let a peer overwrite an existing record
   const clean = cleanLabel(name, 255) || 'file';
   const ttl = Number.isInteger(meta?.ttl) && meta.ttl > 0 && meta.ttl <= 86400 ? meta.ttl : 0;
-  const r = newRecord(fid, 'them', Date.now(), { kind: 'file', name: clean, size, ttl });
+  const r = newRecord(fid, 'them', Date.now(), { kind: 'file', name: clean, size, ttl, from });
   const card = fileCard(r, clean, size, `Receiving · ${fmtSize(size)}`);
   const cancel = h('button', 'btn btn-text btn-sm', 'Cancel');
   cancel.type = 'button'; cancel.onclick = () => session?.cancelFile(fid);
@@ -6165,12 +7031,59 @@ function openPanel(force) {
 })();
 $('panelBtn').onclick = () => openPanel();
 $('qaVerify').onclick = () => {
+  // Jump to the first person not yet verified.
+  const next = present().find((p) => p.sn && !p.verified);
+  if (next && next.id !== selPerson) { selPerson = next.id; renderSafety(); }
   $('snSec').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
   $('markVerified').focus({ preventScroll: true });
 };
-$('inviteNewBtn').onclick = () => {
-  const w = window.open(location.pathname + '#new', '_blank', 'noopener');
-  if (!w) toast('Your browser blocked the new tab. Open Ghost Chat in another tab and start a chat there.', true);
+
+// ── invite: same room, same code; the host lets each newcomer in ──
+function openInvite() {
+  if (!canInviteNow()) return toast('Only the host can invite people to this room', true);
+  if (session.count() >= MAX_MEMBERS) return toast(`The room is full (${MAX_MEMBERS} people)`, true);
+  $('invCode').textContent = code;
+  $('invNote').textContent = role === 'host'
+    ? `Anyone who opens it asks to join, and you decide who comes in. Up to ${MAX_MEMBERS} people; ${MAX_MEMBERS - session.count()} more can join.`
+    : `Whoever opens it asks to join, and ${nameOf(session.hostId)} (the host) decides who comes in.`;
+  $('invQr').hidden = true; $('invQr').replaceChildren(); $('invQrBtn').textContent = 'Show QR';
+  openSheet('inviteSheet', $('qaInvite'));
+}
+$('qaInvite').onclick = openInvite;
+$('invCopy').onclick = () => copy(inviteLink(), 'Invite link');
+$('invCopyCode').onclick = () => copy(code, 'Room code');
+$('invShare').hidden = !(navigator.share && matchMedia('(pointer: coarse)').matches);
+$('invShare').onclick = async () => {
+  try { await navigator.share({ title: 'Ghost Chat invite', text: 'Join my private Ghost Chat room:', url: inviteLink() }); }
+  catch (e) { if (e?.name !== 'AbortError') copy(inviteLink(), 'Invite link'); }
+};
+$('invQrBtn').onclick = () => {
+  const box = $('invQr'), open = box.hidden;
+  if (open) { try { renderQR(box, inviteLink()); } catch { return toast('Couldn\'t draw the QR code', true); } }
+  else box.replaceChildren();
+  box.hidden = !open;
+  $('invQrBtn').textContent = open ? 'Hide QR' : 'Show QR';
+};
+$('optCanInvite').onchange = (e) => {
+  session?.setCanInvite(e.target.checked);
+  sys(e.target.checked ? 'Everyone can now share the invite. You still let each newcomer in.' : 'Only you can invite people now.');
+};
+
+// ── unsend all / clear for everyone ──
+$('unsendAllBtn').onclick = async () => {
+  if (!session || session.ended) return;
+  const mine = [...msgs.values()].filter((r) => r.side === 'me');
+  if (!(await confirmDialog('Unsend all your messages?', 'Every message and file you sent is removed from this screen and from everyone else\'s. Someone who already copied or screenshotted something keeps that copy.', 'Unsend all', { danger: true }))) return;
+  for (const r of mine) removeRecord(r);
+  session.send({ t: 'unsend-all' });
+  sys('You unsent all your messages from every screen.');
+};
+$('clearAllBtn').onclick = async () => {
+  if (!session || session.ended || role !== 'host') return;
+  if (!(await confirmDialog('Clear the chat for everyone?', 'Every message and file, from everyone, is removed from all screens. Anyone who already copied or screenshotted something keeps that copy.', 'Clear for everyone', { danger: true }))) return;
+  clearAll();
+  session.send({ t: 'clear-all' });
+  sys('You cleared the chat for everyone.', 'is-warn');
 };
 $('panelClose').onclick = () => openPanel(false);
 $('optReceipts').onchange = (e) => { opts.receipts = e.target.checked; };
@@ -6184,8 +7097,8 @@ function setShape(on, by) {
   $('optShape').checked = on;
   session?.setShaping(on);
   if (by) {
-    const who = by === 'me' ? 'You' : them.name;
-    sys(on ? `${who} turned on constant-rate traffic. Observers can no longer tell when either of you is typing or sending.` : `${who} turned off constant-rate traffic.`, on ? 'is-good' : '');
+    const who = by === 'me' ? 'You' : nameOf(by);
+    sys(on ? `${who} turned on constant-rate traffic. Observers can no longer tell when ${inGroup() ? 'anyone here' : 'either of you'} is typing or sending.` : `${who} turned off constant-rate traffic.`, on ? 'is-good' : '');
   }
 }
 
@@ -6251,8 +7164,15 @@ $('optNotify').onchange = async (e) => {
 };
 
 $('endBtn').onclick = async () => {
-  if (!(await confirmDialog('End this session?', 'The other person will be told you left. Messages, files and keys are wiped from this tab.', 'End session'))) return;
-  await session?.end();
+  const host = role === 'host' && present().length > 0;
+  const group = inGroup();
+  const ok = await confirmDialog(host && group ? 'End for everyone?' : group ? 'Leave this room?' : 'End this session?',
+    host && group ? 'Everyone is disconnected and the room closes. Messages, files and keys are wiped from this tab.'
+      : group ? 'The others are told you left, and the room carries on without you. Messages, files and keys are wiped from this tab.'
+      : 'The other person will be told you left. Messages, files and keys are wiped from this tab.',
+    host && group ? 'End for everyone' : group ? 'Leave' : 'End session');
+  if (!ok) return;
+  await session?.end({ forAll: host });
   teardown();
   show('home');
   toast('Session ended and wiped');
@@ -6263,17 +7183,21 @@ function resetChat() {
   for (const url of objectUrls) URL.revokeObjectURL(url);
   objectUrls.clear(); msgs.clear();
   $('messages').replaceChildren();
-  them.name = 'Peer'; them.avatar = '👤';
-  $('peerName').textContent = them.name; $('peerAvatar').textContent = them.avatar;
-  $('panelName').textContent = them.name; $('panelAvatar').textContent = them.avatar; $('phRoom').textContent = '';
+  for (const p of people.values()) clearTimeout(p.announce);
+  people.clear(); selPerson = null; lastLeft = '';
+  for (const t of typers.values()) clearTimeout(t);
+  typers.clear(); knockCards.clear();
+  $('peerName').textContent = 'Connecting'; $('peerAvatar').textContent = '👤';
+  $('panelName').textContent = '—'; $('panelAvatar').textContent = '👤'; $('phRoom').textContent = '';
   $('typingText').textContent = 'Typing';
-  burnSecs = 0; verified = false; replyTo = null; unread = 0; updateTitle();
+  burnSecs = 0; replyTo = null; unread = 0; updateTitle();
   editing = null; $('editBar').hidden = true; $('chat').classList.remove('is-editing');
   for (const b of $('timerOptions').children) b.setAttribute('aria-checked', String(b.dataset.secs === '0'));
   $('timerBadge').hidden = true; $('replyBar').hidden = true; $('typing').hidden = true; $('veil').hidden = true;
   $('banner').hidden = true; $('panel').hidden = true; $('panelBtn').setAttribute('aria-expanded', 'false');
   $('input').value = ''; $('input').disabled = false; $('attachBtn').disabled = false; $('sendBtn').disabled = true;
-  $('safetyNumber').replaceChildren(); delete $('safetyNumber').dataset.value;
+  $('safetyNumber').replaceChildren(); delete $('safetyNumber').dataset.value; $('snPick').replaceChildren();
+  $('optCanInvite').checked = false;
   $('kvRoute').textContent = '—'; $('kvLatency').textContent = '—'; $('kvRoom').textContent = '—';
   setLink('', 'Connecting');
   closeMenu(); closeViewer();
@@ -6334,7 +7258,7 @@ if (window.visualViewport) {
     const st = document.documentElement.style;
     st.setProperty('--vvh', vv.height + 'px');
     st.setProperty('--vvt', Math.max(0, vv.offsetTop) + 'px');   // iOS pans the page under the keyboard
-    if ($('chat').classList.contains('is-on') && document.activeElement === $('input')) scrollDown(true);
+    if ($('chat')?.classList.contains('is-on') && document.activeElement === $('input')) scrollDown(true);
   };
   vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); fit();
 }

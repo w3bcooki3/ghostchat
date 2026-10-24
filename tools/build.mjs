@@ -21,7 +21,7 @@ const testPort = (process.argv.find((a) => a.startsWith('--test-signal=')) || ''
 
 // Minimal module linker for our own ES modules plus the vendored ML-KEM build.
 // Order = dependency order (each module only imports ones listed before it).
-const order = ['config', 'protocol', 'local', 'relay', 'ice', 'session', 'netcheck', 'fx',
+const order = ['config', 'protocol', 'local', 'relay', 'ice', 'session', 'room', 'netcheck', 'fx',
   'ui/sanitize', 'ui/dom', 'ui/handshake', 'ui/media', 'app'];
 const key = (name) => name.replace(/\//g, '_');
 /** Resolves an import specifier relative to the importing module (both under js/). */

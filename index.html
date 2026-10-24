@@ -229,23 +229,32 @@
 
     <div class="panel-id">
       <span id="panelAvatar" class="pid-av" aria-hidden="true">👤</span>
-      <div class="pid-text"><b id="panelName" class="pid-name">Peer</b><small class="pid-sub">Nothing stored on this device</small></div>
+      <div class="pid-text"><b id="panelName" class="pid-name">Peer</b><small id="pidSub" class="pid-sub">Nothing stored on this device</small></div>
+      <span id="pidTrust" class="pid-trust">Not verified</span>
     </div>
     <div class="qa-row">
-      <button id="qaVerify" class="qa qa-warn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Verify</button>
-      <button id="inviteNewBtn" class="qa" type="button" title="Open a separate private room for someone else, in a new tab"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/></svg>Invite</button>
-      <button id="endBtn" class="qa" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>End</button>
-      <button id="panicSheetBtn" class="qa qa-danger" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>Wipe</button>
+      <button id="qaVerify" class="qa qa-verify" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="qa-txt"><b>Verify</b><small id="qaVerifySub">Compare safety numbers</small></span></button>
+      <button id="qaInvite" class="qa" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/></svg></span><span class="qa-txt"><b>Invite</b><small>Link, QR or code</small></span></button>
+      <button id="endBtn" class="qa" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg></span><span class="qa-txt"><b id="qaEndLbl">Leave</b><small id="qaEndSub">Others are told</small></span></button>
+      <button id="panicSheetBtn" class="qa qa-danger" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></svg></span><span class="qa-txt"><b>Wipe</b><small>Instant, no undo</small></span></button>
     </div>
-    <p class="panel-note qa-note">Rooms are for two: Invite opens a separate private room in a new tab. Wipe destroys everything at once, with no confirmation (<kbd>Esc</kbd> three times on a keyboard).</p>
+    <p class="panel-note qa-note">Wipe destroys this tab's copy of everything at once, with no confirmation (<kbd>Esc</kbd> three times on a keyboard). To remove your messages from everyone's screens, use <em>Unsend all</em> below.</p>
+
+    <section class="panel-sec">
+      <h3 id="peoplesTitle">People</h3>
+      <div id="peopleList" class="people-list"></div>
+      <label id="canInviteRow" class="toggle" hidden><input id="optCanInvite" type="checkbox"><span class="toggle-ui" aria-hidden="true"></span><span>Members can invite <em>(off: only you can share the invite; you always decide who comes in)</em></span></label>
+    </section>
 
     <section id="snSec" class="panel-sec sn-sec">
+      <div id="snPick" class="sn-pick" role="radiogroup" aria-label="Whose safety number" hidden></div>
     <div id="trustBadge" class="trust-badge">
       <span class="tb-orb"><i></i><i></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
       <div class="tb-text"><b id="trustTitle">Not verified yet</b><small id="trustSub">Compare the safety number by voice to rule out anyone in the middle.</small></div>
       <button id="markVerified" class="tb-action" type="button" aria-pressed="false">Mark as verified</button>
     </div>
       <div id="safetyNumber" class="safety-number" aria-label="Safety number"></div>
+      <p id="snWith" class="sn-with"></p>
       <p class="panel-note">Compare it with the other person by voice or in person. If it matches, nobody is in the middle. It stays the same across reconnects, because the returning browser has to prove it's the same one.</p>
       <div class="panel-row">
         <button id="copySafety" class="btn btn-ghost btn-sm" type="button">Copy number</button>
@@ -253,9 +262,13 @@
     </section>
 
     <section class="panel-sec">
-      <h3>Disappearing messages</h3>
-      <p class="panel-note">Applies to both of you. The countdown starts when a message is delivered (for you) or shown (for them).</p>
+      <h3>Messages</h3>
+      <p class="panel-note">Disappearing messages apply to everyone in the room. The countdown starts when a message is delivered (for you) or shown (for them).</p>
       <div id="timerOptions" class="seg" role="radiogroup" aria-label="Disappearing timer"></div>
+      <div class="msg-tools">
+        <button id="unsendAllBtn" class="btn btn-ghost btn-sm" type="button">Unsend all mine</button>
+        <button id="clearAllBtn" class="btn btn-ghost btn-sm btn-danger-ghost" type="button" hidden>Clear for everyone</button>
+      </div>
     </section>
 
     <section class="panel-sec">
@@ -270,6 +283,8 @@
     <section class="panel-sec">
       <h3>Theme</h3>
       <div class="theme-grid" role="radiogroup" aria-label="Colour theme" data-theme-picker></div>
+      <h3 class="h3-sub">Text style</h3>
+      <div class="seg type-seg" role="radiogroup" aria-label="Text style" data-type-picker></div>
     </section>
 
     <section class="panel-sec">
@@ -279,7 +294,7 @@
         <dt>Route</dt><dd id="kvRoute">—</dd>
         <dt>Latency</dt><dd id="kvLatency" class="mono">—</dd>
         <dt>Encryption</dt><dd>AES-256-GCM, a new key per message</dd>
-        <dt>Access</dt><dd>Locked to the two of you</dd>
+        <dt>Access</dt><dd id="kvAccess">—</dd>
         <dt>Message keys used</dt><dd id="kvKeys" class="mono">0</dd>
         <dt>Live keys</dt><dd id="kvLive" class="mono">—</dd>
         <dt>Key exchange</dt><dd>ECDH P-384 + ML-KEM-1024 (post-quantum), authenticated by the room code</dd>
@@ -306,9 +321,26 @@
 <section id="themeSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="themeTitle" hidden>
   <div class="sheet-grip" aria-hidden="true"></div>
   <h2 id="themeTitle" class="sheet-title">Theme</h2>
-  <p class="sheet-sub">Colours only; everything works the same. Your choice lasts for this tab and isn't saved anywhere.</p>
+  <p class="sheet-sub">Looks only; everything works the same. Your choice lasts for this tab and isn't saved anywhere.</p>
   <div class="theme-grid" role="radiogroup" aria-label="Colour theme" data-theme-picker></div>
+  <h3 class="sheet-h3">Text style</h3>
+  <div class="seg type-seg" role="radiogroup" aria-label="Text style" data-type-picker></div>
   <button class="btn btn-primary btn-xl" type="button" data-close-sheet>Done</button>
+</section>
+
+<section id="inviteSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="invTitle" hidden>
+  <div class="sheet-grip" aria-hidden="true"></div>
+  <h2 id="invTitle" class="sheet-title">Invite to this room</h2>
+  <p id="invNote" class="sheet-sub"></p>
+  <div class="inv-code mono" aria-label="Room code"><span id="invCode"></span><button id="invCopyCode" class="icon-btn icon-sm" type="button" aria-label="Copy the room code"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button></div>
+  <div class="inv-acts">
+    <button id="invCopy" class="btn btn-primary" type="button">Copy invite link</button>
+    <button id="invShare" class="btn btn-ghost" type="button" hidden>Share…</button>
+    <button id="invQrBtn" class="btn btn-ghost" type="button">Show QR</button>
+  </div>
+  <div id="invQr" class="qr-box inv-qr" hidden></div>
+  <p class="help">Send it over something you trust. The link holds the full code after the <span class="mono">#</span>, which never reaches any server.</p>
+  <button class="btn btn-text btn-xl" type="button" data-close-sheet>Done</button>
 </section>
 
 <section id="privSheet" class="sheet privacy" role="dialog" aria-modal="true" aria-labelledby="privTitle" hidden>

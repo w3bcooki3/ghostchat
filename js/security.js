@@ -88,9 +88,9 @@ const OBSERVERS = [
   },
   {
     id: 'codeholder', name: 'Someone who learns the code', short: 'Code leaked',
-    verdict: 'The code is the key, but only until your peer arrives. Once you are both in, the room locks and the code stops working.',
+    verdict: 'The code gets someone in only before your peer arrives. After that, it only lets them ask: the host has to let them in, and everyone sees who joined.',
     s: {
-      content: ['part', 'Only if they join before your peer does. After that the room is locked, even to the right code.'],
+      content: ['part', 'Only if they join before your peer does, or the host lets them in. Even then, they never see messages sent before they joined.'],
       files: ['part', 'Same: only if they get in first.'],
       names: ['part', 'Same: only if they get in first.'],
       activity: ['part', 'Same: only if they get in first.'],

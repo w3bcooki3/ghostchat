@@ -93,13 +93,13 @@
     <ol class="seq" aria-label="The three handshake messages">
       <li><span class="seq-dir">Joiner → creator</span><strong>Hello</strong><span>A random number, a one-time elliptic-curve key, and a one-time post-quantum key.</span></li>
       <li><span class="seq-dir">Creator → joiner</span><strong>Hello + proof</strong><span>The creator's one-time key, a post-quantum ciphertext only the joiner can open, and proof it holds the room code.</span></li>
-      <li><span class="seq-dir">Joiner → creator</span><strong>Proof</strong><span>The joiner's proof. Both sides now know they share keys only the two of you have.</span></li>
+      <li><span class="seq-dir">Joiner → creator</span><strong>Proof</strong><span>The joiner's proof. Both sides now know they share keys only the two of them have. In a group, every pair of people runs this same exchange on its own fresh code.</span></li>
     </ol>
   </section>
 
   <section class="lock wrap" aria-labelledby="lockTitle">
     <h2 id="lockTitle">Once you're both in, the code stops working</h2>
-    <p>The first conversation leaves both browsers with a second secret that never travels anywhere. From then on the room is locked: it only accepts a reconnect that proves it has that secret. If your code leaks after the conversation starts, it's useless, even to someone who has all 20 characters.</p>
+    <p>The first conversation leaves both browsers with a second secret that never travels anywhere. A dropped connection can only come back by proving it has that secret. If your code leaks after the conversation starts, someone with it can only ask to join: they wait until the host lets them in, and every member then sees them and gets a new safety number with them.</p>
     <p>That's also why the safety number stays the same when the connection drops and comes back: the returning browser has proved it's the same one. If someone reloads the page, their browser loses the secret. The person who created the room can then unlock it once, and Ghost Chat shows a new safety number to compare.</p>
   </section>
 
@@ -117,7 +117,7 @@
     <h2 id="limitsTitle">What Ghost Chat can't protect against</h2>
     <dl class="limit-list">
       <div><dt>A compromised device</dt><dd>Malware, a malicious browser extension or a screen recorder sees what you see. Encryption protects messages on the way, not on the screen.</dd></div>
-      <div><dt>A code that leaks before your peer joins</dt><dd>Until the room locks, the code is the key. Share it over a channel you trust, with one person, and compare safety numbers when it matters.</dd></div>
+      <div><dt>A code that leaks before your peer joins</dt><dd>The first person to use the code joins straight away; after that the host decides who comes in. Share it over a channel you trust, and compare safety numbers when it matters.</dd></div>
       <div><dt>The other person</dt><dd>They can screenshot or copy anything. Disappearing messages clear both screens; they can't stop someone determined to keep a copy.</dd></div>
       <div><dt>That you're connected at all</dt><dd>The introduction server, any relay, and your network can see IP addresses and when a conversation starts and ends. Constant-rate traffic hides when you talk, not that you're talking. A VPN or Tor, and running your own servers, reduce what's left.</dd></div>
       <div><dt>Your IP address, by default</dt><dd>Direct connections show each side's IP address to the other. Choose <em>Maximum</em> privacy before connecting to route through a relay instead.</dd></div>

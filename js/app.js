@@ -2,7 +2,8 @@
 // All peer-supplied strings reach the DOM through textContent / attribute
 // setters only; nothing from the network is ever parsed as HTML.
 import { generateCode, normalizeCode, roomIdFromCode } from './protocol.js';
-import { Session, uid, iceServersWith, parseTurn } from './session.js';
+import { uid, iceServersWith, parseTurn } from './session.js';
+import { Room, MAX_MEMBERS } from './room.js';
 import { checkNetwork, explain } from './netcheck.js';
 import { LIMITS } from './config.js';
 import { scramble, scrambleOverlay, loopScramble, cycleText, followEyes, EtherLine, renderQR, flash, wait, reducedMotion } from './fx.js';
@@ -26,29 +27,43 @@ const GROUP_GAP_MS = 3 * 60_000;
 
 // ───────────────────────────── state ─────────────────────────────
 const me = { name: '', avatar: AVATARS[crypto.getRandomValues(new Uint8Array(1))[0] % AVATARS.length] };
-const them = { name: 'Peer', avatar: '👤' };
-let session = null;
+// Everyone else in the room, by member id. Entries stay after someone leaves (marked gone) so
+// their old messages keep a name.
+const people = new Map();
+let session = null;            // the Room
+let selPerson = null;          // whose safety number the panel shows
 let code = null;
 let role = null;
 let burnSecs = 0;
-let verified = false;
 let replyTo = null;
 let editing = null;           // the message being edited in the composer
 let unread = 0;
 let menuFor = null;
 let lastTypingSent = 0;
 let typingIdle = null;
-let typingHide = null;
 let roomTakenRetries = 0;
 const opts = { receipts: true, typing: true, veil: false, notify: false, shape: false };
 let privacy = 'standard'; // 'standard' | 'max' — chosen on the home screen
 const msgs = new Map(); // id → record
 const objectUrls = new Set();
 // Automation hook, only present when the test server marks the page (never in production builds).
-const testHook = document.documentElement.dataset.test === '1' ? (window.__ghost = { get session() { return session; }, msgs, files: {} }) : null;
+const testHook = document.documentElement.dataset.test === '1' ? (window.__ghost = { get session() { return session; }, msgs, people, files: {} }) : null;
 
 // ───────────────────────────── helpers ─────────────────────────────
 const inviteLink = () => location.href.split('#')[0] + '#' + code;
+
+// ── people ──
+function person(id) {
+  let p = people.get(id);
+  if (!p) { p = { id, name: '', avatar: '👤', verified: false, sn: null, ready: false, gone: false, state: 'connecting' }; people.set(id, p); }
+  return p;
+}
+const isHostId = (id) => !!session && id === session.hostId;
+const nameOf = (id) => people.get(id)?.name || (isHostId(id) ? 'The host' : 'Someone');
+const present = () => [...people.values()].filter((p) => !p.gone);
+const inGroup = () => present().length > 1 || (!!session && session.count() > 2);
+const allVerified = () => { const ps = present().filter((p) => p.sn); return ps.length > 0 && ps.every((p) => p.verified); };
+const canInviteNow = () => !!session && !session.ended && (role === 'host' || session.canInvite);
 
 function show(id) {
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('is-on', s.id === id);
@@ -63,7 +78,7 @@ function release(url) { if (url) { URL.revokeObjectURL(url); objectUrls.delete(u
 // ───────────────────────────── home ─────────────────────────────
 
 // ── home motion: decrypting headline, status line, ghosts whose eyes follow you ──
-const homeOn = () => $('home').classList.contains('is-on');
+const homeOn = () => !!$('home')?.classList.contains('is-on');   // false once a panic wipe emptied the page
 loopScramble($('headLine'), 'Say it once.', 9000, homeOn);
 loopScramble($('heroLine'), 'Say it once.', 9000, homeOn);
 cycleText($('statusPill'), ['BROWSER TO BROWSER', 'POST-QUANTUM KEY EXCHANGE', 'NO ACCOUNT · NOTHING STORED', 'THE CODE IS THE ONLY WAY IN'], 3400, homeOn);
@@ -135,6 +150,7 @@ const THEMES = [
   ['vault', 'Vault', ['#0A0C10', '#7AA2FF', '#E6E9EF']],
 ];
 let theme = 'auto';
+let typeStyle;
 function applyTheme(t) {
   theme = THEMES.some(([id]) => id === t) ? t : 'auto';
   if (theme === 'auto') delete document.documentElement.dataset.theme;
@@ -142,6 +158,29 @@ function applyTheme(t) {
   const chrome = getComputedStyle(document.documentElement).getPropertyValue('--chrome').trim();
   for (const m of document.querySelectorAll('meta[name="theme-color"]')) m.content = chrome;
   for (const b of document.querySelectorAll('[data-theme-picker] button')) b.setAttribute('aria-checked', String(b.dataset.t === theme));
+  applyType(typeStyle);
+}
+// ── text style: separate from colour. Auto picks what suits the theme (dot-matrix for the
+// hacker palettes, clean type for the softer ones). Also lasts for this tab only. ──
+const TYPES = [['auto', 'Auto'], ['terminal', 'Terminal'], ['clean', 'Clean'], ['mono', 'Mono']];
+const THEME_TYPE = { signal: 'terminal', phosphor: 'terminal', graphite: 'terminal', vault: 'mono', aurora: 'clean', daylight: 'clean', ledger: 'clean' };
+typeStyle = 'auto';
+function applyType(t) {
+  typeStyle = TYPES.some(([id]) => id === t) ? t : 'auto';
+  const eff = typeStyle === 'auto' ? THEME_TYPE[theme] || 'terminal' : typeStyle;
+  if (eff === 'terminal') delete document.documentElement.dataset.type; else document.documentElement.dataset.type = eff;
+  for (const b of document.querySelectorAll('[data-type-picker] button')) {
+    b.setAttribute('aria-checked', String(b.dataset.ty === typeStyle));
+    if (b.dataset.ty === 'auto') b.title = 'Matches the theme: ' + eff[0].toUpperCase() + eff.slice(1);
+  }
+}
+for (const grid of document.querySelectorAll('[data-type-picker]')) {
+  for (const [id, label] of TYPES) {
+    const b = h('button', null, label);
+    b.type = 'button'; b.dataset.ty = id; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(id === 'auto'));
+    b.onclick = () => applyType(id);
+    grid.append(b);
+  }
 }
 for (const grid of document.querySelectorAll('[data-theme-picker]')) {
   for (const [id, label, [bg, a, b]] of THEMES) {
@@ -352,7 +391,7 @@ const FAIL_TEXT = {
   timeout: 'Found the room, but your browsers couldn\'t open a connection to each other.',
   unsupported: 'This browser lacks WebRTC or Web Crypto support. Use a current version of Firefox, Chrome, Edge or Safari.',
   'room-taken': 'Couldn\'t reserve a room. Try again.',
-  locked: 'This room already has its two people and is locked. A room code can\'t be used again once a conversation has started. Ask for a new invite, or ask the person who created the room to unlock it.',
+  locked: `This room is full (${MAX_MEMBERS} people), so it isn't taking anyone new right now.`,
 };
 
 function startSession(r, c) {
@@ -372,7 +411,8 @@ function startSession(r, c) {
   show('connect');
   if (role === 'host') $('copyLinkBtn').focus();
 
-  session = new Session({ code, role, relayOnly: $('relayOnly').checked, extraIce: customRelay ? [customRelay] : [] });
+  session = new Room({ code, role, relayOnly: $('relayOnly').checked, extraIce: customRelay ? [customRelay] : [] });
+  session.profile = { name: me.name, avatar: me.avatar };
   applyPrivacyPreset();
   wire(session);
   session.start().then(() => { if (role === 'host') startExpiryClock(); }).catch((e) => { console.error(e); showConnectError(FAIL_TEXT.unsupported, false); });
@@ -426,9 +466,10 @@ $('retryBtn').onclick = () => {
 function wire(s) {
   s.on('state', ({ state }) => {
     if (s !== session) return;
-    if (state === 'waiting') setSteps('peer', 'signal');
-    if (state === 'dialing') setSteps('peer', 'signal');
+    if (state === 'waiting' || state === 'dialing') setSteps('peer', 'signal');
     if (state === 'reconnecting') onReconnecting();
+    if (state === 'ready' && $('chat').classList.contains('is-on')) { hideBanner(); setLink('is-good', 'Encrypted'); enableComposer(); }
+    if (state === 'alone') onAlone();
   });
   s.on('link-open', () => {
     if (s !== session || s.everReady) return;
@@ -451,70 +492,194 @@ function wire(s) {
     setSteps('peer', null, relay ? null : 'signal');
   });
   s.on('relay-up', () => { if (s === session && !s.everReady) { $('connectError').hidden = true; setSteps('peer', 'signal'); } });
-  s.on('rejected', ({ count, locked }) => {
-    if (locked) {
-      sys('Someone tried to join this room. It\'s locked to the two of you, so they were refused.', 'is-warn');
-      if (s.state === 'reconnecting') offerUnlock();
-      return;
-    }
+  s.on('rejected', ({ count, locked, pair }) => {
+    if (s !== session || pair) return;
+    if (locked) { sys(`Someone tried to join, but the room is full (${MAX_MEMBERS} people), so they were turned away.`, 'is-warn'); return; }
     const msg = count === 1 ? 'A connection attempt was refused because it couldn\'t prove it had the room code.' : `${count} connection attempts were refused because they couldn't prove they had the room code.`;
     if (!s.everReady) toast(msg, true);
     else sys(msg, 'is-warn');
   });
-  s.on('ready', onReady);
-  s.on('latency', ({ ms }) => {
+  s.on('waiting-admit', ({ host }) => {
+    if (s !== session) return;
+    const who = cleanLabel(host, 24) || 'the host';
+    $('connectTitle').textContent = 'Waiting to be let in';
+    $('peerStepText').textContent = `The code is right. Waiting for ${who} to let you in`;
+    setSteps('peer', 'signal');
+  });
+  s.on('denied', ({ reason }) => {
+    if (s !== session) return;
+    stage.set('failed');
+    setSteps(null, 'signal', 'peer');
+    showConnectError({
+      full: `This room is full (${MAX_MEMBERS} people). Ask the host for a new invite later.`,
+      timeout: 'Nobody let you in within 3 minutes. Ask the host to try again while you wait.',
+    }[reason] || 'The host didn\'t let you in.', false);
+  });
+  s.on('joined', onJoined);
+  s.on('member-join', ({ id }) => { if (s === session) { person(id); renderHead(); } });
+  s.on('member-ready', onMemberReady);
+  s.on('member-state', ({ id, state }) => {
+    if (s !== session) return;
+    const p = person(id);
+    p.state = state; if (state !== 'ready') p.ready = false;
+    renderHead();
+  });
+  s.on('member-left', onMemberLeft);
+  s.on('knock', onKnock);
+  s.on('knock-gone', ({ kid, reason }) => { if (s === session) knockGone(kid, reason); });
+  s.on('settings', ({ canInvite }) => {
+    if (s !== session) return;
+    $('optCanInvite').checked = canInvite;
+    if (role !== 'host' && $('chat').classList.contains('is-on')) sys(canInvite ? 'The host lets everyone invite people. The host still lets each newcomer in.' : 'Only the host can invite people now.');
+    renderHead();
+  });
+  s.on('latency', ({ ms, from }) => {
+    if (selPerson && from !== selPerson) return;
     $('kvLatency').textContent = ms + ' ms';
     setLink(ms < 250 ? 'is-good' : 'is-fair', `${ms} ms`);
   });
-  s.on('delivered', ({ mid }) => {
+  s.on('delivered', ({ mid, from }) => {
     const r = msgs.get(mid);
-    if (r && r.side === 'me') { r.delivered = true; updateStatus(r); if (r.ttl) startBurn(r); }
+    if (r && r.side === 'me') { r.deliveredTo.add(from); r.delivered = true; updateStatus(r); if (r.ttl) startBurn(r); }
   });
   s.on('message', onMessage);
   s.on('file-in', onFileIn);
   s.on('file-progress', onFileProgress);
   s.on('file-received', onFileReceived);
   s.on('file-failed', onFileFailed);
-  s.on('file-sent', ({ fid }) => { const r = msgs.get(fid); if (r) { r.sub.textContent = fmtSize(r.size) + ' · sent'; r.cancelBtn?.remove(); if (r.ttl) startBurn(r); } });
+  s.on('file-sent', ({ fid, sent, total }) => {
+    const r = msgs.get(fid);
+    if (r) { r.sub.textContent = fmtSize(r.size) + (total > 1 ? (sent === total ? ` · sent to all ${total}` : ` · sent to ${sent} of ${total}`) : ' · sent'); r.cancelBtn?.remove(); if (r.ttl) startBurn(r); }
+  });
   s.on('ended', ({ reason }) => onEnded(s, reason));
 }
 
-async function onReady({ safetyNumber, resumed, continuity, newPeer }) {
-  if (!continuity) verified = false;   // a proven resume keeps your verification
-  renderSafety(safetyNumber);
-  // The stable safety number identifies the conversation; the live fingerprint shows the
-  // keys this particular connection negotiated (it changes on every reconnect).
-  $('kvLive').textContent = (session.liveSafetyNumber || '').split(' ').slice(0, 3).join(' ') || '—';
-  session.send({ t: 'profile', name: me.name, avatar: me.avatar });
-  if (opts.shape) session.send({ t: 'shape', on: true });
+/** The first pair connected: open the conversation. */
+async function onJoined() {
+  const s = session;
   stopExpiryClock(); $('expiryRow').hidden = true;
-  if (!resumed) {
-    $('hsThemName').textContent = them.name !== 'Peer' ? them.name : role === 'host' ? 'Them' : 'The room';
-    await stage.seal(session.safetyNumber, () => setSteps(null, 'ready'));
-    if (!session || session.ended) return;
-    show('chat');
-    applyDock();
-    etherOut.clear(); etherIn.clear();
-    $('kvRoom').textContent = roomIdFromCode(code).replace(/^ghostchat-v\d+-/, '').toUpperCase();
-    $('phRoom').textContent = '· ' + $('kvRoom').textContent;
-    sys('End-to-end encrypted with post-quantum protection. Only someone holding the room code could have joined, and the room is now locked to the two of you.', 'is-good');
-    sysSafety(safetyNumber);
-    if (privacy === 'max') sys('Maximum privacy: relayed connection, constant-rate traffic, no typing indicator or read receipts.', 'is-good');
-    if (role === 'host' && burnSecs) session.send({ t: 'timer', secs: burnSecs });
-    $('input').focus();
-  } else {
-    hideBanner();
-    if (newPeer) sys('A new browser joined after you unlocked the room. The safety number changed, so verify it again before sharing anything sensitive.', 'is-warn');
-    else sys('Reconnected with fresh keys. Their browser proved it\'s the same one as before, so the safety number hasn\'t changed.', 'is-good');
-  }
-  $('sendBtn').disabled = !$('input').value.trim();
+  const first = s.first && people.get(s.first.id);
+  $('hsThemName').textContent = first?.name || (role === 'host' ? 'Them' : 'The room');
+  await stage.seal(s.safetyNumber, () => setSteps(null, 'ready'));
+  if (!session || session !== s || s.ended) return;
+  show('chat');
+  applyDock();
+  etherOut.clear(); etherIn.clear();
+  $('kvRoom').textContent = roomIdFromCode(code).replace(/^ghostchat-v\d+-/, '').toUpperCase();
+  $('phRoom').textContent = '· ' + $('kvRoom').textContent;
+  sys(role === 'host'
+    ? 'End-to-end encrypted with post-quantum protection. Only someone holding the room code could have joined, and anyone else who uses it has to wait for you to let them in.'
+    : 'End-to-end encrypted with post-quantum protection. Only someone holding the room code could have joined. Every pair of people in this room has its own keys.', 'is-good');
+  if (s.first) sysSafety(s.first.id);
+  if (privacy === 'max') sys('Maximum privacy: relayed connection, constant-rate traffic, no typing indicator or read receipts.', 'is-good');
+  $('optCanInvite').checked = s.canInvite;
+  enableComposer();
   setLink('is-good', 'Encrypted');
+  renderHead();
+  refreshRoute();
+  $('input').focus();
+}
+
+function onMemberReady({ id, safetyNumber, resumed, continuity, newPeer, first }) {
+  if (!session) return;
+  const p = person(id);
+  const wasReady = p.everReady;
+  p.ready = true; p.state = 'ready'; p.gone = false; p.everReady = true;
+  if (!continuity) p.verified = false;   // a proven resume keeps your verification
+  p.sn = safetyNumber;
+  if (!selPerson || !people.get(selPerson) || people.get(selPerson).gone) selPerson = id;
+  session.sendTo(id, { t: 'profile', name: me.name, avatar: me.avatar });
+  if (opts.shape) session.sendTo(id, { t: 'shape', on: true });
+  if (!resumed && burnSecs && (role === 'host' || !first)) session.sendTo(id, { t: 'timer', secs: burnSecs });
+  if (resumed && wasReady) {
+    if (newPeer) sys(`A new browser took ${nameOf(id)}'s place. The safety number changed, so verify it again before sharing anything sensitive.`, 'is-warn');
+    else sys(present().length > 1 ? `Reconnected to ${nameOf(id)} with fresh keys. Their browser proved it's the same one as before, so the safety number hasn't changed.` : 'Reconnected with fresh keys. Their browser proved it\'s the same one as before, so the safety number hasn\'t changed.', 'is-good');
+  } else if (!first) {
+    // Their name arrives a moment later, with their profile.
+    p.announce = setTimeout(() => announce(p), 1500);
+  }
+  $('kvLive').textContent = (session.members.get(id)?.s.liveSafetyNumber || '').split(' ').slice(0, 3).join(' ') || '—';
+  renderHead(); renderSafety();
   refreshRoute();
   for (const r of msgs.values()) if (r.side === 'me' && !r.delivered) updateStatus(r);
 }
+function announce(p) {
+  if (!p.announce || !session) return;
+  clearTimeout(p.announce); p.announce = null;
+  sys(`${nameOf(p.id)} joined. Your connection with them has its own keys and safety number.`, 'is-good');
+  sysSafety(p.id);
+}
+
+function onMemberLeft({ id, reason, isHost, wasReady }) {
+  if (!session) return;
+  const p = person(id);
+  const name = nameOf(id);
+  p.gone = true; p.ready = false; clearTimeout(p.announce); p.announce = null;
+  typers.delete(id); renderTyping();
+  lastLeft = name;
+  if (session.ended) return;
+  const text = !wasReady ? `Couldn't connect to ${name}.`
+    : reason === 'removed' ? (role === 'host' ? `You removed ${name} from the room.` : `The host removed ${name} from the room.`)
+    : reason === 'peer-left' ? `${name} left.`
+    : reason === 'resume-failed' ? `${name}'s browser couldn't prove it was the same one after reconnecting, so that connection was closed.`
+    : `Lost the connection to ${name}.`;
+  sys(text, reason === 'peer-left' || reason === 'removed' ? '' : 'is-warn');
+  if (isHost && role !== 'host') sys('The host has left, so nobody new can join this room.', 'is-warn');
+  if (selPerson === id) selPerson = present()[0]?.id || null;
+  renderHead(); renderSafety();
+  for (const r of msgs.values()) if (r.side === 'me') updateStatus(r);
+}
+let lastLeft = '';
+
+function onAlone() {
+  if (!$('chat').classList.contains('is-on')) return;
+  setLink('is-down', 'Alone');
+  $('sendBtn').disabled = true; $('attachBtn').disabled = true;
+  showBanner('Everyone else has left. The room is still open: anyone with the code can ask to join, and you decide who comes in.', false, 'Leave');
+}
+function enableComposer() {
+  $('input').disabled = false; $('attachBtn').disabled = false;
+  $('sendBtn').disabled = !$('input').value.trim();
+}
+
+// ── knocks (host): someone with the code wants in ──
+const knockCards = new Map();
+function onKnock({ kid, name, avatar }) {
+  const n = cleanLabel(name, 24) || 'Someone';
+  const av = AVATARS.includes(avatar) ? avatar : '👤';
+  const stick = atBottom();
+  const card = h('div', 'knock-card');
+  card.append(h('span', 'kn-av', av));
+  const txt = h('div', 'kn-text');
+  txt.append(h('b', null, `${n} wants to join`), h('small', null, 'They have the room code. Only let them in if you know who they are.'));
+  const acts = h('div', 'kn-acts');
+  const deny = h('button', 'btn btn-ghost btn-sm', 'Deny'); deny.type = 'button';
+  const ok = h('button', 'btn btn-primary btn-sm', 'Let in'); ok.type = 'button';
+  deny.onclick = () => { session?.deny(kid); };
+  ok.onclick = () => { if (session?.admit(kid)) { knockGone(kid, 'admitted'); sys(`You let ${n} in. Connecting…`); } };
+  acts.append(deny, ok);
+  card.append(txt, acts);
+  $('messages').append(card);
+  knockCards.set(kid, { card, name: n, avatar: av });
+  scrollDown(stick);
+  toast(`${n} wants to join`);
+  notifyIncoming('Someone wants to join');
+  renderPeople();
+}
+function knockGone(kid, reason) {
+  const k = knockCards.get(kid);
+  if (!k) return;
+  knockCards.delete(kid);
+  k.card.remove();
+  if (reason === 'denied') sys(`You turned ${k.name} away.`);
+  else if (reason === 'timeout') sys(`${k.name} wasn't let in within 3 minutes, so they were turned away.`);
+  else if (reason === 'full') sys(`${k.name} couldn't join: the room is full.`);
+  else if (reason !== 'admitted') sys(`${k.name} stopped waiting.`);
+  renderPeople();
+}
 
 async function refreshRoute() {
-  const route = await session?.getRoute();
+  const route = await session?.getRoute(selPerson);
   const label = { direct: 'Direct, peer-to-peer', local: 'Direct, same network', relay: 'Relayed via TURN server', 'relay-ws': 'Via the Ghost Chat relay (end-to-end encrypted)', device: 'Same browser on this device (no network)' }[route] || 'Unknown';
   $('kvRoute').textContent = label;
   const chip = $('routeChip');
@@ -527,8 +692,8 @@ function onReconnecting() {
   setLink('is-down', 'Reconnecting');
   showBanner(role === 'joiner'
     ? 'Connection dropped. Reconnecting… Messages you send now are queued and delivered when it\'s back.'
-    : 'Connection dropped. Waiting for the other person to reconnect… Messages you send now are queued.');
-  $('typing').hidden = true;
+    : 'Connection dropped. Waiting for the others to reconnect… Messages you send now are queued.');
+  typers.clear(); renderTyping();
   for (const r of msgs.values()) if (r.side === 'me' && !r.delivered) updateStatus(r);
 }
 
@@ -540,17 +705,22 @@ function onEnded(s, reason) {
       stage.set('failed'); setSteps(null, 'signal', 'peer');
       $('keycard').classList.add('is-spent');
       showConnectError(`This code expired: nobody joined within ${fmtSecs(Math.round((s.expiresAt - s.createdAt) / 1000))}. It no longer works, even for someone who has it.`, true, false, 'Get a new code');
-    } else if (reason !== 'local') showConnectError('The session ended.', false);
+    } else if (reason === 'host-left') showConnectError('The person who made this room left before letting you in. Ask them for a new invite.', false);
+    else if (reason !== 'local' && reason !== 'denied' && s.state !== 'failed') showConnectError('The session ended.', false);
     return;
   }
   setLink('is-down', 'Ended');
   $('sendBtn').disabled = true; $('input').disabled = true; $('attachBtn').disabled = true;
-  $('typing').hidden = true;
-  const text = reason === 'peer-left' ? `${them.name} ended the session.`
+  typers.clear(); renderTyping();
+  for (const k of [...knockCards.keys()]) knockGone(k, 'admitted');
+  const text = reason === 'kicked' ? 'The host removed you from this room.'
+    : reason === 'room-ended' ? 'The host ended the session for everyone.'
+    : reason === 'peer-left' ? (lastLeft && !inGroup() ? `${lastLeft} ended the session.` : 'Everyone else has left, so the session ended.')
     : reason === 'resume-failed' ? 'The other side couldn\'t prove it was the same conversation after reconnecting, so the session was closed.'
     : 'The connection couldn\'t be restored.';
   sys(text, 'is-bad');
   showBanner(text + ' Messages stay on screen until you leave.', true, 'Leave');
+  renderHead();
 }
 
 // ───────────────────────────── chat rendering ─────────────────────────────
@@ -566,31 +736,12 @@ function showBanner(text, bad = false, actionLabel) {
   if (actionLabel) {
     const btn = h('button', 'btn btn-ghost btn-sm', actionLabel);
     btn.type = 'button'; btn.style.marginLeft = '12px';
-    btn.onclick = () => { teardown(); show('home'); };
+    btn.onclick = async () => { if (session && !session.ended) await session.end(); teardown(); show('home'); };
     b.append(btn);
   }
   b.hidden = false;
 }
 function hideBanner() { $('banner').hidden = true; }
-
-// Host only: someone tried to join while the peer was away. If that's the peer after a reload,
-// they lost the resumption secret and can only come back through a fresh join.
-function offerUnlock() {
-  if (role !== 'host' || !session || session.ended || !session.locked) return;
-  showBanner(`Waiting for ${them.name} to reconnect. If they reloaded the page, their browser can't prove it's them any more.`);
-  const btn = h('button', 'btn btn-ghost btn-sm', 'Unlock room once');
-  btn.type = 'button';
-  btn.onclick = async () => {
-    const ok = await confirmDialog('Unlock the room?',
-      `Only do this if ${them.name} told you, some other way, that they reloaded the page. Anyone holding the room code could take their place. You'll get a new safety number, and you should compare it again.`,
-      'Unlock once');
-    if (!ok || !session || session.ended) return;
-    session.unlock();
-    hideBanner();
-    sys('Room unlocked. The next person with the room code can join; you\'ll see a new safety number to verify.', 'is-warn');
-  };
-  $('banner').append(btn);
-}
 
 function atBottom() { const m = $('messages'); return m.scrollHeight - m.scrollTop - m.clientHeight < 80; }
 function scrollDown(force) { const m = $('messages'); if (force || atBottom()) requestAnimationFrame(() => { m.scrollTop = m.scrollHeight; }); }
@@ -602,37 +753,136 @@ function sys(text, cls = '') {
   scrollDown(stick);
   return el;
 }
-function sysSafety(sn) {
+function sysSafety(id) {
+  const p = people.get(id);
+  if (!p?.sn) return;
   const stick = atBottom();
   const card = h('div', 'sn-card');
   const head = h('div', 'sn-card-head');
-  head.append(h('strong', null, 'Safety number'), h('span', null, 'Read it to the other person by voice. If both screens match, nobody is in the middle.'));
+  const group = inGroup();
+  head.append(h('strong', null, group ? `Safety number with ${nameOf(id)}` : 'Safety number'),
+    h('span', null, group ? `Only you and ${nameOf(id)} share this number. Compare it by voice; if it matches, nobody is in the middle.` : 'Read it to the other person by voice. If both screens match, nobody is in the middle.'));
   const grid = h('div', 'sn-card-grid mono');
-  for (const g of sn.split(' ')) grid.append(h('span', null, g));
+  for (const g of p.sn.split(' ')) grid.append(h('span', null, g));
   const btn = h('button', 'btn btn-ghost btn-sm sn-open', 'Compare and verify');
-  btn.type = 'button'; btn.onclick = () => openPanel(true);
+  btn.type = 'button'; btn.onclick = () => { selPerson = id; renderSafety(); openPanel(true); setTimeout(() => { $('snSec').scrollIntoView({ block: 'start' }); $('markVerified').focus({ preventScroll: true }); }, 60); };
   card.append(head, grid, btn);
   $('messages').append(card);
   scrollDown(stick);
 }
 
-function renderSafety(sn) {
+/** The panel's safety number: for the selected person (a picker appears in groups). */
+function renderSafety() {
+  const list = present().filter((p) => p.sn);
+  if (selPerson && !list.some((p) => p.id === selPerson)) selPerson = list[0]?.id || null;
+  const p = selPerson && people.get(selPerson);
+  const pick = $('snPick');
+  pick.replaceChildren();
+  pick.hidden = list.length < 2;
+  for (const q of list) {
+    const b = h('button', 'sn-who' + (q.verified ? ' is-verified' : ''));
+    b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(q.id === selPerson));
+    b.append(h('span', null, q.avatar), h('b', null, q.name || '…'));
+    b.onclick = () => { selPerson = q.id; renderSafety(); refreshRoute(); };
+    pick.append(b);
+  }
   const box = $('safetyNumber');
-  box.replaceChildren(...sn.split(' ').map((g) => h('span', null, g)));
-  box.dataset.value = sn;
+  if (!p?.sn) { box.replaceChildren(); delete box.dataset.value; }
+  else { box.replaceChildren(...p.sn.split(' ').map((g) => h('span', null, g))); box.dataset.value = p.sn; }
+  $('snWith').textContent = list.length > 1 && p ? `With ${p.name || 'them'}` : '';
   applyVerified();
 }
 function applyVerified() {
-  $('verifyText').textContent = verified ? 'Verified' : 'Not verified';
-  $('verifyChip').setAttribute('aria-label', verified ? 'Safety number verified' : 'Safety number not verified');
-  $('verifyChip').classList.toggle('is-verified', verified);
-  $('markVerified').setAttribute('aria-pressed', String(verified));
-  $('markVerified').textContent = verified ? 'Verified' : 'Mark as verified';
-  $('safetyNumber').classList.toggle('is-verified', verified);
-  $('trustBadge').classList.toggle('is-verified', verified);
-  $('trustTitle').textContent = verified ? 'Nobody in between' : 'Not verified yet';
-  $('trustSub').textContent = verified ? 'You both confirmed the same safety number.' : 'Compare the safety number by voice to rule out anyone in the middle.';
-  if (verified) flash($('trustBadge'), 'is-pop', 900);
+  const p = selPerson && people.get(selPerson);
+  const v = !!p?.verified;
+  const list = present().filter((q) => q.sn);
+  const nV = list.filter((q) => q.verified).length;
+  const all = allVerified();
+  const label = all ? 'Verified' : list.length > 1 && nV ? `${nV} of ${list.length} verified` : 'Not verified';
+  $('verifyText').textContent = label;
+  $('verifyChip').setAttribute('aria-label', all ? 'Safety numbers verified' : 'Safety number not verified');
+  $('verifyChip').classList.toggle('is-verified', all);
+  $('pidTrust').textContent = label;
+  $('pidTrust').classList.toggle('is-verified', all);
+  $('qaVerify').classList.toggle('is-done', all);
+  $('qaVerifySub').textContent = all ? 'All safety numbers match' : list.length > 1 ? `${list.length - nV} still to compare` : 'Compare safety numbers';
+  $('markVerified').setAttribute('aria-pressed', String(v));
+  $('markVerified').textContent = v ? 'Verified' : 'Mark as verified';
+  $('safetyNumber').classList.toggle('is-verified', v);
+  $('trustBadge').classList.toggle('is-verified', v);
+  const who = list.length > 1 && p ? p.name || 'them' : 'the other person';
+  $('trustTitle').textContent = v ? 'Nobody in between' : 'Not verified yet';
+  $('trustSub').textContent = v ? `You and ${list.length > 1 ? who : 'they'} confirmed the same safety number.` : `Compare the safety number with ${who} by voice to rule out anyone in the middle.`;
+}
+
+/** Header and panel identity: one person, or the group. */
+function renderHead() {
+  const list = present();
+  const names = list.map((p) => p.name || '…');
+  const title = !list.length ? (role === 'host' ? 'Just you' : 'Nobody here')
+    : list.length === 1 ? names[0]
+    : list.length === 2 ? `${names[0]} & ${names[1]}`
+    : `${names[0]}, ${names[1]} +${list.length - 2}`;
+  $('peerName').textContent = title;
+  $('peerAvatar').textContent = list.length === 1 ? list[0].avatar : list.length ? '👥' : '👤';
+  $('panelName').textContent = list.length > 1 ? `${list.length + 1} people` : title;
+  $('panelAvatar').textContent = $('peerAvatar').textContent;
+  $('pidSub').textContent = list.length > 1 ? names.join(' · ') : 'Nothing stored on this device';
+  $('qaInvite').hidden = !canInviteNow();
+  $('qaInvite').parentElement.classList.toggle('is-odd', $('qaInvite').hidden);
+  $('qaEndLbl').textContent = role === 'host' && list.length ? 'End' : 'Leave';
+  $('qaEndSub').textContent = role === 'host' && list.length ? 'For everyone' : 'Others are told';
+  $('peoplesTitle').textContent = `People · ${list.length + 1} of ${MAX_MEMBERS}`;
+  $('canInviteRow').hidden = role !== 'host';
+  $('clearAllBtn').hidden = role !== 'host';
+  $('kvAccess').textContent = role === 'host' ? 'Anyone else with the code waits for you to let them in' : 'Newcomers wait for the host to let them in';
+  for (const n of document.querySelectorAll('.msg-name[data-from]')) n.textContent = nameOf(n.dataset.from);
+  applyVerified();
+  renderPeople();
+  renderTyping();
+}
+
+/** The People section: everyone here, their state, and the host's controls. */
+function renderPeople() {
+  const box = $('peopleList');
+  if (!box) return;
+  box.replaceChildren();
+  const row = (av, name, tag, sub, cls) => {
+    const r = h('div', 'pp-row' + (cls ? ' ' + cls : ''));
+    r.append(h('span', 'pp-av', av));
+    const t = h('div', 'pp-text');
+    const nm = h('b', null, name);
+    if (tag) nm.append(h('em', 'pp-tag', tag));
+    t.append(nm, h('small', null, sub));
+    r.append(t);
+    box.append(r);
+    return r;
+  };
+  row(me.avatar, me.name + ' (you)', role === 'host' ? 'Host' : '', 'This browser', 'is-me');
+  for (const p of present()) {
+    const sub = !p.ready ? (p.state === 'reconnecting' ? 'Reconnecting…' : 'Connecting…') : p.verified ? 'Verified' : 'Not verified';
+    const r = row(p.avatar, p.name || '…', isHostId(p.id) ? 'Host' : '', sub, p.verified ? 'is-verified' : '');
+    if (p.sn) {
+      const b = h('button', 'pp-btn', 'Safety no.'); b.type = 'button';
+      b.onclick = () => { selPerson = p.id; renderSafety(); refreshRoute(); $('snSec').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); };
+      r.append(b);
+    }
+    if (role === 'host') {
+      const b = h('button', 'pp-btn is-danger', 'Remove'); b.type = 'button';
+      b.onclick = async () => {
+        if (!(await confirmDialog(`Remove ${p.name || 'them'}?`, 'Everyone disconnects from them at once. They can only come back if they ask again with the code and you let them in.', 'Remove', { danger: true }))) return;
+        session?.remove(p.id);
+      };
+      r.append(b);
+    }
+  }
+  for (const [kid, k] of knockCards) {
+    const r = row(k.avatar, k.name, '', 'Waiting to be let in', 'is-knock');
+    const no = h('button', 'pp-btn', 'Deny'); no.type = 'button'; no.onclick = () => session?.deny(kid);
+    const yes = h('button', 'pp-btn is-primary', 'Let in'); yes.type = 'button';
+    yes.onclick = () => { if (session?.admit(kid)) { knockGone(kid, 'admitted'); sys(`You let ${k.name} in. Connecting…`); } };
+    r.append(no, yes);
+  }
 }
 
 // ───────────────────────────── ether line: live ciphertext ─────────────────────────────
@@ -648,8 +898,10 @@ function onWire(dir, bytes) {
   if (ch) $('kvKeys').textContent = String(ch.tx.n + ch.rx.n);
 }
 $('markVerified').onclick = () => {
-  verified = !verified; applyVerified();
-  if (verified) sys('You marked the safety number as verified.', 'is-good');
+  const p = selPerson && people.get(selPerson);
+  if (!p?.sn) return;
+  p.verified = !p.verified; renderSafety(); renderPeople();
+  if (p.verified) { sys(inGroup() ? `You marked your safety number with ${nameOf(p.id)} as verified.` : 'You marked the safety number as verified.', 'is-good'); flash($('trustBadge'), 'is-pop', 900); }
 };
 $('copySafety').onclick = () => copy($('safetyNumber').dataset.value || '', 'Safety number');
 $('verifyChip').onclick = () => openPanel(true);
@@ -695,7 +947,8 @@ const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|\p{Emoji_Component}|‍|️|\s
 function newRecord(id, side, ts, extra = {}) {
   const el = h('div', 'msg ' + side + ' arrive');
   el.dataset.id = id;
-  const r = { id, side, ts, el, reacts: { me: null, them: null }, delivered: side !== 'me', read: false, seen: false, ttl: 0, burnAt: 0, urls: [], ...extra };
+  const r = { id, side, ts, el, reacts: new Map(), delivered: side !== 'me', read: false, seen: false, ttl: 0, burnAt: 0, urls: [],
+    from: null, to: new Set(side === 'me' && session ? session.memberIds() : []), deliveredTo: new Set(), readBy: new Set(), ...extra };
   msgs.set(id, r);
   // A flooding peer can't grow the page without bound: the oldest messages drop off.
   if (msgs.size > MAX_RECORDS) { const oldest = msgs.values().next().value; if (oldest && oldest !== r) removeRecord(oldest, false); }
@@ -706,10 +959,10 @@ const MAX_RECORDS = 2000;
 function placeRecord(r, body) {
   const prev = [...$('messages').children].reverse().find((n) => n.classList.contains('msg') || n.classList.contains('sys'));
   const prevRec = prev && prev.classList.contains('msg') ? msgs.get(prev.dataset.id) : null;
-  const grouped = prevRec && prevRec.side === r.side && r.ts - prevRec.ts < GROUP_GAP_MS;
+  const grouped = prevRec && prevRec.side === r.side && prevRec.from === r.from && r.ts - prevRec.ts < GROUP_GAP_MS;
   if (grouped) prevRec.el.classList.remove('last'); else r.el.classList.add('first');
   r.el.classList.add('last');
-  if (!grouped && r.side === 'them') r.el.append(h('div', 'msg-name', them.name));
+  if (!grouped && r.side === 'them') r.el.append(nameTag(r.from));
   r.el.append(body);
   // A visible way into the actions (edit, delete, reply…) for mouse users; touch uses long-press.
   const more = h('button', 'msg-more');
@@ -734,25 +987,30 @@ function placeRecord(r, body) {
   if (r.side === 'them') markSeenSoon();
 }
 
+function nameTag(from) {
+  const n = h('div', 'msg-name', nameOf(from));
+  if (from) n.dataset.from = from;
+  return n;
+}
 function regroup() {
   let prev = null;
   for (const n of $('messages').children) {
     if (!n.classList.contains('msg')) { if (prev) prev.el.classList.add('last'); prev = null; continue; }
     const r = msgs.get(n.dataset.id);
     if (!r) continue;
-    const grouped = prev && prev.side === r.side && r.ts - prev.ts < GROUP_GAP_MS;
+    const grouped = prev && prev.side === r.side && prev.from === r.from && r.ts - prev.ts < GROUP_GAP_MS;
     r.el.classList.toggle('first', !grouped);
     if (prev) prev.el.classList.toggle('last', !grouped);
     r.el.classList.add('last');
     const nameEl = r.el.querySelector('.msg-name');
-    if (r.side === 'them' && !grouped && !nameEl) r.el.prepend(h('div', 'msg-name', them.name));
+    if (r.side === 'them' && !grouped && !nameEl) r.el.prepend(nameTag(r.from));
     if (grouped && nameEl) nameEl.remove();
     prev = r;
   }
 }
 
-function addText(side, { id, text, ts, ttl = 0, reply = null }) {
-  const r = newRecord(id, side, ts, { kind: 'text', text, ttl });
+function addText(side, { id, text, ts, ttl = 0, reply = null, from = null }) {
+  const r = newRecord(id, side, ts, { kind: 'text', text, ttl, from });
   const bubble = h('div', 'bubble');
   bubble.dir = 'auto';
   bubble.tabIndex = 0;
@@ -782,7 +1040,7 @@ let lastDecryptAt = 0;
 function quoteFor(mid) {
   const r = msgs.get(mid);
   if (!r) return { mid, name: '', text: 'Message unavailable' };
-  return { mid, name: r.side === 'me' ? 'You' : them.name, text: (r.kind === 'text' ? r.text : r.name).slice(0, 120) };
+  return { mid, name: r.side === 'me' ? 'You' : nameOf(r.from), text: (r.kind === 'text' ? r.text : r.name).slice(0, 120) };
 }
 
 function applyEdit(r, text) {
@@ -805,23 +1063,32 @@ function jumpTo(mid) {
 
 function updateStatus(r) {
   if (r.side !== 'me' || !r.statusEl || r.kind !== 'text') return;
+  // Counted against the people who were here when it was sent and haven't left since.
+  const live = [...r.to].filter((id) => people.has(id) && !people.get(id).gone);
+  const nRead = live.filter((id) => r.readBy.has(id)).length;
+  const nDel = live.filter((id) => r.deliveredTo.has(id) || r.readBy.has(id)).length;
+  const many = r.to.size > 1;
   let t = 'Sent', cls = 'status';
-  if (r.read) { t = 'Read'; cls += ' is-read'; }
-  else if (r.delivered) t = 'Delivered';
+  if (live.length && nRead === live.length) { t = 'Read'; cls += ' is-read'; }
+  else if (many && nRead) { t = `Read by ${nRead}`; cls += ' is-read'; }
+  else if (live.length && nDel === live.length) t = 'Delivered';
+  else if (many && nDel) t = `Delivered to ${nDel}`;
   else if (!session || session.state !== 'ready') { t = 'Queued'; cls += ' is-queued'; }
+  r.read = live.length > 0 && nRead === live.length;
   r.statusEl.textContent = t;
   r.statusEl.className = cls;
 }
 
 function renderReacts(r) {
   const counts = new Map();
-  for (const who of ['me', 'them']) {
-    const e = r.reacts[who];
-    if (e) { const c = counts.get(e) || { n: 0, mine: false }; c.n++; if (who === 'me') c.mine = true; counts.set(e, c); }
+  for (const [who, e] of r.reacts) {
+    if (who !== 'me' && people.get(who)?.gone) continue;
+    if (e) { const c = counts.get(e) || { n: 0, mine: false, who: [] }; c.n++; c.who.push(who === 'me' ? 'You' : nameOf(who)); if (who === 'me') c.mine = true; counts.set(e, c); }
   }
   r.reactsEl.replaceChildren();
   for (const [e, c] of counts) {
     const chip = h('span', 'react' + (c.mine ? ' mine' : ''), e);
+    chip.title = c.who.join(', ');
     if (c.n > 1) chip.append(h('small', null, String(c.n)));
     r.reactsEl.append(chip);
   }
@@ -858,7 +1125,7 @@ function setTimer(secs, by) {
   for (const b of $('timerOptions').children) b.setAttribute('aria-checked', String(Number(b.dataset.secs) === secs));
   $('timerBadge').hidden = !secs;
   $('timerBadge').textContent = secs ? '⏱ ' + fmtSecs(secs) : '';
-  const who = by === 'me' ? 'You' : them.name;
+  const who = by === 'me' ? 'You' : nameOf(by);
   sys(secs ? `${who} set messages to disappear after ${fmtSecs(secs)}.` : `${who} turned off disappearing messages.`, secs ? 'is-warn' : '');
 }
 (function buildTimers() {
@@ -874,15 +1141,16 @@ function setTimer(secs, by) {
 let seenTimer = null;
 function markSeenSoon() { clearTimeout(seenTimer); seenTimer = setTimeout(markSeen, 150); }
 function markSeen() {
-  if (document.hidden || !$('chat').classList.contains('is-on') || !$('veil').hidden) return;
-  const ids = [];
+  if (document.hidden || !$('chat')?.classList.contains('is-on') || !$('veil').hidden) return;
+  const byAuthor = new Map();
   for (const r of msgs.values()) {
     if (r.side !== 'them' || r.seen) continue;
     r.seen = true;
     if (r.ttl) startBurn(r);
-    if (r.kind === 'text') ids.push(r.id);
+    if (r.kind === 'text' && r.from) { if (!byAuthor.has(r.from)) byAuthor.set(r.from, []); byAuthor.get(r.from).push(r.id); }
   }
-  if (ids.length && opts.receipts && session?.state === 'ready') session.send({ t: 'read', ids: ids.slice(0, 200) });
+  // Each author is told only about their own messages.
+  if (opts.receipts && session?.state === 'ready') for (const [id, ids] of byAuthor) session.sendTo(id, { t: 'read', ids: ids.slice(0, 200) });
   unread = 0; updateTitle();
 }
 function updateTitle() { document.title = unread ? `(${unread}) Ghost Chat` : 'Ghost Chat'; }
@@ -896,26 +1164,26 @@ $('unveilBtn').onclick = () => { $('veil').hidden = true; markSeen(); $('input')
 
 // ───────────────────────────── inbound ─────────────────────────────
 function onMessage(o) {
+  const from = o.from;
+  if (!from || !session) return;
   switch (o.t) {
     case 'profile': {
-      them.name = cleanLabel(o.name, 24) || 'Peer';
-      them.avatar = AVATARS.includes(o.avatar) ? o.avatar : '👤';
-      $('peerName').textContent = them.name;
-      $('peerAvatar').textContent = them.avatar;
-      $('panelName').textContent = them.name; $('panelAvatar').textContent = them.avatar;
-      $('typingText').textContent = `${them.name} is typing`;
-      for (const n of document.querySelectorAll('.msg.them .msg-name')) n.textContent = them.name;
+      const p = person(from);
+      p.name = cleanLabel(o.name, 24) || 'Someone';
+      p.avatar = AVATARS.includes(o.avatar) ? o.avatar : '👤';
+      renderHead(); renderSafety();
+      if (p.announce) announce(p);
       return;
     }
     case 'msg': {
       if (typeof o.text !== 'string' || !o.text || !isMid(o.mid) || msgs.has(o.mid)) return;
       const ttl = Number.isInteger(o.ttl) && o.ttl > 0 && o.ttl <= 86400 ? o.ttl : 0;
-      // Quotes are resolved from our own copy of the conversation; the peer only names the message.
+      // Quotes are resolved from our own copy of the conversation; the sender only names the message.
       const reply = o.reply && isMid(o.reply.mid) ? quoteFor(o.reply.mid) : null;
       const text = cleanText(o.text, LIMITS.maxText);
       if (!text.trim()) return;
-      addText('them', { id: o.mid, text, ts: Date.now(), ttl, reply });
-      $('typing').hidden = true;
+      addText('them', { id: o.mid, text, ts: Date.now(), ttl, reply, from });
+      typers.delete(from); renderTyping();
       notifyIncoming();
       return;
     }
@@ -923,19 +1191,20 @@ function onMessage(o) {
       if (!Array.isArray(o.ids)) return;
       for (const id of o.ids.slice(0, 200)) {
         const r = msgs.get(id);
-        if (r && r.side === 'me') { r.read = true; r.delivered = true; updateStatus(r); if (r.ttl) startBurn(r); }
+        if (r && r.side === 'me' && r.to.has(from)) { r.readBy.add(from); r.delivered = true; updateStatus(r); if (r.ttl) startBurn(r); }
       }
       return;
     }
     case 'typing':
-      clearTimeout(typingHide);
-      if (o.on === true) { $('typing').hidden = false; typingHide = setTimeout(() => { $('typing').hidden = true; }, 6000); }
-      else $('typing').hidden = true;
+      clearTimeout(typers.get(from));
+      if (o.on === true) typers.set(from, setTimeout(() => { typers.delete(from); renderTyping(); }, 6000));
+      else typers.delete(from);
+      renderTyping();
       return;
     case 'react': {
       const r = msgs.get(o.target);
       if (!r) return;
-      r.reacts.them = REACTIONS.includes(o.emoji) ? o.emoji : null;
+      r.reacts.set(from, REACTIONS.includes(o.emoji) ? o.emoji : null);
       renderReacts(r);
       return;
     }
@@ -943,7 +1212,7 @@ function onMessage(o) {
       // Only the author can edit, only text, and the new text passes the same checks as a new message.
       if (!isMid(o.target) || typeof o.text !== 'string') return;
       const r = msgs.get(o.target);
-      if (!r || r.side !== 'them' || r.kind !== 'text') return;
+      if (!r || r.side !== 'them' || r.from !== from || r.kind !== 'text') return;
       const text = cleanText(o.text, LIMITS.maxText);
       if (!text.trim() || text === r.text) return;
       applyEdit(r, text);
@@ -951,27 +1220,56 @@ function onMessage(o) {
     }
     case 'unsend': {
       const r = msgs.get(o.target);
-      if (r && r.side === 'them') { removeRecord(r); sys(`${them.name} unsent a message.`); }
+      if (r && r.side === 'them' && r.from === from) { removeRecord(r); sys(`${nameOf(from)} unsent a message.`); }
+      return;
+    }
+    case 'unsend-all': {
+      let n = 0;
+      for (const r of [...msgs.values()]) if (r.side === 'them' && r.from === from) { removeRecord(r); n++; }
+      sys(`${nameOf(from)} unsent all their messages${n ? '' : ' (there were none here)'}.`);
+      return;
+    }
+    case 'clear-all': {
+      if (!isHostId(from)) return;   // only the host can clear everyone's screens
+      clearAll();
+      sys(`${nameOf(from)} (the host) cleared the chat for everyone.`, 'is-warn');
       return;
     }
     case 'shape': {
       const on = o.on === true;
-      if (on !== opts.shape) setShape(on, 'them');
+      if (on !== opts.shape) setShape(on, from);
       return;
     }
     case 'timer': {
       const secs = Number(o.secs);
-      if (TIMERS.some(([s]) => s === secs) && secs !== burnSecs) setTimer(secs, 'them');
+      if (TIMERS.some(([t]) => t === secs) && secs !== burnSecs) setTimer(secs, from);
       return;
     }
   }
 }
 
-function notifyIncoming() {
+// ── typing: who is typing right now ──
+const typers = new Map();   // member id → hide timer
+function renderTyping() {
+  const ids = [...typers.keys()].filter((id) => people.has(id) && !people.get(id).gone);
+  $('typing').hidden = !ids.length;
+  if (!ids.length) return;
+  const n = ids.map(nameOf);
+  $('typingText').textContent = n.length === 1 ? `${n[0]} is typing` : n.length === 2 ? `${n[0]} and ${n[1]} are typing` : `${n.length} people are typing`;
+}
+
+/** Removes every message and file from this screen (used by "clear for everyone"). */
+function clearAll() {
+  for (const r of [...msgs.values()]) removeRecord(r, false);
+  for (const n of [...$('messages').querySelectorAll('.sys, .sn-card')]) n.remove();
+  clearReply(); clearEdit();
+}
+
+function notifyIncoming(body = 'New message') {
   if (!document.hidden) return;
   unread++; updateTitle();
   if (opts.notify && 'Notification' in window && Notification.permission === 'granted') {
-    try { new Notification('Ghost Chat', { body: 'New message', tag: 'ghostchat', silent: false }); } catch {}
+    try { new Notification('Ghost Chat', { body, tag: 'ghostchat', silent: false }); } catch {}
   }
 }
 
@@ -1005,6 +1303,7 @@ $('sendBtn').onclick = () => { sendText(); input.focus(); };
 function sendText() {
   const text = input.value.replace(/^\s+|\s+$/g, '');
   if (!text || !session || session.ended) return;
+  if (!session.members.size) return toast('Nobody else is in the room right now', true);
   if (text.length > LIMITS.maxText) return toast(`Messages are limited to ${LIMITS.maxText} characters`, true);
   if (editing) {
     const r = editing;
@@ -1026,7 +1325,7 @@ function sendText() {
 function setReply(r) {
   clearEdit();
   const text = r.kind === 'text' ? r.text : r.name;
-  replyTo = { mid: r.id, name: r.side === 'me' ? 'You' : them.name, text: text.slice(0, 120) };
+  replyTo = { mid: r.id, name: r.side === 'me' ? 'You' : nameOf(r.from), text: text.slice(0, 120) };
   $('replyName').textContent = replyTo.name;
   $('replyText').textContent = replyTo.text;
   $('replyBar').hidden = false;
@@ -1066,9 +1365,10 @@ $('editCancel').onclick = () => { clearEdit(); input.focus(); };
   }
 })();
 function toggleReact(r, e) {
-  r.reacts.me = r.reacts.me === e ? null : e;
+  const mine = r.reacts.get('me') === e ? null : e;
+  r.reacts.set('me', mine);
   renderReacts(r);
-  session?.send({ t: 'react', target: r.id, emoji: r.reacts.me });
+  session?.send({ t: 'react', target: r.id, emoji: mine });
 }
 // Phones and small screens get bottom sheets instead of popovers.
 const sheetMode = () => matchMedia('(max-width: 640px), (pointer: coarse)').matches;
@@ -1214,11 +1514,11 @@ function onFileProgress({ fid, done, size }) {
   if (done >= size) setTimeout(() => r.bar?.remove(), 400);
 }
 
-function onFileIn({ fid, name, size, meta }) {
+function onFileIn({ fid, name, size, meta, from }) {
   if (msgs.has(fid)) { session?.cancelFile(fid); return; } // never let a peer overwrite an existing record
   const clean = cleanLabel(name, 255) || 'file';
   const ttl = Number.isInteger(meta?.ttl) && meta.ttl > 0 && meta.ttl <= 86400 ? meta.ttl : 0;
-  const r = newRecord(fid, 'them', Date.now(), { kind: 'file', name: clean, size, ttl });
+  const r = newRecord(fid, 'them', Date.now(), { kind: 'file', name: clean, size, ttl, from });
   const card = fileCard(r, clean, size, `Receiving · ${fmtSize(size)}`);
   const cancel = h('button', 'btn btn-text btn-sm', 'Cancel');
   cancel.type = 'button'; cancel.onclick = () => session?.cancelFile(fid);
@@ -1316,12 +1616,59 @@ function openPanel(force) {
 })();
 $('panelBtn').onclick = () => openPanel();
 $('qaVerify').onclick = () => {
+  // Jump to the first person not yet verified.
+  const next = present().find((p) => p.sn && !p.verified);
+  if (next && next.id !== selPerson) { selPerson = next.id; renderSafety(); }
   $('snSec').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
   $('markVerified').focus({ preventScroll: true });
 };
-$('inviteNewBtn').onclick = () => {
-  const w = window.open(location.pathname + '#new', '_blank', 'noopener');
-  if (!w) toast('Your browser blocked the new tab. Open Ghost Chat in another tab and start a chat there.', true);
+
+// ── invite: same room, same code; the host lets each newcomer in ──
+function openInvite() {
+  if (!canInviteNow()) return toast('Only the host can invite people to this room', true);
+  if (session.count() >= MAX_MEMBERS) return toast(`The room is full (${MAX_MEMBERS} people)`, true);
+  $('invCode').textContent = code;
+  $('invNote').textContent = role === 'host'
+    ? `Anyone who opens it asks to join, and you decide who comes in. Up to ${MAX_MEMBERS} people; ${MAX_MEMBERS - session.count()} more can join.`
+    : `Whoever opens it asks to join, and ${nameOf(session.hostId)} (the host) decides who comes in.`;
+  $('invQr').hidden = true; $('invQr').replaceChildren(); $('invQrBtn').textContent = 'Show QR';
+  openSheet('inviteSheet', $('qaInvite'));
+}
+$('qaInvite').onclick = openInvite;
+$('invCopy').onclick = () => copy(inviteLink(), 'Invite link');
+$('invCopyCode').onclick = () => copy(code, 'Room code');
+$('invShare').hidden = !(navigator.share && matchMedia('(pointer: coarse)').matches);
+$('invShare').onclick = async () => {
+  try { await navigator.share({ title: 'Ghost Chat invite', text: 'Join my private Ghost Chat room:', url: inviteLink() }); }
+  catch (e) { if (e?.name !== 'AbortError') copy(inviteLink(), 'Invite link'); }
+};
+$('invQrBtn').onclick = () => {
+  const box = $('invQr'), open = box.hidden;
+  if (open) { try { renderQR(box, inviteLink()); } catch { return toast('Couldn\'t draw the QR code', true); } }
+  else box.replaceChildren();
+  box.hidden = !open;
+  $('invQrBtn').textContent = open ? 'Hide QR' : 'Show QR';
+};
+$('optCanInvite').onchange = (e) => {
+  session?.setCanInvite(e.target.checked);
+  sys(e.target.checked ? 'Everyone can now share the invite. You still let each newcomer in.' : 'Only you can invite people now.');
+};
+
+// ── unsend all / clear for everyone ──
+$('unsendAllBtn').onclick = async () => {
+  if (!session || session.ended) return;
+  const mine = [...msgs.values()].filter((r) => r.side === 'me');
+  if (!(await confirmDialog('Unsend all your messages?', 'Every message and file you sent is removed from this screen and from everyone else\'s. Someone who already copied or screenshotted something keeps that copy.', 'Unsend all', { danger: true }))) return;
+  for (const r of mine) removeRecord(r);
+  session.send({ t: 'unsend-all' });
+  sys('You unsent all your messages from every screen.');
+};
+$('clearAllBtn').onclick = async () => {
+  if (!session || session.ended || role !== 'host') return;
+  if (!(await confirmDialog('Clear the chat for everyone?', 'Every message and file, from everyone, is removed from all screens. Anyone who already copied or screenshotted something keeps that copy.', 'Clear for everyone', { danger: true }))) return;
+  clearAll();
+  session.send({ t: 'clear-all' });
+  sys('You cleared the chat for everyone.', 'is-warn');
 };
 $('panelClose').onclick = () => openPanel(false);
 $('optReceipts').onchange = (e) => { opts.receipts = e.target.checked; };
@@ -1335,8 +1682,8 @@ function setShape(on, by) {
   $('optShape').checked = on;
   session?.setShaping(on);
   if (by) {
-    const who = by === 'me' ? 'You' : them.name;
-    sys(on ? `${who} turned on constant-rate traffic. Observers can no longer tell when either of you is typing or sending.` : `${who} turned off constant-rate traffic.`, on ? 'is-good' : '');
+    const who = by === 'me' ? 'You' : nameOf(by);
+    sys(on ? `${who} turned on constant-rate traffic. Observers can no longer tell when ${inGroup() ? 'anyone here' : 'either of you'} is typing or sending.` : `${who} turned off constant-rate traffic.`, on ? 'is-good' : '');
   }
 }
 
@@ -1402,8 +1749,15 @@ $('optNotify').onchange = async (e) => {
 };
 
 $('endBtn').onclick = async () => {
-  if (!(await confirmDialog('End this session?', 'The other person will be told you left. Messages, files and keys are wiped from this tab.', 'End session'))) return;
-  await session?.end();
+  const host = role === 'host' && present().length > 0;
+  const group = inGroup();
+  const ok = await confirmDialog(host && group ? 'End for everyone?' : group ? 'Leave this room?' : 'End this session?',
+    host && group ? 'Everyone is disconnected and the room closes. Messages, files and keys are wiped from this tab.'
+      : group ? 'The others are told you left, and the room carries on without you. Messages, files and keys are wiped from this tab.'
+      : 'The other person will be told you left. Messages, files and keys are wiped from this tab.',
+    host && group ? 'End for everyone' : group ? 'Leave' : 'End session');
+  if (!ok) return;
+  await session?.end({ forAll: host });
   teardown();
   show('home');
   toast('Session ended and wiped');
@@ -1414,17 +1768,21 @@ function resetChat() {
   for (const url of objectUrls) URL.revokeObjectURL(url);
   objectUrls.clear(); msgs.clear();
   $('messages').replaceChildren();
-  them.name = 'Peer'; them.avatar = '👤';
-  $('peerName').textContent = them.name; $('peerAvatar').textContent = them.avatar;
-  $('panelName').textContent = them.name; $('panelAvatar').textContent = them.avatar; $('phRoom').textContent = '';
+  for (const p of people.values()) clearTimeout(p.announce);
+  people.clear(); selPerson = null; lastLeft = '';
+  for (const t of typers.values()) clearTimeout(t);
+  typers.clear(); knockCards.clear();
+  $('peerName').textContent = 'Connecting'; $('peerAvatar').textContent = '👤';
+  $('panelName').textContent = '—'; $('panelAvatar').textContent = '👤'; $('phRoom').textContent = '';
   $('typingText').textContent = 'Typing';
-  burnSecs = 0; verified = false; replyTo = null; unread = 0; updateTitle();
+  burnSecs = 0; replyTo = null; unread = 0; updateTitle();
   editing = null; $('editBar').hidden = true; $('chat').classList.remove('is-editing');
   for (const b of $('timerOptions').children) b.setAttribute('aria-checked', String(b.dataset.secs === '0'));
   $('timerBadge').hidden = true; $('replyBar').hidden = true; $('typing').hidden = true; $('veil').hidden = true;
   $('banner').hidden = true; $('panel').hidden = true; $('panelBtn').setAttribute('aria-expanded', 'false');
   $('input').value = ''; $('input').disabled = false; $('attachBtn').disabled = false; $('sendBtn').disabled = true;
-  $('safetyNumber').replaceChildren(); delete $('safetyNumber').dataset.value;
+  $('safetyNumber').replaceChildren(); delete $('safetyNumber').dataset.value; $('snPick').replaceChildren();
+  $('optCanInvite').checked = false;
   $('kvRoute').textContent = '—'; $('kvLatency').textContent = '—'; $('kvRoom').textContent = '—';
   setLink('', 'Connecting');
   closeMenu(); closeViewer();
@@ -1485,7 +1843,7 @@ if (window.visualViewport) {
     const st = document.documentElement.style;
     st.setProperty('--vvh', vv.height + 'px');
     st.setProperty('--vvt', Math.max(0, vv.offsetTop) + 'px');   // iOS pans the page under the keyboard
-    if ($('chat').classList.contains('is-on') && document.activeElement === $('input')) scrollDown(true);
+    if ($('chat')?.classList.contains('is-on') && document.activeElement === $('input')) scrollDown(true);
   };
   vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); fit();
 }

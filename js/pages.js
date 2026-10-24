@@ -44,7 +44,7 @@
         ['Host opens a room', 'Your browser registers the room name with the introduction server and keeps a door open on the relay.'],
         ['Joiner tries direct', 'WebRTC asks STUN servers for each side\'s public address and opens a peer-to-peer pipe.'],
         ['Handshake', 'Three messages trade fresh keys and prove both sides hold the code.'],
-        ['Locked', 'The room accepts no one else. Messages flow directly between you.'],
+        ['Connected', 'Anyone else needs the host\'s approval. Messages flow directly between you.'],
       ],
     },
     vpn: {
@@ -54,7 +54,7 @@
         ['Direct attempt stalls', 'The VPN or carrier network hides a usable address, so no peer-to-peer path opens.'],
         ['Relay dialled', 'A WebSocket on port 443, the same as any website, so it gets through.'],
         ['Same handshake', 'The relay forwards the three handshake messages it can\'t read or fake.'],
-        ['Locked', 'Messages flow through the relay, sealed end to end. It sees sizes and timing, never content.'],
+        ['Connected', 'Messages flow through the relay, sealed end to end. It sees sizes and timing, never content.'],
       ],
     },
     max: {
@@ -64,7 +64,7 @@
         ['No direct attempt', 'WebRTC is never asked for your address, so it never reaches the other person.'],
         ['Relay only', 'Traffic goes through the relay, with steady 4 KB packets that hide when you type.'],
         ['Same handshake', 'Keys and proofs are identical; only the route differs.'],
-        ['Locked', 'Slower, and about 60 MB an hour, in exchange for hiding your address and your rhythm.'],
+        ['Connected', 'Slower, and about 60 MB an hour, in exchange for hiding your address and your rhythm.'],
       ],
     },
     wrong: {

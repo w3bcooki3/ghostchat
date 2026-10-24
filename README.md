@@ -27,7 +27,7 @@ It works on phones and computers, on home Wi-Fi, mobile data, office networks an
 
 1. **Open Ghost Chat and tap _Start a private chat_.** You get a 20-character room code and an invite link.
 2. **Send the link to one person**, over something you trust: in person, a phone call, or an app you already use. You can also show a QR code for someone next to you.
-3. **They open the link and tap _Join_.** Your browsers check that both hold the same code, create fresh keys and connect. The room then **locks**: the code stops working, even for someone who has all 20 characters.
+3. **They open the link and tap _Join_.** Your browsers check that both hold the same code, create fresh keys and connect. Anyone else who uses the code afterwards has to **wait for you to let them in**.
 4. **Optional, but recommended for anything sensitive:** open *Session* and **compare the safety number** with the other person by voice. If both screens show the same 60 digits, nobody is in the middle.
 
 That's it. Chat, send files, and close the tab when you're done.
@@ -38,7 +38,8 @@ That's it. Chat, send files, and close the tab when you're done.
 
 **Talk**
 - Messages with replies, reactions, edits (marked "edited") and delete for everyone or just for you.
-- **Disappearing messages** from 10 seconds to 1 hour, set once for both of you.
+- **Disappearing messages** from 10 seconds to 1 hour, set once for everyone in the room.
+- **Unsend all mine** removes everything you sent from every screen. The host can also **clear the chat for everyone**.
 - Delivered and read receipts and a typing indicator, each of which you can turn off.
 - **Files up to 100 MB**, sent in encrypted pieces with a progress bar.
 
@@ -52,8 +53,10 @@ That's it. Chat, send files, and close the tab when you're done.
 - **Seven colour themes**: Signal, Phosphor, Aurora, Daylight, Graphite, Ledger and Vault, plus **Auto**, which is Signal by day and Phosphor by night. Your choice lasts for the tab and isn't saved anywhere.
 - Pick a name and an avatar for the conversation. They're forgotten when you leave.
 
-**Talk to someone else too**
-- Each room is for exactly two people. To bring in a third, use **Invite** in the session panel. It opens a separate private room in a new tab.
+**Group rooms**
+- **Up to 6 people per room.** Tap **Invite** in the session panel for the same link, a QR code or the code. The first person you invite joins straight away. After that, everyone who uses the code shows up as *"wants to join"*, and the host taps **Let in** or **Deny**.
+- **Every pair of people gets its own encryption** and its own safety number, so messages between two people are readable only by them. Compare your number with each person.
+- **The host is in charge.** Only the host can share the invite, unless they switch on *Members can invite*. The host can also **remove** anyone.
 
 ## How private is it?
 
@@ -78,8 +81,8 @@ Neither ever sees your messages, your keys or the full room code. The [Who can r
 **Do I need an account or an app?**
 No. Any current browser works: Chrome, Safari, Firefox or Edge, on a phone or a computer.
 
-**Can three people chat in one room?**
-No. Each room's keys belong to one pair. Use *Invite* in the session panel to open a second room.
+**Can more than two people chat?**
+Yes, up to six. Use *Invite* in the session panel. The host lets each newcomer in, and every pair of people gets its own keys and safety number.
 
 **It's stuck connecting. What now?**
 If it says the other person *isn't answering*, their phone may be locked or the browser closed in the background. Ask them to open Ghost Chat again, then tap *Try again*. If the room *isn't open*, ask for a fresh invite. *Check my network* (under Privacy → Customize) explains what your network allows.
@@ -91,7 +94,7 @@ Yes. If a direct connection can't be made, Ghost Chat switches to its relay over
 On a direct connection, yes, as with any video call. Choose *Maximum privacy* before connecting to go through the relay instead.
 
 **If I reload the page, can I get back in?**
-No. Your keys live only in that tab. The person who created the room can let you back in once, and you'll get a new safety number to compare.
+Yes, as a newcomer. Your old keys lived only in that tab, so open the invite again and ask to join. The host lets you back in, and you'll get a new safety number to compare.
 
 **Is it "military grade"?**
 Nobody certifies apps as military grade. Ghost Chat uses the same algorithms and key sizes as the US government's CNSA 2.0 suite, but it isn't certified or independently audited, and a website isn't a classified environment.

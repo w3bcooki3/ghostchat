@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-R5Z0AafMhe9Dk/H4aokj31Ek+LDVjKwOrlqAtmLWxhc='; style-src 'sha256-eo91bkx/6IFUjRTU4s0n+QkfX1eBB56b1MRhJU2VR78='; font-src data:; img-src data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-QzE6bSZJaSIwSkls+StT3qnLDhZdoldjWoZDC2apJ9o='; style-src 'sha256-eo91bkx/6IFUjRTU4s0n+QkfX1eBB56b1MRhJU2VR78='; font-src data:; img-src data:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#05080A">
@@ -461,7 +461,7 @@ tr:last-child td { border-bottom: 0; }
         ['Host opens a room', 'Your browser registers the room name with the introduction server and keeps a door open on the relay.'],
         ['Joiner tries direct', 'WebRTC asks STUN servers for each side\'s public address and opens a peer-to-peer pipe.'],
         ['Handshake', 'Three messages trade fresh keys and prove both sides hold the code.'],
-        ['Locked', 'The room accepts no one else. Messages flow directly between you.'],
+        ['Connected', 'Anyone else needs the host\'s approval. Messages flow directly between you.'],
       ],
     },
     vpn: {
@@ -471,7 +471,7 @@ tr:last-child td { border-bottom: 0; }
         ['Direct attempt stalls', 'The VPN or carrier network hides a usable address, so no peer-to-peer path opens.'],
         ['Relay dialled', 'A WebSocket on port 443, the same as any website, so it gets through.'],
         ['Same handshake', 'The relay forwards the three handshake messages it can\'t read or fake.'],
-        ['Locked', 'Messages flow through the relay, sealed end to end. It sees sizes and timing, never content.'],
+        ['Connected', 'Messages flow through the relay, sealed end to end. It sees sizes and timing, never content.'],
       ],
     },
     max: {
@@ -481,7 +481,7 @@ tr:last-child td { border-bottom: 0; }
         ['No direct attempt', 'WebRTC is never asked for your address, so it never reaches the other person.'],
         ['Relay only', 'Traffic goes through the relay, with steady 4 KB packets that hide when you type.'],
         ['Same handshake', 'Keys and proofs are identical; only the route differs.'],
-        ['Locked', 'Slower, and about 60 MB an hour, in exchange for hiding your address and your rhythm.'],
+        ['Connected', 'Slower, and about 60 MB an hour, in exchange for hiding your address and your rhythm.'],
       ],
     },
     wrong: {

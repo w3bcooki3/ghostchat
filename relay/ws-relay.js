@@ -15,7 +15,7 @@
 // origin(s), comma-separated, e.g. "https://<you>.github.io".
 
 const MAX_FRAME = 66 * 1024;      // largest Ghost Chat frame is ~65.6 KB
-const MAX_JOINERS = 4;            // pending handshakes per room (the app locks after one)
+const MAX_JOINERS = 8;            // joiners per room at once (people waiting to be let in, plus handshakes)
 const RATE_PER_10S = 4000;        // per socket; generous for file transfers
 // A host pings every 25 s. Phones freeze or kill background tabs without closing their
 // sockets, so a host that has been silent this long is treated as gone (background tabs may

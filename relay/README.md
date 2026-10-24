@@ -41,7 +41,7 @@ The relay also helps Ghost Chat tell you what's going on instead of leaving you 
 
 The relay is a [Cloudflare Worker](https://workers.cloudflare.com/) that runs on Cloudflare's **free plan, with no payment card needed**. The code is [`ws-relay.js`](ws-relay.js), and you can read it in a few minutes.
 
-**What it enforces:** only the sites you list may use it; each room is limited to one creator and a few joiners; frames over 66 KB are rejected; each connection is rate-limited. A creator whose page has gone silent for over two minutes is removed.
+**What it enforces:** only the sites you list may use it; each room is limited to one creator and up to eight joiners at once (in a group room, every pair of people gets its own relay room); frames over 66 KB are rejected; each connection is rate-limited. A creator whose page has gone silent for over two minutes is removed.
 
 ### Deploy it from GitHub (recommended)
 1. Sign in at [dash.cloudflare.com](https://dash.cloudflare.com) and go to **Workers & Pages → Create → Import a repository**.

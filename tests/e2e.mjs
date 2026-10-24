@@ -264,8 +264,8 @@ await test('a third browser with the right room but wrong secret is refused; cha
   await join(M, wrong, 'Mallory');
   await M.waitForSelector('#connectError:not([hidden])', { timeout: 20000 });
   const msg = await M.textContent('#connectErrorText');
-  assert(/locked/.test(msg), 'a locked room refuses before even checking the code: ' + msg);
-  await S.A.waitForSelector('.sys.is-warn >> text=locked to the two of you', { timeout: 5000 });
+  assert(/didn.t accept this code/.test(msg), 'refused for the wrong code: ' + msg);
+  await S.A.waitForSelector('.sys.is-warn >> text=couldn\'t prove it had the room code', { timeout: 5000 });
   await say(S.A, 'still private');
   await S.B.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent === 'still private', null, { timeout: 5000 });
   assert(await M.locator('#chat.is-on').count() === 0, 'mallory reached the chat');
@@ -289,14 +289,20 @@ await test('dropped link resumes automatically, proves continuity, delivers queu
   assert(await S.B.locator('.msg.them .bubble', { hasText: 'sent while offline' }).count() === 1, 'duplicate delivery');
 });
 
-await test('room locks once both people are in: a full, correct code is refused afterwards', async () => {
+await test('a newcomer with the full, correct code waits for the host; Deny turns them away', async () => {
   const M = await page('Leaker');
   await join(M, S.code, 'Leaker');
-  await M.waitForSelector('#connectError:not([hidden])', { timeout: 20000 });
-  assert(/locked/.test(await M.textContent('#connectErrorText')), 'joiner told the room is locked: ' + await M.textContent('#connectErrorText'));
-  await S.A.waitForSelector('.sys.is-warn >> text=locked to the two of you', { timeout: 5000 });
+  await M.waitForFunction(() => /Waiting to be let in/.test(document.getElementById('connectTitle').textContent), null, { timeout: 20000 });
+  assert(/Waiting for Alice to let you in/.test(await M.textContent('#peerStepText')), 'joiner told who decides: ' + await M.textContent('#peerStepText'));
+  await S.A.waitForSelector('.knock-card >> text=Leaker wants to join', { timeout: 10000 });
+  assert(await S.B.locator('.knock-card').count() === 0, 'only the host is asked');
+  await S.A.click('.knock-card >> text=Deny');
+  await M.waitForSelector('#connectError:not([hidden])', { timeout: 10000 });
+  assert(/didn.t let you in/.test(await M.textContent('#connectErrorText')), await M.textContent('#connectErrorText'));
+  await S.A.waitForSelector('.sys >> text=You turned Leaker away', { timeout: 5000 });
   await say(S.A, 'still just us');
   await S.B.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent === 'still just us', null, { timeout: 5000 });
+  assert(await M.locator('#chat.is-on').count() === 0, 'denied joiner reached the chat');
   await M.context().close();
 });
 
@@ -421,10 +427,13 @@ await test('wide screen: docked panel collapses, one verify control at a time, i
   assert(pr === '0px', 'conversation takes the panel\'s space: ' + pr);
   await B.click('#panelBtn');
   assert(await B.isVisible('#panel') && await B.isHidden('#verifyChip'), 'panel expands again');
-  const [popup] = await Promise.all([B.context().waitForEvent('page'), B.click('#inviteNewBtn')]);
-  await popup.waitForFunction(() => document.querySelector('#connect.is-on') && document.querySelector('#codeGroups').textContent.trim().length > 10, null, { timeout: 15000 });
-  assert(!(await popup.evaluate(() => location.hash)), 'the #new marker is removed');
-  assert(await B.locator('#chat.is-on').count() === 1, 'original conversation stays open');
+  assert(await B.isHidden('#qaInvite'), 'members can\'t invite by default');
+  await s.A.click('#panelBtn');
+  await s.A.click('#qaInvite');
+  await s.A.waitForSelector('#inviteSheet:not([hidden])');
+  assert((await s.A.textContent('#invCode')).trim() === s.code, 'invite shares this room\'s code');
+  assert(s.A.context().pages().length === 1, 'no new tab');
+  await s.A.click('#inviteSheet [data-close-sheet]');
   await s.A.context().close(); await s.B.context().close();
 });
 
@@ -473,24 +482,106 @@ await test('guide and legal pages: linked from home, interactive flowchart works
   await P.context().close();
 });
 
-await test('host can unlock once for a peer who reloaded; the new safety number must be re-verified', async () => {
+await test('someone who reloaded asks to join again; the host lets them in with a new safety number', async () => {
   const s = await pair('Host', 'Guest');
   const sn0 = await s.A.getAttribute('#safetyNumber', 'data-value');
   await s.B.context().close();                                  // guest "reloads": its keys are gone
   await s.A.waitForSelector('#banner:not([hidden])', { timeout: 15000 });
   const G = await page('Guest again');
   await join(G, s.code, 'Guest');
-  await G.waitForSelector('#connectError:not([hidden])', { timeout: 20000 });
-  await s.A.waitForSelector('#banner button >> text=Unlock room once', { timeout: 5000 });
-  await s.A.click('#banner button');
-  assert(/Anyone holding the room code/.test(await s.A.textContent('#dialogBody')), 'unlock warns before acting');
-  await s.A.click('#dialogOk');
-  await G.click('#retryBtn');
-  await G.waitForSelector('#chat.is-on', { timeout: 20000 });
-  await s.A.waitForSelector('.sys.is-warn >> text=new browser joined', { timeout: 10000 });
-  const sn1 = await s.A.getAttribute('#safetyNumber', 'data-value');
-  assert(sn1 !== sn0 && sn1 === await G.getAttribute('#safetyNumber', 'data-value'), 'fresh, matching safety number');
+  await s.A.waitForSelector('.knock-card >> text=Guest wants to join', { timeout: 20000 });
+  await s.A.click('.knock-card >> text=Let in');
+  await G.waitForSelector('#chat.is-on', { timeout: 30000 });
+  await s.A.waitForSelector('.sys.is-good >> text=Guest joined', { timeout: 10000 });
+  await s.A.waitForSelector('#banner', { state: 'hidden', timeout: 10000 });
+  const sn1 = await G.getAttribute('#safetyNumber', 'data-value');
+  const hostHas = await s.A.evaluate(() => [...window.__ghost.people.values()].filter((p) => p.ready).map((p) => p.sn));
+  assert(sn1 !== sn0 && hostHas.includes(sn1), 'fresh, matching safety number');
+  assert(await s.A.locator('#verifyChip.is-verified').count() === 0, 'must be verified again');
+  await say(G, 'back again');
+  await s.A.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent === 'back again', null, { timeout: 8000 });
   await s.A.context().close(); await G.context().close();
+});
+
+// ───────────────────────────── groups ─────────────────────────────
+const nameSn = (p) => p.evaluate(() => Object.fromEntries([...window.__ghost.people.values()].filter((x) => !x.gone).map((x) => [x.name, x.sn])));
+async function trio() {
+  const s = await pair('Ann', 'Ben');
+  const C = await page('Cat');
+  await join(C, s.code, 'Cat');
+  await s.A.waitForSelector('.knock-card >> text=Cat wants to join', { timeout: 20000 });
+  await s.A.click('.knock-card >> text=Let in');
+  await C.waitForSelector('#chat.is-on', { timeout: 30000 });
+  for (const p of [s.A, s.B, C]) await p.waitForFunction(() => window.__ghost.session.readyIds().length === 2, null, { timeout: 30000 });
+  for (const p of [s.A, s.B, C]) await p.waitForFunction(() => [...window.__ghost.people.values()].every((x) => x.name), null, { timeout: 10000 });
+  return { ...s, C };
+}
+let G3;
+await test('groups: the host lets a third person in; every pair has its own end-to-end keys', async () => {
+  G3 = await trio();
+  const { A, B, C } = G3;
+  await say(C, 'hi all');
+  for (const p of [A, B]) await p.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent === 'hi all', null, { timeout: 8000 });
+  assert(await A.textContent('.msg.them:last-child .msg-name, .msg.them .msg-name >> nth=-1') === 'Cat', 'sender named');
+  await say(B, 'hello from ben');
+  for (const p of [A, C]) await p.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent === 'hello from ben', null, { timeout: 8000 });
+  assert(await A.textContent('#peerName') === 'Ben & Cat', 'header names the group: ' + await A.textContent('#peerName'));
+  const [a, b, c] = [await nameSn(A), await nameSn(B), await nameSn(C)];
+  assert(b.Cat && b.Cat === c.Ben, 'Ben and Cat share their own safety number');
+  assert(a.Cat === c.Ann && a.Ben === b.Ann, 'each pair matches');
+  assert(new Set([a.Ben, a.Cat, b.Cat]).size === 3, 'and every pair\'s number is different');
+  await say(A, 'to both');
+  await A.waitForFunction(() => document.querySelector('.msg.me:last-child .status')?.textContent === 'Read', null, { timeout: 8000 });
+  await B.click('#panelBtn');
+  assert(await B.locator('#snPick .sn-who').count() === 2, 'a picker for whose safety number');
+  assert(/3 of 6/.test(await B.textContent('#peoplesTitle')), await B.textContent('#peoplesTitle'));
+  await B.click('#panelClose');
+});
+
+await test('groups: unsend all mine; only the host can clear the chat for everyone', async () => {
+  const { A, B, C } = G3;
+  await say(B, 'b-one'); await say(B, 'b-two');
+  await C.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent === 'b-two', null, { timeout: 8000 });
+  await B.click('#panelBtn'); await B.click('#unsendAllBtn'); await B.click('#dialogOk');
+  for (const p of [A, C]) {
+    await p.waitForSelector('.sys >> text=Ben unsent all their messages', { timeout: 8000 });
+    await p.waitForFunction(() => ![...document.querySelectorAll('.msg.them .bubble')].some((b) => /b-one|b-two|hello from ben/.test(b.textContent)), null, { timeout: 5000 });
+  }
+  assert(await C.locator('.msg.them .bubble', { hasText: 'hi all' }).count() === 0 && await C.locator('.msg.me .bubble', { hasText: 'hi all' }).count() === 1, 'other people\'s messages untouched');
+  assert(await B.isHidden('#clearAllBtn'), 'members don\'t get the button');
+  await B.evaluate(() => window.__ghost.session.send({ t: 'clear-all' }));   // a member forging it is ignored
+  await C.waitForTimeout(600);
+  assert(await C.locator('.msg').count() > 0, 'a member can\'t clear other screens');
+  await B.click('#panelClose');
+  await A.click('#panelBtn'); await A.click('#clearAllBtn'); await A.click('#dialogOk');
+  for (const p of [B, C]) {
+    await p.waitForSelector('.sys >> text=cleared the chat for everyone', { timeout: 8000 });
+    await p.waitForFunction(() => document.querySelectorAll('.msg').length === 0, null, { timeout: 5000 });
+  }
+  assert(await A.locator('.msg').count() === 0, 'host\'s screen cleared too');
+  await A.click('#panelClose');
+});
+
+await test('groups: the host decides who may invite, and can remove someone', async () => {
+  const { A, B, C } = G3;
+  await C.click('#panelBtn');
+  assert(await C.isHidden('#qaInvite'), 'invite hidden for members by default');
+  await A.click('#panelBtn');
+  await A.click('label:has(#optCanInvite)');
+  await C.waitForSelector('#qaInvite', { state: 'visible', timeout: 8000 });
+  await C.click('#qaInvite');
+  await C.waitForSelector('#inviteSheet:not([hidden])');
+  assert(/Ann \(the host\) decides/.test(await C.textContent('#invNote')), await C.textContent('#invNote'));
+  await C.click('#inviteSheet [data-close-sheet]');
+  await A.click('.pp-row:has-text("Cat") .pp-btn.is-danger');
+  await A.click('#dialogOk');
+  await C.waitForSelector('.sys.is-bad >> text=The host removed you', { timeout: 10000 });
+  await B.waitForSelector('.sys >> text=The host removed Cat', { timeout: 10000 });
+  await B.waitForFunction(() => window.__ghost.session.readyIds().length === 1, null, { timeout: 8000 });
+  await say(A, 'just us two');
+  await B.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent === 'just us two', null, { timeout: 8000 });
+  assert(await C.locator('.msg.them .bubble', { hasText: 'just us two' }).count() === 0, 'removed member gets nothing new');
+  for (const p of [A, B, C]) await p.context().close();
 });
 
 await test('privacy preset: Maximum turns on relay + constant-rate, Customize reports a custom mix', async () => {
@@ -601,6 +692,18 @@ await test('colour themes: every theme applies, Auto follows the device, nothing
   assert(seen.size === 7, 'each theme has its own background: ' + seen.size);
   await P.click('#themeSheet [data-theme-picker] button[data-t="auto"]');
   assert(!(await P.evaluate(() => document.documentElement.dataset.theme)), 'back to Auto');
+  // Text style: separate from colour; Auto follows the theme; theme names fit their tiles.
+  await P.click('#themeSheet [data-theme-picker] button[data-t="daylight"]');
+  assert(await P.evaluate(() => document.documentElement.dataset.type) === 'clean', 'Auto text follows Daylight');
+  for (const ty of ['terminal', 'clean', 'mono']) {
+    await P.click(`#themeSheet [data-type-picker] button[data-ty="${ty}"]`);
+    const got = await P.evaluate(() => document.documentElement.dataset.type || 'terminal');
+    assert(got === ty, 'text style ' + ty + ' → ' + got);
+    const spill = await P.$$eval('#themeSheet .th-name', (ns) => ns.filter((n) => n.scrollWidth > n.clientWidth + 1).map((n) => n.textContent));
+    assert(!spill.length, 'theme names spill out in ' + ty + ': ' + spill.join(','));
+  }
+  await P.click('#themeSheet [data-type-picker] button[data-ty="auto"]');
+  await P.click('#themeSheet [data-theme-picker] button[data-t="auto"]');
   const stored = await P.evaluate(() => ({ ls: localStorage.length, ss: sessionStorage.length, ck: document.cookie }));
   assert(stored.ls === 0 && stored.ss === 0 && !stored.ck, 'nothing stored: ' + JSON.stringify(stored));
   await P.context().close();

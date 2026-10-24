@@ -113,14 +113,18 @@ T('wrong code in the same profile is refused too (same-device link is authentica
   await ctx.close();
 });
 
-T('room locks after the first join: a third browser with the right code is refused', async () => {
+T('a third browser with the right code waits for the host, then joins the group over its own pairs', async () => {
   const a = await fresh(), b = await fresh(), c = await fresh();
-  const { A, code } = await pair(a, b, live.url);
+  const { A, B, code } = await pair(a, b, live.url);
   const C = await page(c);
   await join(C, live.url, code);
-  await C.waitForFunction(() => window.__ghost.session.state === 'failed', null, { timeout: 20000 });
-  assert(/locked/.test(await C.textContent('#connectErrorText')), 'third party not told it is locked');
-  await A.waitForFunction(() => /refused/.test(document.getElementById('messages').textContent), null, { timeout: 5000 });
+  await C.waitForFunction(() => window.__ghost.session.state === 'knocking', null, { timeout: 20000 });
+  await A.waitForSelector('.knock-card', { timeout: 10000 });
+  assert(await C.locator('#chat.is-on').count() === 0, 'nobody gets in without the host');
+  await A.click('.knock-card >> text=Let in');
+  for (const p of [A, B, C]) await p.waitForFunction(() => window.__ghost.session.readyIds().length === 2, null, { timeout: 30000 });
+  await C.fill('#input', 'three of us'); await C.press('#input', 'Enter');
+  for (const p of [A, B]) await p.waitForFunction(() => /three of us/.test(document.getElementById('messages').textContent), null, { timeout: 8000 });
   await a.close(); await b.close(); await c.close();
 });
 
