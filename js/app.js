@@ -5,7 +5,6 @@ import { generateCode, normalizeCode, roomIdFromCode } from './protocol.js';
 import { Session, uid, iceServersWith, parseTurn } from './session.js';
 import { checkNetwork, explain } from './netcheck.js';
 import { LIMITS } from './config.js';
-import { initFog } from './fog.js';
 import { scramble, scrambleOverlay, loopScramble, cycleText, followEyes, EtherLine, renderQR, flash, wait, reducedMotion } from './fx.js';
 import { cleanLabel, cleanText, isMid, sniffImage, parseLink } from './ui/sanitize.js';
 import { $, h, fmtSize, fmtTime, fmtSecs, fmtLeft, toast, copy, confirmDialog, closeDialog, dialogOpen, initDialog } from './ui/dom.js';
@@ -34,6 +33,7 @@ let role = null;
 let burnSecs = 0;
 let verified = false;
 let replyTo = null;
+let editing = null;           // the message being edited in the composer
 let unread = 0;
 let menuFor = null;
 let lastTypingSent = 0;
@@ -50,10 +50,8 @@ const testHook = document.documentElement.dataset.test === '1' ? (window.__ghost
 // ───────────────────────────── helpers ─────────────────────────────
 const inviteLink = () => location.href.split('#')[0] + '#' + code;
 
-let fog = null; // home-screen atmosphere; created once the DOM helpers below exist
 function show(id) {
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('is-on', s.id === id);
-  fog?.setActive(id === 'home' || id === 'joinScreen');
 }
 
 initDialog();
@@ -63,10 +61,6 @@ function track(url) { objectUrls.add(url); return url; }
 function release(url) { if (url) { URL.revokeObjectURL(url); objectUrls.delete(url); } }
 
 // ───────────────────────────── home ─────────────────────────────
-try {
-  fog = initFog({ fog: $('fogCanvas'), mark: $('homeMark'), markCanvas: $('markCanvas'), apparition: $('apparition'), interactive: $('home') });
-  fog.setActive($('home').classList.contains('is-on'));
-} catch (e) { console.warn('[ghost] fog unavailable', e); document.documentElement.classList.add('no-fog'); }
 
 // ── home motion: decrypting headline, status line, ghosts whose eyes follow you ──
 const homeOn = () => $('home').classList.contains('is-on');
@@ -127,6 +121,44 @@ function closeSheet(instant) {
 }
 for (const b of document.querySelectorAll('[data-sheet]')) b.addEventListener('click', () => openSheet(b.dataset.sheet, b));
 for (const b of document.querySelectorAll('[data-close-sheet]')) b.addEventListener('click', () => closeSheet());
+
+// ── colour themes: one layout, several palettes. Auto follows the device's light/dark
+// setting. The choice lasts for this tab only: nothing is written to storage. ──
+const THEMES = [
+  ['auto', 'Auto', ['#F1F0EC', '#0A0B0C', '#62F2B4']],
+  ['signal', 'Signal', ['#F1F0EC', '#111214', '#FF3B1F']],
+  ['phosphor', 'Phosphor', ['#0A0B0C', '#62F2B4', '#E6ECE8']],
+  ['aurora', 'Aurora', ['#0B0820', '#6D4AFF', '#F472B6']],
+  ['daylight', 'Daylight', ['#F6F1EA', '#14151A', '#E8590C']],
+  ['graphite', 'Graphite', ['#0E1012', '#45D69A', '#E8EAED']],
+  ['ledger', 'Ledger', ['#13110F', '#8CC7B0', '#E0A458']],
+  ['vault', 'Vault', ['#0A0C10', '#7AA2FF', '#E6E9EF']],
+];
+let theme = 'auto';
+function applyTheme(t) {
+  theme = THEMES.some(([id]) => id === t) ? t : 'auto';
+  if (theme === 'auto') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = theme;
+  const chrome = getComputedStyle(document.documentElement).getPropertyValue('--chrome').trim();
+  for (const m of document.querySelectorAll('meta[name="theme-color"]')) m.content = chrome;
+  for (const b of document.querySelectorAll('[data-theme-picker] button')) b.setAttribute('aria-checked', String(b.dataset.t === theme));
+}
+for (const grid of document.querySelectorAll('[data-theme-picker]')) {
+  for (const [id, label, [bg, a, b]] of THEMES) {
+    const btn = h('button', 'th');
+    btn.type = 'button'; btn.dataset.t = id; btn.setAttribute('role', 'radio'); btn.setAttribute('aria-checked', 'false');
+    const sw = h('span', 'th-sw');
+    sw.style.background = id === 'auto' ? `linear-gradient(135deg, ${bg} 50%, ${a} 50%)` : bg;
+    const dotA = h('i'); dotA.style.background = id === 'auto' ? b : a;
+    const dotB = h('b'); dotB.style.background = id === 'auto' ? '#111214' : b;
+    sw.append(dotA, dotB);
+    btn.append(sw, h('span', 'th-name', label));
+    btn.onclick = () => applyTheme(id);
+    grid.append(btn);
+  }
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (theme === 'auto') applyTheme('auto'); });
+applyTheme('auto');
 $('sheetScrim').addEventListener('click', () => closeSheet());
 for (const sh of document.querySelectorAll('.sheet')) { // drag the grip down to dismiss (phones)
   let y0 = null, dy = 0;
@@ -238,6 +270,12 @@ $('joinForm').addEventListener('submit', (e) => {
 
 // Invite links carry the code in the fragment (never sent to any server). Read it, then erase it.
 function readInvite() {
+  if (location.hash === '#new') {
+    history.replaceState(history.state, '', location.pathname + location.search);
+    // After the rest of the page has initialised (this runs while the module is loading).
+    if ($('home').classList.contains('is-on') || $('joinScreen').classList.contains('is-on')) setTimeout(() => { readName(); startSession('host', generateCode()); }, 0);
+    return;
+  }
   const c = normalizeCode(location.hash);
   if (location.hash) history.replaceState(history.state, '', location.pathname + location.search);
   if (!c) return;
@@ -307,7 +345,8 @@ async function runNetCheck(outEl, btn) {
 $('netCheckBtn').onclick = () => runNetCheck($('netResult'), $('netCheckBtn'));
 
 const FAIL_TEXT = {
-  'not-found': 'No room with this code is open right now. Check the code. Codes also expire if nobody joins in time, so ask for a fresh invite if it\'s been a while.',
+  'not-found': 'This room isn\'t open. The person who made it may have ended the chat or closed Ghost Chat, or the code expired. Check the code, or ask them for a new invite.',
+  'host-away': 'The room exists, but the person who made it isn\'t answering. Their phone may be locked, or Ghost Chat was closed or put in the background. Ask them to open it again, then try again.',
   'auth-failed': 'A room exists, but it didn\'t accept this code. Check every character. If you\'re certain it\'s right, something may be interfering with the connection — don\'t continue.',
   signaling: 'Couldn\'t reach the introduction server. Check your internet connection, or whether a firewall or content blocker is stopping it.',
   timeout: 'Found the room, but your browsers couldn\'t open a connection to each other.',
@@ -457,6 +496,7 @@ async function onReady({ safetyNumber, resumed, continuity, newPeer }) {
     applyDock();
     etherOut.clear(); etherIn.clear();
     $('kvRoom').textContent = roomIdFromCode(code).replace(/^ghostchat-v\d+-/, '').toUpperCase();
+    $('phRoom').textContent = '· ' + $('kvRoom').textContent;
     sys('End-to-end encrypted with post-quantum protection. Only someone holding the room code could have joined, and the room is now locked to the two of you.', 'is-good');
     sysSafety(safetyNumber);
     if (privacy === 'max') sys('Maximum privacy: relayed connection, constant-rate traffic, no typing indicator or read receipts.', 'is-good');
@@ -613,6 +653,12 @@ $('markVerified').onclick = () => {
 };
 $('copySafety').onclick = () => copy($('safetyNumber').dataset.value || '', 'Safety number');
 $('verifyChip').onclick = () => openPanel(true);
+// One verify control on screen at a time: the header chip only shows while the panel is hidden.
+function syncHead() {
+  const panelShown = !$('panel').hidden;
+  $('verifyChip').hidden = panelShown;
+  $('chat').classList.toggle('panel-shown', panelShown);
+}
 
 // Linkify http(s) URLs as text nodes + anchors — no HTML parsing.
 function fillText(el, text) {
@@ -665,6 +711,12 @@ function placeRecord(r, body) {
   r.el.classList.add('last');
   if (!grouped && r.side === 'them') r.el.append(h('div', 'msg-name', them.name));
   r.el.append(body);
+  // A visible way into the actions (edit, delete, reply…) for mouse users; touch uses long-press.
+  const more = h('button', 'msg-more');
+  more.type = 'button'; more.setAttribute('aria-label', 'Message actions'); more.tabIndex = -1;
+  for (let i = 0; i < 3; i++) more.append(h('i'));
+  more.onclick = (e) => { e.stopPropagation(); const b = more.getBoundingClientRect(); openMenu(r, r.side === 'me' ? b.left - 180 : b.left, b.bottom + 4); };
+  r.el.append(more);
   r.reactsEl = h('div', 'reacts'); r.reactsEl.hidden = true;
   r.metaEl = h('div', 'meta');
   r.timeEl = h('span', null, fmtTime(r.ts));
@@ -714,6 +766,7 @@ function addText(side, { id, text, ts, ttl = 0, reply = null }) {
   const span = h('span');
   fillText(span, text);
   bubble.append(span);
+  r.textEl = span; r.bubble = bubble;
   placeRecord(r, bubble);
   // Incoming text "decrypts" into place. Skipped for bursts, long text and emoji, so it never
   // gets in the way of reading.
@@ -730,6 +783,16 @@ function quoteFor(mid) {
   const r = msgs.get(mid);
   if (!r) return { mid, name: '', text: 'Message unavailable' };
   return { mid, name: r.side === 'me' ? 'You' : them.name, text: (r.kind === 'text' ? r.text : r.name).slice(0, 120) };
+}
+
+function applyEdit(r, text) {
+  r.text = text;
+  r.textEl.replaceChildren();
+  fillText(r.textEl, text);
+  r.bubble.classList.remove('emoji-only');
+  if (!r.editedEl) { r.editedEl = h('span', 'edited', 'edited'); r.bubble.append(r.editedEl); }
+  flash(r.bubble, 'is-edited', 900);
+  if (replyTo?.mid === r.id) setReply(r);
 }
 
 function jumpTo(mid) {
@@ -772,6 +835,7 @@ function removeRecord(r, animate = true) {
   if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) { r.el.classList.add('dissolve'); setTimeout(done, 600); }
   else done();
   if (replyTo?.mid === r.id) clearReply();
+  if (editing === r) clearEdit();
 }
 
 // ───────────────────────────── disappearing messages ─────────────────────────────
@@ -838,6 +902,7 @@ function onMessage(o) {
       them.avatar = AVATARS.includes(o.avatar) ? o.avatar : '👤';
       $('peerName').textContent = them.name;
       $('peerAvatar').textContent = them.avatar;
+      $('panelName').textContent = them.name; $('panelAvatar').textContent = them.avatar;
       $('typingText').textContent = `${them.name} is typing`;
       for (const n of document.querySelectorAll('.msg.them .msg-name')) n.textContent = them.name;
       return;
@@ -872,6 +937,16 @@ function onMessage(o) {
       if (!r) return;
       r.reacts.them = REACTIONS.includes(o.emoji) ? o.emoji : null;
       renderReacts(r);
+      return;
+    }
+    case 'edit': {
+      // Only the author can edit, only text, and the new text passes the same checks as a new message.
+      if (!isMid(o.target) || typeof o.text !== 'string') return;
+      const r = msgs.get(o.target);
+      if (!r || r.side !== 'them' || r.kind !== 'text') return;
+      const text = cleanText(o.text, LIMITS.maxText);
+      if (!text.trim() || text === r.text) return;
+      applyEdit(r, text);
       return;
     }
     case 'unsend': {
@@ -920,9 +995,9 @@ function stopTyping() {
 }
 input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !coarse) { e.preventDefault(); sendText(); }
-  if (e.key === 'ArrowUp' && !input.value) {
+  if (e.key === 'ArrowUp' && !input.value && session && !session.ended) {
     const mine = [...msgs.values()].filter((r) => r.side === 'me' && r.kind === 'text').pop();
-    if (mine) { e.preventDefault(); setReply(mine); }
+    if (mine) { e.preventDefault(); startEdit(mine); }
   }
 });
 $('sendBtn').onclick = () => { sendText(); input.focus(); };
@@ -931,6 +1006,13 @@ function sendText() {
   const text = input.value.replace(/^\s+|\s+$/g, '');
   if (!text || !session || session.ended) return;
   if (text.length > LIMITS.maxText) return toast(`Messages are limited to ${LIMITS.maxText} characters`, true);
+  if (editing) {
+    const r = editing;
+    clearEdit();
+    if (msgs.has(r.id) && text !== r.text) { applyEdit(r, text); session.send({ t: 'edit', target: r.id, text }); }
+    stopTyping();
+    return;
+  }
   const mid = uid();
   const o = { t: 'msg', mid, text, ttl: burnSecs || undefined };
   let reply = null;
@@ -942,6 +1024,7 @@ function sendText() {
 }
 
 function setReply(r) {
+  clearEdit();
   const text = r.kind === 'text' ? r.text : r.name;
   replyTo = { mid: r.id, name: r.side === 'me' ? 'You' : them.name, text: text.slice(0, 120) };
   $('replyName').textContent = replyTo.name;
@@ -951,6 +1034,27 @@ function setReply(r) {
 }
 function clearReply() { replyTo = null; $('replyBar').hidden = true; }
 $('replyCancel').onclick = clearReply;
+
+// Editing: the composer takes the message's text; sending replaces it on both screens.
+function startEdit(r) {
+  if (r.side !== 'me' || r.kind !== 'text' || !session || session.ended) return;
+  clearReply();
+  editing = r;
+  $('editText').textContent = r.text.slice(0, 120);
+  $('editBar').hidden = false;
+  input.value = r.text; autosize();
+  $('sendBtn').disabled = false;
+  $('chat').classList.add('is-editing');
+  input.focus(); input.setSelectionRange(input.value.length, input.value.length);
+}
+function clearEdit() {
+  if (!editing) return;
+  editing = null;
+  $('editBar').hidden = true;
+  $('chat').classList.remove('is-editing');
+  input.value = ''; autosize(); $('sendBtn').disabled = true;
+}
+$('editCancel').onclick = () => { clearEdit(); input.focus(); };
 
 // ───────────────────────────── message menu ─────────────────────────────
 (function buildReactRow() {
@@ -1007,6 +1111,7 @@ function openMenu(r, x, y) {
   const m = $('msgMenu');
   m.querySelector('[data-act="unsend"]').hidden = r.side !== 'me' || session?.ended;
   m.querySelector('[data-act="copy"]').hidden = r.kind !== 'text';
+  m.querySelector('[data-act="edit"]').hidden = r.side !== 'me' || r.kind !== 'text' || !session || session.ended;
   m.querySelector('[data-act="reply"]').hidden = !session || session.ended;
   $('reactRow').hidden = !session || session.ended;
   const sheet = sheetMode();
@@ -1028,6 +1133,7 @@ $('msgMenu').addEventListener('click', async (e) => {
   if (!act || !r) return;
   closeMenu();
   if (act === 'reply') setReply(r);
+  if (act === 'edit') startEdit(r);
   if (act === 'copy') copy(r.text, 'Message');
   if (act === 'hide') removeRecord(r);
   if (act === 'unsend') { session?.send({ t: 'unsend', target: r.id }); removeRecord(r); }
@@ -1156,25 +1262,37 @@ $('viewer').addEventListener('click', (e) => { if (e.target === $('viewer')) clo
 
 // ───────────────────────────── panel & settings ─────────────────────────────
 // Wide screens: the session panel is a permanent right-hand column, not a drawer.
-const dockMQ = matchMedia('(min-width: 1280px) and (pointer: fine)');
+// It can be collapsed to give the conversation the full width (remembered for this tab only).
+const dockMQ = matchMedia('(min-width: 1100px) and (pointer: fine)');
+let dockCollapsed = false;
 const docked = () => dockMQ.matches && $('chat').classList.contains('is-on');
 function applyDock() {
-  document.documentElement.classList.toggle('dock', dockMQ.matches);
-  if (!$('chat').classList.contains('is-on')) return;
-  if (dockMQ.matches) { $('panel').hidden = false; refreshRoute(); }
+  const dock = dockMQ.matches;
+  document.documentElement.classList.toggle('dock', dock);
+  document.documentElement.classList.toggle('dock-collapsed', dock && dockCollapsed);
+  $('panelClose').setAttribute('aria-label', dock ? 'Collapse session panel' : 'Close');
+  $('panelClose').title = dock ? 'Collapse panel' : '';
+  if (!$('chat').classList.contains('is-on')) { syncHead(); return; }
+  if (dock) { $('panel').hidden = dockCollapsed; if (!dockCollapsed) refreshRoute(); }
   else $('panel').hidden = true;
   $('panelBtn').setAttribute('aria-expanded', String(!$('panel').hidden));
-  syncScrim();
+  syncScrim(); syncHead();
 }
 dockMQ.addEventListener?.('change', applyDock);
 applyDock();
 function openPanel(force) {
-  if (docked()) { $('panel').hidden = false; return; }
+  if (docked()) {
+    const open = force ?? $('panel').hidden;
+    dockCollapsed = !open;
+    applyDock();
+    if (open) $('panelClose').focus({ preventScroll: true });
+    return;
+  }
   const open = force ?? $('panel').hidden;
   $('panel').hidden = !open;
   $('panel').style.transform = '';
   $('panelBtn').setAttribute('aria-expanded', String(open));
-  syncScrim();
+  syncScrim(); syncHead();
   if (open) { refreshRoute(); $('panelClose').focus({ preventScroll: true }); }
 }
 // Drag the sheet's handle down to dismiss it.
@@ -1197,6 +1315,14 @@ function openPanel(force) {
   }, { passive: true });
 })();
 $('panelBtn').onclick = () => openPanel();
+$('qaVerify').onclick = () => {
+  $('snSec').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
+  $('markVerified').focus({ preventScroll: true });
+};
+$('inviteNewBtn').onclick = () => {
+  const w = window.open(location.pathname + '#new', '_blank', 'noopener');
+  if (!w) toast('Your browser blocked the new tab. Open Ghost Chat in another tab and start a chat there.', true);
+};
 $('panelClose').onclick = () => openPanel(false);
 $('optReceipts').onchange = (e) => { opts.receipts = e.target.checked; };
 $('optTyping').onchange = (e) => { opts.typing = e.target.checked; if (!opts.typing) stopTyping(); };
@@ -1290,8 +1416,10 @@ function resetChat() {
   $('messages').replaceChildren();
   them.name = 'Peer'; them.avatar = '👤';
   $('peerName').textContent = them.name; $('peerAvatar').textContent = them.avatar;
+  $('panelName').textContent = them.name; $('panelAvatar').textContent = them.avatar; $('phRoom').textContent = '';
   $('typingText').textContent = 'Typing';
   burnSecs = 0; verified = false; replyTo = null; unread = 0; updateTitle();
+  editing = null; $('editBar').hidden = true; $('chat').classList.remove('is-editing');
   for (const b of $('timerOptions').children) b.setAttribute('aria-checked', String(b.dataset.secs === '0'));
   $('timerBadge').hidden = true; $('replyBar').hidden = true; $('typing').hidden = true; $('veil').hidden = true;
   $('banner').hidden = true; $('panel').hidden = true; $('panelBtn').setAttribute('aria-expanded', 'false');
@@ -1322,7 +1450,31 @@ function panic() {
   // Let the goodbye frame leave the transport before tearing it down (the screen is already blank).
   setTimeout(() => { try { s?.destroy('local'); } catch {} location.replace('https://www.google.com/'); }, 150);
 }
-$('panicBtn').onclick = panic;
+// Header panic button. Mouse and keyboard: instant. Touch: press and hold briefly, so a pocket
+// tap or a slip of the thumb can't wipe a conversation (the ring fills while you hold).
+(() => {
+  const b = $('panicBtn');
+  const HOLD_MS = 600;
+  let t = 0, lastTouch = 0;
+  const cancel = (hint) => {
+    if (!t) return;
+    clearTimeout(t); t = 0; b.classList.remove('is-holding');
+    if (hint) toast('Hold to wipe everything');
+  };
+  b.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    lastTouch = Date.now();
+    e.preventDefault();
+    b.classList.add('is-holding');
+    navigator.vibrate?.(12);
+    t = setTimeout(() => { t = 0; navigator.vibrate?.([30, 40, 30]); panic(); }, HOLD_MS);
+  });
+  b.addEventListener('pointerup', () => cancel(true));
+  b.addEventListener('pointercancel', () => cancel(false));
+  b.addEventListener('pointerleave', () => cancel(false));
+  b.addEventListener('contextmenu', (e) => e.preventDefault());
+  b.addEventListener('click', () => { if (Date.now() - lastTouch < 1500) return; panic(); });
+})();
 $('panicSheetBtn').onclick = panic;
 
 // Keep the chat sized to the visible viewport when the on-screen keyboard opens (iOS ignores
@@ -1330,10 +1482,12 @@ $('panicSheetBtn').onclick = panic;
 if (window.visualViewport) {
   const vv = window.visualViewport;
   const fit = () => {
-    document.documentElement.style.setProperty('--vvh', vv.height + 'px');
+    const st = document.documentElement.style;
+    st.setProperty('--vvh', vv.height + 'px');
+    st.setProperty('--vvt', Math.max(0, vv.offsetTop) + 'px');   // iOS pans the page under the keyboard
     if ($('chat').classList.contains('is-on') && document.activeElement === $('input')) scrollDown(true);
   };
-  vv.addEventListener('resize', fit); fit();
+  vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); fit();
 }
 let escPresses = [];
 document.addEventListener('keydown', (e) => {
@@ -1347,6 +1501,7 @@ document.addEventListener('keydown', (e) => {
   if (!$('viewer').hidden) return closeViewer();
   if (!$('msgMenu').hidden) return closeMenu();
   if (!$('panel').hidden) return openPanel(false);
+  if (editing) { clearEdit(); return; }
   if (replyTo) clearReply();
 });
 

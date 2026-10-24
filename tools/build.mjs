@@ -21,7 +21,7 @@ const testPort = (process.argv.find((a) => a.startsWith('--test-signal=')) || ''
 
 // Minimal module linker for our own ES modules plus the vendored ML-KEM build.
 // Order = dependency order (each module only imports ones listed before it).
-const order = ['config', 'protocol', 'local', 'relay', 'ice', 'session', 'netcheck', 'fx', 'fog',
+const order = ['config', 'protocol', 'local', 'relay', 'ice', 'session', 'netcheck', 'fx',
   'ui/sanitize', 'ui/dom', 'ui/handshake', 'ui/media', 'app'];
 const key = (name) => name.replace(/\//g, '_');
 /** Resolves an import specifier relative to the importing module (both under js/). */
@@ -102,28 +102,33 @@ fs.writeFileSync(path.join(root, out), html);
 const digest = crypto.createHash('sha256').update(html, 'utf8').digest('hex');
 console.log(`${out}  ${(html.length / 1024).toFixed(0)} KB  sha256 ${digest}`);
 
-// dist/security.html: the interactive "Who can read what" page, self-contained the same way,
-// so the app's links to it work from the dist folder (and from disk) as well as on the site.
-let sdigest = '';
+// dist/security.html, guide.html, legal.html: the info pages, self-contained the same way,
+// so the app's links to them work from the dist folder (and from disk) as well as on the site.
 if (!testPort) {
-  const scss = read('css/security.css').replace(/url\(\.\.\/fonts\/([^)]+)\)/g, (_, f) =>
-    `url(data:font/woff2;base64,${fs.readFileSync(path.join(root, 'fonts', f)).toString('base64')})`);
-  const sjs = read('js/security.js');
-  let sec = read('security.html');
-  const scspOld = sec.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/)[1];
-  const scsp = ["default-src 'none'", `script-src ${sha(sjs)}`, `style-src ${sha(scss)}`, 'font-src data:', 'img-src data:', "base-uri 'none'", "form-action 'none'"].join('; ');
-  sec = sec
-    .replace(scspOld, scsp)
-    .replace('<link rel="icon" href="icon.svg" type="image/svg+xml">', `<link rel="icon" href="${icon}" type="image/svg+xml">`)
-    .replace('<link rel="stylesheet" href="css/security.css">', () => `<style>${scss}</style>`)
-    .replace('<script src="js/security.js" defer></script>\n', '')
-    .replaceAll('href="index.html"', 'href="ghostchat.html"')
-    .replaceAll('href="SECURITY.md"', `href="${REPO}/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer"`)
-    .replaceAll('href="docs/AUDIT.md"', `href="${REPO}/blob/main/docs/AUDIT.md" target="_blank" rel="noopener noreferrer"`)
-    .replace('</body>', () => `<script>${sjs}</script>\n</body>`);
-  if (/src="js\//.test(sec) || /href="css\//.test(sec)) throw new Error('unresolved local reference in security.html');
-  fs.writeFileSync(path.join(root, 'dist/security.html'), sec);
-  sdigest = crypto.createHash('sha256').update(sec, 'utf8').digest('hex');
-  console.log(`dist/security.html  ${(sec.length / 1024).toFixed(0)} KB  sha256 ${sdigest}`);
-  fs.writeFileSync(path.join(root, 'dist/SHA256SUMS'), `${digest}  ghostchat.html\n${sdigest}  security.html\n`);
+  const sums = [`${digest}  ghostchat.html`];
+  const PAGES = [['security.html', 'css/security.css', 'js/security.js'], ['guide.html', 'css/pages.css', 'js/pages.js'], ['legal.html', 'css/pages.css', 'js/pages.js']];
+  for (const [file, cssFile, jsFile] of PAGES) {
+    const pcss = read(cssFile).replace(/url\(\.\.\/fonts\/([^)]+)\)/g, (_, f) =>
+      `url(data:font/woff2;base64,${fs.readFileSync(path.join(root, 'fonts', f)).toString('base64')})`);
+    const pjs = read(jsFile);
+    let pg = read(file);
+    const cspOld = pg.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/)[1];
+    const pcsp = ["default-src 'none'", `script-src ${sha(pjs)}`, `style-src ${sha(pcss)}`, 'font-src data:', 'img-src data:', "base-uri 'none'", "form-action 'none'"].join('; ');
+    pg = pg
+      .replace(cspOld, pcsp)
+      .replace('<link rel="icon" href="icon.svg" type="image/svg+xml">', `<link rel="icon" href="${icon}" type="image/svg+xml">`)
+      .replace(`<link rel="stylesheet" href="${cssFile}">`, () => `<style>${pcss}</style>`)
+      .replace(`<script src="${jsFile}" defer></script>\n`, '')
+      .replaceAll('href="index.html"', 'href="ghostchat.html"')
+      .replaceAll('href="SECURITY.md"', `href="${REPO}/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer"`)
+      .replaceAll('href="docs/AUDIT.md"', `href="${REPO}/blob/main/docs/AUDIT.md" target="_blank" rel="noopener noreferrer"`)
+      .replace('</body>', () => `<script>${pjs}</script>\n</body>`);
+    if (/src="js\//.test(pg) || /href="css\//.test(pg)) throw new Error('unresolved local reference in ' + file);
+    fs.writeFileSync(path.join(root, 'dist', file), pg);
+    const d = crypto.createHash('sha256').update(pg, 'utf8').digest('hex');
+    sums.push(`${d}  ${file}`);
+    console.log(`dist/${file}  ${(pg.length / 1024).toFixed(0)} KB  sha256 ${d}`);
+  }
+  fs.writeFileSync(path.join(root, 'dist/SHA256SUMS'), sums.join('\n') + '\n');
 }
+

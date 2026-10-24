@@ -23,7 +23,7 @@ const problems = [];
 let passed = 0, failed = 0;
 const results = [];
 
-async function page(name, viewport = { width: 1200, height: 800 }) {
+async function page(name, viewport = { width: 1024, height: 800 }) {
   const ctx = await browser.newContext({ viewport, acceptDownloads: true });
   await ctx.route(/google\.com/, (r) => r.fulfill({ body: '<title>elsewhere</title>', contentType: 'text/html' }));
   const p = await ctx.newPage();
@@ -202,6 +202,43 @@ await test('reply, reactions and unsend sync between peers', async () => {
   assert(await S.B.locator('.sys', { hasText: 'unsent a message' }).count() === 1, 'unsend notice');
 });
 
+await test('edit a message: both screens update and show it was edited', async () => {
+  await say(S.A, 'meet at nine');
+  await S.B.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent === 'meet at nine');
+  await S.A.locator('.msg.me').last().locator('.bubble').click({ button: 'right' });
+  await S.A.click('[data-act="edit"]');
+  assert(await S.A.isVisible('#editBar'), 'edit bar shown');
+  assert(await S.A.inputValue('#input') === 'meet at nine', 'composer holds the text');
+  await S.A.fill('#input', 'meet at ten');
+  await S.A.press('#input', 'Enter');
+  await S.B.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble span')?.textContent === 'meet at ten', null, { timeout: 5000 });
+  assert(await S.B.locator('.msg.them').last().locator('.edited').count() === 1, 'receiver sees "edited"');
+  assert(await S.A.locator('.msg.me').last().locator('.edited').count() === 1, 'sender sees "edited"');
+  assert(await S.A.isHidden('#editBar'), 'edit bar closes');
+  // ArrowUp on an empty composer edits the last message; Escape cancels.
+  await S.A.focus('#input'); await S.A.press('#input', 'ArrowUp');
+  assert(await S.A.isVisible('#editBar'), 'ArrowUp starts editing');
+  await S.A.press('#input', 'Escape');
+  assert(await S.A.isHidden('#editBar') && await S.A.inputValue('#input') === '', 'Escape cancels editing');
+});
+
+await test('peer cannot edit messages it did not author, files, or messages that do not exist', async () => {
+  await say(S.B, 'only bob writes this');
+  await S.A.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent === 'only bob writes this');
+  const bobsId = await S.B.evaluate(() => document.querySelector('.msg.me:last-child').dataset.id);
+  await S.A.evaluate((id) => {
+    const s = window.__ghost.session;
+    s.send({ t: 'edit', target: id, text: 'forged by alice' });
+    s.send({ t: 'edit', target: 'ffffffffffffffff', text: 'nothing here' });
+    s.send({ t: 'edit', target: id, text: '' });
+    s.send({ t: 'edit', target: { x: 1 }, text: 'bad target' });
+  }, bobsId);
+  await S.A.waitForTimeout(600);
+  const t = await S.B.evaluate(() => document.querySelector('.msg.me:last-child .bubble span').textContent);
+  assert(t === 'only bob writes this', 'forged edit was ignored: ' + t);
+  assert(await S.B.locator('.edited', { hasText: 'edited' }).count() <= 1, 'no edited label added by forgeries');
+});
+
 await test('peer cannot unsend or react to messages it did not author or that do not exist', async () => {
   await say(S.B, 'bob owns this');
   await S.A.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent === 'bob owns this');
@@ -319,7 +356,7 @@ await test('joining a room that does not exist explains what happened', async ()
   const P = await page('Lonely');
   await join(P, 'ZZZZZ-ZZZZZ-ZZZZZ-ZZZZZ', 'Lonely');
   await P.waitForSelector('#connectError:not([hidden])', { timeout: 20000 });
-  assert(/No room with this code/.test(await P.textContent('#connectErrorText')), 'message');
+  assert(/This room isn.t open/.test(await P.textContent('#connectErrorText')), 'message');
   await P.context().close();
 });
 
@@ -371,6 +408,26 @@ await test('panic wipe destroys the page and leaves', async () => {
   await s.A.context().close(); await s.B.context().close();
 });
 
+await test('wide screen: docked panel collapses, one verify control at a time, invite opens a new room', async () => {
+  const s = await pair('W1', 'W2', { width: 1400, height: 860 });
+  const B = s.B;
+  assert(await B.isVisible('#panel'), 'panel docked open');
+  assert(await B.isHidden('#verifyChip'), 'header chip hidden while the panel shows verification');
+  await B.click('#panelClose');
+  assert(await B.isHidden('#panel'), 'panel collapses');
+  assert(await B.isVisible('#verifyChip') && await B.isVisible('#panelBtn'), 'chip and expand button appear');
+  await B.waitForTimeout(450);
+  const pr = await B.evaluate(() => getComputedStyle(document.getElementById('chat')).paddingRight);
+  assert(pr === '0px', 'conversation takes the panel\'s space: ' + pr);
+  await B.click('#panelBtn');
+  assert(await B.isVisible('#panel') && await B.isHidden('#verifyChip'), 'panel expands again');
+  const [popup] = await Promise.all([B.context().waitForEvent('page'), B.click('#inviteNewBtn')]);
+  await popup.waitForFunction(() => document.querySelector('#connect.is-on') && document.querySelector('#codeGroups').textContent.trim().length > 10, null, { timeout: 15000 });
+  assert(!(await popup.evaluate(() => location.hash)), 'the #new marker is removed');
+  assert(await B.locator('#chat.is-on').count() === 1, 'original conversation stays open');
+  await s.A.context().close(); await s.B.context().close();
+});
+
 await test('refuses to run inside a frame (click-jacking guard)', async () => {
   const ctx = await browser.newContext();
   const p = await ctx.newPage();
@@ -396,6 +453,23 @@ await test('security page: observer lens updates the sample view, no CSP problem
   await P.click('.obs[data-id="relay"]');
   assert((await P.textContent('[data-f="size"] dd')).includes('64 KB'), 'relay sees padded sizes only');
   assert(await P.locator('#matrix tbody tr').count() === 9, 'matrix rows');
+  await P.context().close();
+});
+
+await test('guide and legal pages: linked from home, interactive flowchart works, no CSP problems', async () => {
+  const P = await page('Guide');
+  await P.click('.home-links a[href="guide.html"]');
+  await P.waitForSelector('#flow');
+  assert(await P.locator('#flow .n.is-lit').count() >= 8, 'a path is lit by default');
+  await P.click('[data-scen="wrong"]');
+  assert(await P.locator('#flow [data-n="n11"].is-lit').count() === 1, 'wrong code lights "Refused"');
+  assert(await P.locator('#flow [data-n="n10"].is-lit').count() === 0, 'and not the chat');
+  assert((await P.textContent('#scenNote')).includes('proof'), 'scenario note updates');
+  await P.click('.nav a[href="legal.html"]');
+  await P.waitForSelector('#privacy');
+  assert(await P.locator('.legal-nav a').count() === 8, 'legal contents');
+  await P.click('.nav a[href="security.html"]');
+  await P.waitForSelector('#observers .obs');
   await P.context().close();
 });
 
@@ -472,10 +546,64 @@ await test('phone layout: action sheet, swipe-to-reply, session bottom sheet, no
   assert(await B.isVisible('#panicSheetBtn'), 'panic lives in the sheet on phones');
   await B.click('#markVerified', { timeout: 3000 });   // controls inside the sheet must be tappable above the scrim
   assert(await B.locator('#verifyChip.is-verified').count() === 1, 'sheet controls work');
-  assert(await B.isHidden('#panicBtn'), 'no panic button in the phone header');
+  await B.click('#panelClose');
+  // Panic sits in the phone header, but a tap only hints: wiping needs a short hold.
+  assert(await B.isVisible('#panicBtn'), 'panic button in the phone header');
+  await B.tap('#panicBtn');
+  await B.waitForTimeout(250);
+  assert(await B.locator('#chat.is-on').count() === 1, 'a tap does not wipe');
+  assert((await B.textContent('#toast')).includes('Hold'), 'tap explains hold-to-wipe');
   const overflow = await B.evaluate(() => document.documentElement.scrollWidth > innerWidth);
   assert(!overflow, 'no horizontal overflow');
   await A.context().close(); await ctx.close();
+});
+
+await test('phones: home, join, room and chat screens fit without scrolling or sideways overflow', async () => {
+  const fits = (p) => p.evaluate(() => {
+    const scr = document.querySelector('.screen.is-on');
+    scr.scrollTop = 99999; const moved = scr.scrollTop; scr.scrollTop = 0;
+    window.scrollTo(0, 99999); const win = window.scrollY; window.scrollTo(0, 0);
+    return { id: scr.id, moved, win, wide: document.documentElement.scrollWidth > innerWidth };
+  });
+  const check = async (p, what) => { const r = await fits(p); assert(!r.moved && !r.win && !r.wide, `${what} (${r.id}) scrolls: ${JSON.stringify(r)}`); };
+  for (const vp of [{ width: 360, height: 640 }, { width: 390, height: 664 }]) {
+    const A = await page('Phone A', vp), B = await page('Phone B', vp);
+    await check(A, 'home');
+    const code = await host(A, 'Ana');
+    await check(A, 'room screen');
+    await B.goto(BASE + '#' + code.replace(/\s+/g, '-'));
+    await B.waitForSelector('#joinScreen.is-on');
+    await check(B, 'join screen');
+    await B.click('#joinBtn');
+    await A.waitForSelector('#chat.is-on', { timeout: 20000 }); await B.waitForSelector('#chat.is-on', { timeout: 20000 });
+    await say(A, 'hello phone ' + 'x'.repeat(300));
+    await B.focus('#input'); await B.fill('#input', 'typing');
+    await check(B, 'chat while typing');
+    await A.context().close(); await B.context().close();
+  }
+});
+
+await test('colour themes: every theme applies, Auto follows the device, nothing is stored', async () => {
+  const P = await page('Themes');
+  assert(!(await P.evaluate(() => document.documentElement.dataset.theme)), 'starts on Auto');
+  await P.click('#themeBtn');
+  await P.waitForSelector('#themeSheet:not([hidden])');
+  const ids = await P.$$eval('#themeSheet [data-theme-picker] button', (bs) => bs.map((b) => b.dataset.t));
+  assert(ids.length === 8 && ids[0] === 'auto', 'eight choices: ' + ids.join(','));
+  const seen = new Set();
+  for (const id of ids.slice(1)) {
+    await P.click(`#themeSheet [data-theme-picker] button[data-t="${id}"]`);
+    const r = await P.evaluate(() => ({ t: document.documentElement.dataset.theme, bg: getComputedStyle(document.body).backgroundColor, meta: document.querySelector('meta[name="theme-color"]').content, on: document.querySelector('#themeSheet [aria-checked="true"]').dataset.t }));
+    assert(r.t === id && r.on === id, 'applied ' + id);
+    assert(r.meta && r.meta.startsWith('#'), 'browser bar colour follows ' + id);
+    seen.add(r.bg);
+  }
+  assert(seen.size === 7, 'each theme has its own background: ' + seen.size);
+  await P.click('#themeSheet [data-theme-picker] button[data-t="auto"]');
+  assert(!(await P.evaluate(() => document.documentElement.dataset.theme)), 'back to Auto');
+  const stored = await P.evaluate(() => ({ ls: localStorage.length, ss: sessionStorage.length, ck: document.cookie }));
+  assert(stored.ls === 0 && stored.ss === 0 && !stored.ck, 'nothing stored: ' + JSON.stringify(stored));
+  await P.context().close();
 });
 
 // ───────────────────────────── report ─────────────────────────────

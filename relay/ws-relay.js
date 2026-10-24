@@ -17,6 +17,10 @@
 const MAX_FRAME = 66 * 1024;      // largest Ghost Chat frame is ~65.6 KB
 const MAX_JOINERS = 4;            // pending handshakes per room (the app locks after one)
 const RATE_PER_10S = 4000;        // per socket; generous for file transfers
+// A host pings every 25 s. Phones freeze or kill background tabs without closing their
+// sockets, so a host that has been silent this long is treated as gone (background tabs may
+// be throttled to one timer a minute, hence the margin).
+const HOST_SILENT_MS = 130_000;
 
 export class Room {
   constructor(state) {
@@ -24,6 +28,13 @@ export class Room {
     // Keep-alive pings are answered by the platform without waking the object (and free).
     state.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));
   }
+
+  silent(ws) {
+    let last = 0;
+    try { last = this.state.getWebSocketAutoResponseTimestamp(ws)?.getTime() || 0; } catch {}
+    return Date.now() - Math.max(last, this.info(ws).since || 0) > HOST_SILENT_MS;
+  }
+  evict(ws) { try { ws.close(4408, 'host silent'); } catch {} this.gone(ws); }
 
   sockets(except) { return this.state.getWebSockets().filter((w) => w !== except && w.readyState === 1); }
   info(ws) { try { return ws.deserializeAttachment() || {}; } catch { return {}; } }
@@ -34,7 +45,8 @@ export class Room {
     if (request.headers.get('Upgrade') !== 'websocket') return new Response('expected websocket', { status: 426 });
     const role = new URL(request.url).searchParams.get('role');
     if (role !== 'host' && role !== 'joiner') return new Response('bad role', { status: 400 });
-    const host = this.hostOf();
+    let host = this.hostOf();
+    if (host && this.silent(host)) { this.evict(host); host = null; }
     if (role === 'host' && host) return new Response('room already has a host', { status: 409 });
     const joiners = this.joinersOf();
     if (role === 'joiner' && joiners.length >= MAX_JOINERS) return new Response('room busy', { status: 429 });
@@ -42,13 +54,15 @@ export class Room {
     const [client, server] = Object.values(new WebSocketPair());
     this.state.acceptWebSocket(server);
     if (role === 'host') {
-      server.serializeAttachment({ role: 'host', n: 0, t: Date.now() });
+      server.serializeAttachment({ role: 'host', n: 0, t: Date.now(), since: Date.now() });
       for (const j of joiners) server.send(JSON.stringify({ t: 'join', id: this.info(j).id }));
     } else {
       const used = new Set(joiners.map((j) => this.info(j).id));
       let id = 0; while (used.has(id)) id++;
       server.serializeAttachment({ role: 'joiner', id, n: 0, t: Date.now() });
-      if (host) { host.send(JSON.stringify({ t: 'join', id })); server.send('{"t":"ready"}'); }
+      // The joiner is only told "ready" once the host's page answers (an 'accept'), so a frozen
+      // or killed host tab can't swallow a handshake. 'wait' tells the joiner a host socket exists.
+      if (host) { host.send(JSON.stringify({ t: 'join', id })); server.send('{"t":"wait"}'); }
       else { server.send('{"t":"nohost"}'); server.close(4404, 'no host'); }
     }
     return new Response(null, { status: 101, webSocket: client });
@@ -56,10 +70,12 @@ export class Room {
 
   webSocketMessage(ws, msg) {
     const a = this.info(ws);
-    if (typeof msg === 'string') {                             // control: host drops a joiner
+    if (typeof msg === 'string') {                             // control: host accepts or drops a joiner
       if (a.role !== 'host') return;
       let m; try { m = JSON.parse(msg); } catch { return; }
-      if (m?.t === 'kick') { const j = this.joinersOf(ws).find((x) => this.info(x).id === m.id); try { j?.close(4400, 'closed by host'); } catch {} }
+      const j = this.joinersOf(ws).find((x) => this.info(x).id === m?.id);
+      if (m?.t === 'accept') { try { j?.send('{"t":"ready"}'); } catch {} }
+      if (m?.t === 'kick') { try { j?.close(4400, 'closed by host'); } catch {} }
       return;
     }
     const now = Date.now();

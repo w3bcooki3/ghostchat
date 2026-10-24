@@ -59,12 +59,15 @@ export function dialRelay(base, room) {
   conn._buffered = () => ws?.bufferedAmount || 0;
   try { ws = new WebSocket(socketUrl(base, room, 'joiner')); } catch { queueMicrotask(() => { conn.unanswered = true; conn._shut(false); }); return conn; }
   ws.binaryType = 'arraybuffer';
-  const timer = setTimeout(() => { if (!conn.open) { conn.unanswered = true; try { ws.close(); } catch {} conn._shut(false); } }, OPEN_TIMEOUT_MS);
+  // A host socket exists ('wait') but its page never accepted us: it's frozen or gone (a phone
+  // that locked or put the browser in the background). Reported as `silentHost`.
+  const timer = setTimeout(() => { if (!conn.open) { conn.unanswered = true; if (conn.hostSeen) conn.silentHost = true; try { ws.close(); } catch {} conn._shut(false); } }, OPEN_TIMEOUT_MS);
   const ping = setInterval(() => { if (ws.readyState === 1) ws.send('ping'); }, PING_MS);
   ws.onmessage = (e) => {
     if (typeof e.data === 'string') {
       let m; try { m = JSON.parse(e.data); } catch { return; }
       if (m?.t === 'ready') { clearTimeout(timer); conn._opened(); }
+      else if (m?.t === 'wait') conn.hostSeen = true;
       else if (m?.t === 'nohost') { conn.unanswered = true; conn.nohost = true; }
       else if (m?.t === 'hostgone') conn._shut(false);
       return;
@@ -108,6 +111,7 @@ export class RelayHost {
           this.conns.set(id, conn);
           this.onConnection?.(conn);           // Link attaches its handlers synchronously
           conn._opened();
+          ws.send(JSON.stringify({ t: 'accept', id }));   // proves this page is alive; the relay then tells the joiner
         } else if (m?.t === 'leave') { const c = this.conns.get(m.id); this.conns.delete(m.id); c?._shut(false); }
         return;
       }

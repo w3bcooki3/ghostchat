@@ -10,7 +10,7 @@ Post-quantum key exchange. No accounts. Nothing stored. Close the tab and it's g
 [![CI](https://github.com/w3bcooki3/ghostchat/actions/workflows/ci.yml/badge.svg)](https://github.com/w3bcooki3/ghostchat/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-62F2B4?labelColor=0C1216)](LICENSE)
 
-[**Open Ghost Chat**](https://w3bcooki3.github.io/ghostchat/) · [Who can read what](https://w3bcooki3.github.io/ghostchat/security.html) · [Security model](SECURITY.md) · [Review history](docs/AUDIT.md)
+[**Open Ghost Chat**](https://w3bcooki3.github.io/ghostchat/) · [How it works](https://w3bcooki3.github.io/ghostchat/guide.html) · [Who can read what](https://w3bcooki3.github.io/ghostchat/security.html) · [Privacy & terms](https://w3bcooki3.github.io/ghostchat/legal.html) · [Security model](SECURITY.md) · [Review history](docs/AUDIT.md)
 
 ![Ghost Chat home screen](docs/screenshots/home.png)
 
@@ -40,7 +40,9 @@ Post-quantum key exchange. No accounts. Nothing stored. Close the tab and it's g
 **Conversation**
 - Delivered and read receipts; read receipts are optional.
 - Disappearing messages (10 s to 1 h), synced between both people.
-- Replies, reactions, unsend for both, remove for me.
+- Replies, reactions, edit (shown as "edited"; only the author can edit), delete for everyone, delete for me.
+- Colour themes: Signal, Phosphor, Aurora, Daylight, Graphite, Ledger and Vault, plus Auto (Signal by day, Phosphor by night). The choice lasts for the tab; nothing is stored.
+- Rooms are for two. "New room for someone else" opens a separate private room in a new tab.
 - Typing indicator (optional).
 - Files up to 100 MB, streamed in encrypted chunks with progress and cancel. Images preview inline; everything else downloads.
 - Drag and drop, or paste images.
@@ -83,7 +85,7 @@ Either way, add the endpoint's origin to `connect-src` in `index.html`'s Content
 WebRTC between two windows on the same machine relies on mDNS `.local` candidates, NAT hairpinning, or a TURN relay. On many Windows setups, VPNs and symmetric-NAT networks, mDNS doesn't resolve and hairpinning isn't supported. PeerJS's free public TURN relay is also often unreachable, so every path failed and the joiner timed out after 15 seconds. Two windows of one browser profile now use the same-device link. For real conversations across such networks, configure a TURN relay. A self-hosted [coturn](https://github.com/coturn/coturn) works, or any TURN provider; set it in `js/config.js` (`ICE_SERVERS`) or in the app.
 
 **Phones**
-- An app-style launcher: the brand glows in the fog, with **Start a private chat** and **Join with a code** in thumb reach. Your name and privacy level are chips that open bottom sheets.
+- An app-style launcher: the dot-matrix brand on engineering-grid paper, with **Start a private chat** and **Join with a code** in thumb reach. Your name and privacy level are chips that open bottom sheets.
 - **Join with a code** opens a dedicated code pad: four boxes that accept a pasted code or a whole invite link, a Paste button, and look-alike warnings (no 0, 1, I or O). Invite links open it already filled in, so joining is one tap. The phone's back button returns home.
 - Bottom sheets for session settings and message actions; swipe a message right to reply, long-press for actions.
 - Native share sheet for invites, a keyboard-aware composer, safe-area insets, and 44-pixel touch targets throughout.
@@ -147,7 +149,7 @@ Then edit [`js/config.js`](js/config.js) (`SIGNALING`, `TURN_ENDPOINT` or `ICE_S
 npm install
 npm test               # unit tests (Node): protocol, plus relay credentials, ICE sanitizing, TURN input
 npm run test:e2e       # both browser suites: the original scenarios + connectivity/motion/expiry
-npm run build          # → dist/ghostchat.html, dist/security.html, dist/SHA256SUMS (commit all three)
+npm run build          # → dist/ghostchat.html, security.html, guide.html, legal.html, SHA256SUMS (commit them all)
 npm run serve:local    # app on http://127.0.0.1:8090 with its own local signaling server on :9000
 ```
 
@@ -168,6 +170,8 @@ The end-to-end suite covers:
 ```
 index.html             app markup + Content-Security-Policy
 security.html          "Who can read your conversation?" (css/security.css, js/security.js)
+guide.html             How it works: tech stack, diagrams, flowchart (css/pages.css, js/pages.js)
+legal.html             Privacy policy, terms, acceptable use, licenses (css/pages.css, js/pages.js)
 css/app.css            styles (desktop + phone layer)
 js/protocol.js         crypto protocol v3: codes, hybrid handshake, lock/resume, ratchet, padding (no DOM)
 js/session.js          session engine: transports, handshake, reconnection, delivery, goodbye, files (no DOM)
@@ -182,7 +186,6 @@ js/ui/sanitize.js      input hygiene: names, text, links, file risk and safe fil
 js/ui/dom.js           DOM helpers, toast, confirmation dialog
 js/ui/media.js         received files: view-on-demand, save as opaque bytes, risk prompts, share
 js/ui/handshake.js     the connecting screen's handshake animation, driven by real frames
-js/fog.js              home-screen WebGL atmosphere
 js/fx.js               motion effects (decrypt text, eyes, ciphertext strip) and the QR renderer
 js/config.js           signaling, ICE servers, limits
 vendor/                PeerJS 1.5.5, ML-KEM-1024 from noble-post-quantum 0.7.1, uqr 0.1.2 QR encoder (all MIT)

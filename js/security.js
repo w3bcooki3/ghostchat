@@ -48,17 +48,17 @@ const OBSERVERS = [
     },
   },
   {
-    id: 'relay', name: 'Relay server', short: 'TURN relay',
-    verdict: 'Used when a direct connection isn\'t possible, or always with Maximum privacy. It forwards sealed packets it can\'t open.',
+    id: 'relay', name: 'Relay server', short: 'Relay',
+    verdict: 'Ghost Chat\'s WebSocket relay (or your own TURN server). Used when a direct connection isn\'t possible, such as on VPNs and mobile data, or always with Maximum privacy. It forwards sealed packets it can\'t open.',
     s: {
-      content: ['no', 'Encrypted twice: by WebRTC and by Ghost Chat.'],
+      content: ['no', 'Sealed by Ghost Chat\'s end-to-end encryption before it reaches the relay.'],
       files: ['no', 'Encrypted chunk by chunk.'],
       names: ['no', 'Encrypted.'],
       activity: ['no', 'Encrypted, padded like everything else.'],
       size: ['part', 'Only padded sizes: 256 B, 1 KB, 4 KB, 16 KB or 64 KB.'],
       timing: ['yes', 'It sees when packets flow and roughly how much.'],
       ip: ['yes', 'It forwards traffic between your addresses.'],
-      room: ['no', 'It never sees signaling.'],
+      room: ['no', 'It sees only a one-way hash of the full code, which it can\'t reverse or link to the room name.'],
       code: ['no', 'Never sent anywhere.'],
     },
     m: {

@@ -14,3 +14,7 @@ class_name = "Room"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Room"]
+
+# The relay keeps no logs: its code logs nothing, and Workers Logs stay off.
+[observability]
+enabled = false

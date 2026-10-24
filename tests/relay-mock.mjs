@@ -18,7 +18,7 @@ export async function startRelayMock(port = 0) {
       r.host = ws;
       for (const id of r.joiners.keys()) ws.send(JSON.stringify({ t: 'join', id }));
       ws.on('message', (d, isBinary) => {
-        if (!isBinary) { try { const c = JSON.parse(d); if (c.t === 'kick') r.joiners.get(c.id)?.close(4400); } catch {} return; }
+        if (!isBinary) { try { const c = JSON.parse(d); if (c.t === 'kick') r.joiners.get(c.id)?.close(4400); if (c.t === 'accept') r.joiners.get(c.id)?.send('{"t":"ready"}'); } catch {} return; }
         const u8 = new Uint8Array(d); r.joiners.get(u8[0])?.send(u8.subarray(1));
       });
       ws.on('close', () => { if (r.host === ws) r.host = null; for (const j of r.joiners.values()) { j.send('{"t":"hostgone"}'); j.close(4410); } });
@@ -27,7 +27,7 @@ export async function startRelayMock(port = 0) {
       let id = 0; while (r.joiners.has(id)) id++;
       r.joiners.set(id, ws);
       if (!r.host) { ws.send('{"t":"nohost"}'); r.joiners.delete(id); return ws.close(4404); }
-      r.host.send(JSON.stringify({ t: 'join', id })); ws.send('{"t":"ready"}');
+      r.host.send(JSON.stringify({ t: 'join', id })); ws.send('{"t":"wait"}');   // 'ready' once the host accepts
       ws.on('message', (d, isBinary) => {
         if (!isBinary || !r.host) return;
         const u8 = new Uint8Array(d), out = new Uint8Array(u8.length + 1); out[0] = id; out.set(u8, 1); r.host.send(out);

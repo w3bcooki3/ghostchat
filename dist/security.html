@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0dYzVpQwWdATBOCw6cShV073gHPAnU146WSfrz8dOEQ='; style-src 'sha256-w1qulSRN21U9y41UxSXHCf/ceV8isBhkcXKerV1PRxE='; font-src data:; img-src data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-L2KsnxyjRo24G/mdA24g6isTn07kNxIRqnDE6sWLhuw='; style-src 'sha256-Cg2OlZm3zUqEeXW8wWStD4Mpww70KwXmzoT273DB9vc='; font-src data:; img-src data:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#05080A">
@@ -182,6 +182,20 @@ p { max-width: 64ch; color: var(--fog); margin: 0 0 14px; }
   .top .btn-open { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition-duration: .001ms !important; } }
+
+/* shared page navigation (matches guide and legal pages) */
+.nav { display: flex; align-items: center; gap: 4px; }
+.nav a:not(.btn-open) { padding: 8px 12px; border-radius: 10px; color: var(--fog); text-decoration: none; font: 500 14px var(--f-ui); }
+.nav a:not(.btn-open):hover { color: var(--paper); background: var(--hull-2); }
+.nav a[aria-current="page"] { color: var(--paper) !important; background: var(--hull-3); box-shadow: inset 0 0 0 1px var(--line-2); }
+.nav .btn-open { margin-left: 8px; }
+.foot { flex-direction: column; align-items: center; gap: 18px; }
+.foot-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 20px; font-size: 14px; }
+.foot-nav a { color: var(--fog); text-decoration: none; } .foot-nav a:hover { color: var(--ecto); }
+@media (max-width: 720px) {
+  .top { flex-wrap: wrap; row-gap: 8px; }
+  .nav { order: 3; width: 100%; overflow-x: auto; scrollbar-width: none; margin: 0 -6px; }
+}
 </style>
 </head>
 <body>
@@ -192,7 +206,12 @@ p { max-width: 64ch; color: var(--fog); margin: 0 0 14px; }
     <svg class="glyph" viewBox="0 0 40 48" aria-hidden="true"><path fill-rule="evenodd" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Zm-7 16a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm14 0a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/></svg>
     <span>Ghost Chat</span>
   </a>
-  <a class="btn-open" href="ghostchat.html">Open Ghost Chat</a>
+  <nav class="nav" aria-label="Pages">
+    <a href="guide.html">How it works</a>
+    <a href="security.html" aria-current="page">Security</a>
+    <a href="legal.html">Privacy &amp; terms</a>
+    <a class="btn-open" href="ghostchat.html">Open Ghost Chat</a>
+  </nav>
 </header>
 
 <main>
@@ -229,7 +248,7 @@ p { max-width: 64ch; color: var(--fog); margin: 0 0 14px; }
           </div>
           <dl class="mock-meta">
             <div data-f="ip"><dt>Addresses</dt><dd data-plain="203.0.113.24 ↔ 198.51.100.7">203.0.113.24 ↔ 198.51.100.7</dd></div>
-            <div data-f="room"><dt>Room</dt><dd data-plain="ghostchat-v2-tzqfm">ghostchat-v2-tzqfm</dd></div>
+            <div data-f="room"><dt>Room</dt><dd data-plain="ghostchat-v3-k7qxm">ghostchat-v3-k7qxm</dd></div>
             <div data-f="timing"><dt>Activity</dt><dd data-plain="21:02 → 21:09, 14 packets">21:02 → 21:09, 14 packets</dd></div>
             <div data-f="size"><dt>Sizes</dt><dd data-plain="61 B, 33 B, 1,258,291 B">61 B, 33 B, 1,258,291 B</dd></div>
           </dl>
@@ -309,12 +328,13 @@ p { max-width: 64ch; color: var(--fog); margin: 0 0 14px; }
       <h3>Is it "military grade"?</h3>
       <p>Nobody certifies apps as military grade, so the phrase means nothing on its own. What Ghost Chat can say: it uses the same algorithms and key sizes the NSA's CNSA 2.0 suite names for protecting classified information (AES-256, ML-KEM-1024, SHA-384, and P-384 during the transition period). What it can't say: that the implementation is certified, FIPS-validated, or audited, or that a web page served from a website is a classified-grade environment. It isn't.</p>
     </div>
-    <p class="status">Not independently audited. The protocol uses only standard browser cryptography and is covered by automated tests and an internal review. For high-risk situations, use Signal. Read the <a href="https://github.com/w3bcooki3/ghostchat/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">full specification</a> and the <a href="https://github.com/w3bcooki3/ghostchat/blob/main/docs/AUDIT.md" target="_blank" rel="noopener noreferrer">review history</a>, and report problems through a private security advisory on the repository.</p>
+    <p class="status">Not independently audited. The protocol uses only standard browser cryptography and is covered by automated tests and an internal review. For high-risk situations, use Signal. See <a href="guide.html">how it works</a>, with diagrams of every step, read the <a href="https://github.com/w3bcooki3/ghostchat/blob/main/SECURITY.md" rel="noopener noreferrer">full specification</a> and the <a href="https://github.com/w3bcooki3/ghostchat/blob/main/docs/AUDIT.md" rel="noopener noreferrer">review history</a>, and report problems through a private security advisory on the repository.</p>
   </section>
 </main>
 
 <footer class="foot wrap">
   <a class="btn-open" href="ghostchat.html">Start a private conversation</a>
+  <nav class="foot-nav" aria-label="Footer"><a href="guide.html">How it works</a><a href="legal.html">Privacy &amp; terms</a><a href="https://github.com/w3bcooki3/ghostchat" rel="noopener noreferrer">Source code</a></nav>
 </footer>
 <script>// "Who can read your conversation?": interactive observer lens + summary matrix.
 // Every statement here mirrors SECURITY.md; keep them in sync.
@@ -366,17 +386,17 @@ const OBSERVERS = [
     },
   },
   {
-    id: 'relay', name: 'Relay server', short: 'TURN relay',
-    verdict: 'Used when a direct connection isn\'t possible, or always with Maximum privacy. It forwards sealed packets it can\'t open.',
+    id: 'relay', name: 'Relay server', short: 'Relay',
+    verdict: 'Ghost Chat\'s WebSocket relay (or your own TURN server). Used when a direct connection isn\'t possible, such as on VPNs and mobile data, or always with Maximum privacy. It forwards sealed packets it can\'t open.',
     s: {
-      content: ['no', 'Encrypted twice: by WebRTC and by Ghost Chat.'],
+      content: ['no', 'Sealed by Ghost Chat\'s end-to-end encryption before it reaches the relay.'],
       files: ['no', 'Encrypted chunk by chunk.'],
       names: ['no', 'Encrypted.'],
       activity: ['no', 'Encrypted, padded like everything else.'],
       size: ['part', 'Only padded sizes: 256 B, 1 KB, 4 KB, 16 KB or 64 KB.'],
       timing: ['yes', 'It sees when packets flow and roughly how much.'],
       ip: ['yes', 'It forwards traffic between your addresses.'],
-      room: ['no', 'It never sees signaling.'],
+      room: ['no', 'It sees only a one-way hash of the full code, which it can\'t reverse or link to the room name.'],
       code: ['no', 'Never sent anywhere.'],
     },
     m: {

@@ -21,7 +21,12 @@
     <svg class="glyph" viewBox="0 0 40 48" aria-hidden="true"><path fill-rule="evenodd" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Zm-7 16a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm14 0a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/></svg>
     <span>Ghost Chat</span>
   </a>
-  <a class="btn-open" href="index.html">Open Ghost Chat</a>
+  <nav class="nav" aria-label="Pages">
+    <a href="guide.html">How it works</a>
+    <a href="security.html" aria-current="page">Security</a>
+    <a href="legal.html">Privacy &amp; terms</a>
+    <a class="btn-open" href="index.html">Open Ghost Chat</a>
+  </nav>
 </header>
 
 <main>
@@ -58,7 +63,7 @@
           </div>
           <dl class="mock-meta">
             <div data-f="ip"><dt>Addresses</dt><dd data-plain="203.0.113.24 ↔ 198.51.100.7">203.0.113.24 ↔ 198.51.100.7</dd></div>
-            <div data-f="room"><dt>Room</dt><dd data-plain="ghostchat-v2-tzqfm">ghostchat-v2-tzqfm</dd></div>
+            <div data-f="room"><dt>Room</dt><dd data-plain="ghostchat-v3-k7qxm">ghostchat-v3-k7qxm</dd></div>
             <div data-f="timing"><dt>Activity</dt><dd data-plain="21:02 → 21:09, 14 packets">21:02 → 21:09, 14 packets</dd></div>
             <div data-f="size"><dt>Sizes</dt><dd data-plain="61 B, 33 B, 1,258,291 B">61 B, 33 B, 1,258,291 B</dd></div>
           </dl>
@@ -138,12 +143,13 @@
       <h3>Is it "military grade"?</h3>
       <p>Nobody certifies apps as military grade, so the phrase means nothing on its own. What Ghost Chat can say: it uses the same algorithms and key sizes the NSA's CNSA 2.0 suite names for protecting classified information (AES-256, ML-KEM-1024, SHA-384, and P-384 during the transition period). What it can't say: that the implementation is certified, FIPS-validated, or audited, or that a web page served from a website is a classified-grade environment. It isn't.</p>
     </div>
-    <p class="status">Not independently audited. The protocol uses only standard browser cryptography and is covered by automated tests and an internal review. For high-risk situations, use Signal. Read the <a href="SECURITY.md">full specification</a> and the <a href="docs/AUDIT.md">review history</a>, and report problems through a private security advisory on the repository.</p>
+    <p class="status">Not independently audited. The protocol uses only standard browser cryptography and is covered by automated tests and an internal review. For high-risk situations, use Signal. See <a href="guide.html">how it works</a>, with diagrams of every step, read the <a href="https://github.com/w3bcooki3/ghostchat/blob/main/SECURITY.md" rel="noopener noreferrer">full specification</a> and the <a href="https://github.com/w3bcooki3/ghostchat/blob/main/docs/AUDIT.md" rel="noopener noreferrer">review history</a>, and report problems through a private security advisory on the repository.</p>
   </section>
 </main>
 
 <footer class="foot wrap">
   <a class="btn-open" href="index.html">Start a private conversation</a>
+  <nav class="foot-nav" aria-label="Footer"><a href="guide.html">How it works</a><a href="legal.html">Privacy &amp; terms</a><a href="https://github.com/w3bcooki3/ghostchat" rel="noopener noreferrer">Source code</a></nav>
 </footer>
 </body>
 </html>

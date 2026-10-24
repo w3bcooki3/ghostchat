@@ -316,10 +316,20 @@ export class Session extends Emitter {
     if (t === 'unavailable-id') return this.fail('room-taken');
     if (t === 'browser-incompatible') return this.fail('unsupported');
     if (t === 'peer-unavailable') {
-      if (this.canRelay()) { this.dialRelayNow(); this.deferredFail = 'not-found'; return; }  // the relay may still find the host
-      if (this.hasLocalLink()) { this.deferredFail = 'not-found'; return; }   // a local link may still carry it
-      if (!this.everReady) return this.fail('not-found');
-      return this.scheduleRetry();
+      if (this.everReady) {
+        if (this.canRelay()) { this.dialRelayNow(); return; }
+        if (this.hasLocalLink()) return;
+        return this.scheduleRetry();
+      }
+      // Nobody holds this room on the introduction server (the host ended, left or never was).
+      // PeerJS never closes a connection to a peer that doesn't exist, so drop it here;
+      // otherwise the joiner would wait out the 30 s handshake timeout for nothing.
+      this.deferredFail = 'not-found';
+      for (const l of [...this.pending]) if (!l.local && !l.relay && !l.channel && !l.conn.open) l.close('alt-unavailable');
+      if (this.state === 'failed' || this.ended) return;
+      if (this.canRelay() && !this.relayNoHost) { this.dialRelayNow(); return; }   // the relay may still find the host
+      if (this.hasLocalLink() || this.hasRelayLink()) return;                       // another transport may still carry it
+      return this.fail('not-found');
     }
     if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(t)) {
       if (!this.everReady && (this.state === 'signaling' || this.state === 'dialing')) {
@@ -455,6 +465,14 @@ export class Session extends Emitter {
     if (this.ended) return;
     if (reason === 'alt-unavailable' || reason === 'superseded') {   // no host in this browser or on the relay / lost a race
       if (link.relay && link.conn.nohost) this.relayNoHost = true;
+      // The room's host socket is there but its page doesn't answer: the host's phone froze or
+      // closed Ghost Chat. A direct attempt can't succeed either (nothing runs on their side),
+      // so say so now instead of waiting out the handshake timeout.
+      if (link.relay && link.conn.silentHost && this.role === 'joiner' && !this.everReady && !this.active) {
+        this.fail('host-away');
+        for (const l of [...this.pending]) { try { l.close('superseded'); } catch {} }
+        return;
+      }
       if (this.role === 'joiner' && !this.everReady && !this.active && ![...this.pending].some((l) => !l.closed)) {
         if (this.relayNoHost) this.fail('not-found');   // the relay answered: nobody holds this room
         else if (this.deferredFail) this.fail(this.deferredFail);
@@ -502,7 +520,7 @@ export class Session extends Emitter {
   }
 
   fail(code, diag) {
-    if (this.ended) return;
+    if (this.ended || this.state === 'failed') return;
     this.setState('failed');
     this.emit('failed', { code, diag });
   }

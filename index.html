@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' blob:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com wss://ghostchat-relay.mrsaini281-678.workers.dev; worker-src blob:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#05080A">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F1F0EC">
 <meta name="description" content="Ghost Chat: end-to-end encrypted, browser-to-browser chat. No accounts, nothing stored. Close the tab and it's gone.">
 <title>Ghost Chat</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -16,13 +16,13 @@
 <script src="js/app.js" type="module"></script>
 </head>
 <body>
-<div class="backdrop" aria-hidden="true"></div>
-<canvas id="fogCanvas" class="fog is-on" aria-hidden="true"></canvas>
+<svg class="sprite" width="0" height="0" aria-hidden="true"><defs><symbol id="dotGhost" viewBox="0 0 104 120"><circle cx="36" cy="4" r="3"/><circle cx="44" cy="4" r="3"/><circle cx="52" cy="4" r="3"/><circle cx="60" cy="4" r="3"/><circle cx="68" cy="4" r="3"/><circle cx="20" cy="12" r="3"/><circle cx="28" cy="12" r="3"/><circle cx="36" cy="12" r="3"/><circle cx="44" cy="12" r="3"/><circle cx="52" cy="12" r="3"/><circle cx="60" cy="12" r="3"/><circle cx="68" cy="12" r="3"/><circle cx="76" cy="12" r="3"/><circle cx="84" cy="12" r="3"/><circle cx="12" cy="20" r="3"/><circle cx="20" cy="20" r="3"/><circle cx="28" cy="20" r="3"/><circle cx="36" cy="20" r="3"/><circle cx="44" cy="20" r="3"/><circle cx="52" cy="20" r="3"/><circle cx="60" cy="20" r="3"/><circle cx="68" cy="20" r="3"/><circle cx="76" cy="20" r="3"/><circle cx="84" cy="20" r="3"/><circle cx="92" cy="20" r="3"/><circle cx="12" cy="28" r="3"/><circle cx="20" cy="28" r="3"/><circle cx="28" cy="28" r="3"/><circle cx="36" cy="28" r="3"/><circle cx="44" cy="28" r="3"/><circle cx="52" cy="28" r="3"/><circle cx="60" cy="28" r="3"/><circle cx="68" cy="28" r="3"/><circle cx="76" cy="28" r="3"/><circle cx="84" cy="28" r="3"/><circle cx="92" cy="28" r="3"/><circle cx="4" cy="36" r="3"/><circle cx="12" cy="36" r="3"/><circle cx="20" cy="36" r="3"/><circle cx="28" cy="36" r="3"/><circle cx="36" cy="36" r="3"/><circle cx="44" cy="36" r="3"/><circle cx="52" cy="36" r="3"/><circle cx="60" cy="36" r="3"/><circle cx="68" cy="36" r="3"/><circle cx="76" cy="36" r="3"/><circle cx="84" cy="36" r="3"/><circle cx="92" cy="36" r="3"/><circle cx="100" cy="36" r="3"/><circle cx="4" cy="44" r="3"/><circle cx="12" cy="44" r="3"/><circle cx="20" cy="44" r="3"/><circle cx="44" cy="44" r="3"/><circle cx="52" cy="44" r="3"/><circle cx="60" cy="44" r="3"/><circle cx="84" cy="44" r="3"/><circle cx="92" cy="44" r="3"/><circle cx="100" cy="44" r="3"/><circle cx="4" cy="52" r="3"/><circle cx="12" cy="52" r="3"/><circle cx="20" cy="52" r="3"/><circle cx="44" cy="52" r="3"/><circle cx="52" cy="52" r="3"/><circle cx="60" cy="52" r="3"/><circle cx="84" cy="52" r="3"/><circle cx="92" cy="52" r="3"/><circle cx="100" cy="52" r="3"/><circle cx="4" cy="60" r="3"/><circle cx="12" cy="60" r="3"/><circle cx="20" cy="60" r="3"/><circle cx="44" cy="60" r="3"/><circle cx="52" cy="60" r="3"/><circle cx="60" cy="60" r="3"/><circle cx="84" cy="60" r="3"/><circle cx="92" cy="60" r="3"/><circle cx="100" cy="60" r="3"/><circle cx="4" cy="68" r="3"/><circle cx="12" cy="68" r="3"/><circle cx="20" cy="68" r="3"/><circle cx="28" cy="68" r="3"/><circle cx="36" cy="68" r="3"/><circle cx="44" cy="68" r="3"/><circle cx="52" cy="68" r="3"/><circle cx="60" cy="68" r="3"/><circle cx="68" cy="68" r="3"/><circle cx="76" cy="68" r="3"/><circle cx="84" cy="68" r="3"/><circle cx="92" cy="68" r="3"/><circle cx="100" cy="68" r="3"/><circle cx="4" cy="76" r="3"/><circle cx="12" cy="76" r="3"/><circle cx="20" cy="76" r="3"/><circle cx="28" cy="76" r="3"/><circle cx="36" cy="76" r="3"/><circle cx="44" cy="76" r="3"/><circle cx="52" cy="76" r="3"/><circle cx="60" cy="76" r="3"/><circle cx="68" cy="76" r="3"/><circle cx="76" cy="76" r="3"/><circle cx="84" cy="76" r="3"/><circle cx="92" cy="76" r="3"/><circle cx="100" cy="76" r="3"/><circle cx="4" cy="84" r="3"/><circle cx="12" cy="84" r="3"/><circle cx="20" cy="84" r="3"/><circle cx="28" cy="84" r="3"/><circle cx="36" cy="84" r="3"/><circle cx="44" cy="84" r="3"/><circle cx="52" cy="84" r="3"/><circle cx="60" cy="84" r="3"/><circle cx="68" cy="84" r="3"/><circle cx="76" cy="84" r="3"/><circle cx="84" cy="84" r="3"/><circle cx="92" cy="84" r="3"/><circle cx="100" cy="84" r="3"/><circle cx="4" cy="92" r="3"/><circle cx="12" cy="92" r="3"/><circle cx="20" cy="92" r="3"/><circle cx="28" cy="92" r="3"/><circle cx="36" cy="92" r="3"/><circle cx="44" cy="92" r="3"/><circle cx="52" cy="92" r="3"/><circle cx="60" cy="92" r="3"/><circle cx="68" cy="92" r="3"/><circle cx="76" cy="92" r="3"/><circle cx="84" cy="92" r="3"/><circle cx="92" cy="92" r="3"/><circle cx="100" cy="92" r="3"/><circle cx="4" cy="100" r="3"/><circle cx="12" cy="100" r="3"/><circle cx="20" cy="100" r="3"/><circle cx="28" cy="100" r="3"/><circle cx="36" cy="100" r="3"/><circle cx="44" cy="100" r="3"/><circle cx="52" cy="100" r="3"/><circle cx="60" cy="100" r="3"/><circle cx="68" cy="100" r="3"/><circle cx="76" cy="100" r="3"/><circle cx="84" cy="100" r="3"/><circle cx="92" cy="100" r="3"/><circle cx="100" cy="100" r="3"/><circle cx="4" cy="108" r="3"/><circle cx="12" cy="108" r="3"/><circle cx="28" cy="108" r="3"/><circle cx="36" cy="108" r="3"/><circle cx="44" cy="108" r="3"/><circle cx="60" cy="108" r="3"/><circle cx="68" cy="108" r="3"/><circle cx="76" cy="108" r="3"/><circle cx="92" cy="108" r="3"/><circle cx="100" cy="108" r="3"/><circle cx="4" cy="116" r="3"/><circle cx="36" cy="116" r="3"/><circle cx="68" cy="116" r="3"/><circle cx="100" cy="116" r="3"/></symbol></defs></svg>
 
 <!-- ───────────── Home ───────────── -->
 <main id="home" class="screen is-on" aria-labelledby="brand">
   <header class="home-top">
     <h1 id="brand" class="brand"><svg class="brand-glyph" viewBox="0 0 40 48" aria-hidden="true"><path fill-rule="evenodd" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Zm-7 16a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm14 0a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/></svg>Ghost Chat</h1>
+    <button id="themeBtn" class="icon-btn theme-btn" type="button" data-sheet="themeSheet" aria-label="Colour theme"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.8 1.6-1.6 0-1-.9-1.3-.9-2.3 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/></svg></button>
     <a class="icon-btn trust-icon" href="security.html" aria-label="Who can read what, and what Ghost Chat can't protect"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></a>
   </header>
 
@@ -49,6 +49,7 @@
     <button id="createBtn" class="btn btn-primary btn-xl" type="button">Start a private chat</button>
     <button id="openJoinBtn" class="btn btn-glass btn-xl" type="button">Join with a code</button>
     <p class="dock-foot"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Encrypted. No account. Nothing stored.</p>
+    <nav class="home-links" aria-label="About Ghost Chat"><a href="guide.html">How it works</a><a href="security.html">Security</a><a href="legal.html">Privacy &amp; terms</a></nav>
   </section>
 
   <div class="ghost-stage" aria-hidden="true">
@@ -59,7 +60,7 @@
   </div>
   <div class="ticker" aria-hidden="true"><div class="ticker-track"><span>ML-KEM-1024 + ECDH P-384</span><i>✦</i><span>AES-256-GCM · a new key for every message</span><i>✦</i><span>The room locks after one join</span><i>✦</i><span>Nothing written to disk</span><i>✦</i><span>60-digit safety number</span><i>✦</i><span>Not independently audited</span><i>✦</i><span>ML-KEM-1024 + ECDH P-384</span><i>✦</i><span>AES-256-GCM · a new key for every message</span><i>✦</i><span>The room locks after one join</span><i>✦</i><span>Nothing written to disk</span><i>✦</i><span>60-digit safety number</span><i>✦</i><span>Not independently audited</span><i>✦</i></div></div>
 
-  <div id="homeMark" class="home-mark" aria-hidden="true"><span class="home-mark-text">GHOST CHAT</span><canvas id="markCanvas"></canvas></div>
+  <div id="homeMark" class="home-mark" aria-hidden="true"><span class="home-mark-text">GHOST CHAT</span></div>
 </main>
 
 <!-- ───────────── Join ───────────── -->
@@ -114,7 +115,7 @@
       <div id="codeGroups" class="code-groups" aria-live="polite"></div>
       <div id="shareRow" class="share-row">
         <button id="shareBtn" class="btn btn-primary" type="button" hidden>Share invite</button>
-        <button id="copyLinkBtn" class="btn btn-primary" type="button">Copy invite link</button>
+        <button id="copyLinkBtn" class="btn btn-primary" type="button"><span class="lbl-long">Copy invite link</span><span class="lbl-short">Copy link</span></button>
         <button id="copyCodeBtn" class="btn btn-ghost" type="button">Copy code</button>
         <button id="qrBtn" class="btn btn-ghost" type="button" aria-expanded="false" aria-controls="qrBox">Show QR</button>
       </div>
@@ -171,8 +172,10 @@
       <button id="panelBtn" class="icon-btn" type="button" aria-label="Session settings" aria-expanded="false" aria-controls="panel">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
       </button>
-      <button id="panicBtn" class="icon-btn icon-danger" type="button" aria-label="Panic wipe" title="Panic wipe (Esc three times)">
+      <button id="panicBtn" class="icon-btn icon-danger panic-btn" type="button" aria-label="Panic wipe" title="Panic wipe (Esc three times; hold on touch screens)">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>
+        <svg class="panic-ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="20"/></svg>
+        <span class="pb-lbl" aria-hidden="true">Wipe</span>
       </button>
     </div>
   </header>
@@ -180,7 +183,11 @@
   <div id="banner" class="banner" role="status" hidden></div>
 
   <div class="chat-body">
-    <div class="watermark" aria-hidden="true"><span class="wm-word">Ghost Chat</span><span class="wm-by">by w3bcooki3</span></div>
+    <div class="watermark" aria-hidden="true">
+      <svg class="wm-dots" viewBox="0 0 104 120"><use href="#dotGhost"/></svg>
+      <span class="wm-word">Ghost Chat</span>
+      <span class="wm-by">end-to-end · by w3bcooki3</span>
+    </div>
     <div id="messages" class="messages" role="log" aria-live="polite" aria-relevant="additions"></div>
     <div id="veil" class="veil" hidden><button id="unveilBtn" class="btn btn-ghost" type="button">Show conversation</button></div>
     <div id="dropzone" class="dropzone" hidden><span>Drop to send encrypted</span></div>
@@ -192,6 +199,10 @@
     <div id="replyBar" class="reply-bar" hidden>
       <div class="reply-bar-body"><span id="replyName" class="reply-name"></span><span id="replyText" class="reply-text"></span></div>
       <button id="replyCancel" class="icon-btn icon-sm" type="button" aria-label="Cancel reply"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div id="editBar" class="reply-bar edit-bar" hidden>
+      <div class="reply-bar-body"><span class="reply-name">Editing message</span><span id="editText" class="reply-text"></span></div>
+      <button id="editCancel" class="icon-btn icon-sm" type="button" aria-label="Cancel editing"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div class="composer-row">
       <button id="attachBtn" class="icon-btn" type="button" aria-label="Send a file">
@@ -212,21 +223,32 @@
   <aside id="panel" class="panel" aria-label="Session" hidden>
     <div class="sheet-handle" aria-hidden="true"></div>
     <div class="panel-head">
-      <h2>Session</h2>
-      <button id="panelClose" class="icon-btn icon-sm" type="button" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <h2>Session <span id="phRoom" class="ph-room"></span></h2>
+      <button id="panelClose" class="icon-btn icon-sm" type="button" aria-label="Close"><svg class="pc-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><svg class="pc-collapse" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6l6 6-6 6M13 6l6 6-6 6"/></svg></button>
     </div>
 
+    <div class="panel-id">
+      <span id="panelAvatar" class="pid-av" aria-hidden="true">👤</span>
+      <div class="pid-text"><b id="panelName" class="pid-name">Peer</b><small class="pid-sub">Nothing stored on this device</small></div>
+    </div>
+    <div class="qa-row">
+      <button id="qaVerify" class="qa qa-warn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Verify</button>
+      <button id="inviteNewBtn" class="qa" type="button" title="Open a separate private room for someone else, in a new tab"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/></svg>Invite</button>
+      <button id="endBtn" class="qa" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>End</button>
+      <button id="panicSheetBtn" class="qa qa-danger" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>Wipe</button>
+    </div>
+    <p class="panel-note qa-note">Rooms are for two: Invite opens a separate private room in a new tab. Wipe destroys everything at once, with no confirmation (<kbd>Esc</kbd> three times on a keyboard).</p>
+
+    <section id="snSec" class="panel-sec sn-sec">
     <div id="trustBadge" class="trust-badge">
       <span class="tb-orb"><i></i><i></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
       <div class="tb-text"><b id="trustTitle">Not verified yet</b><small id="trustSub">Compare the safety number by voice to rule out anyone in the middle.</small></div>
+      <button id="markVerified" class="tb-action" type="button" aria-pressed="false">Mark as verified</button>
     </div>
-    <section class="panel-sec">
-      <h3>Safety number</h3>
-      <p class="panel-note">Compare this with the other person by voice or in person. If it matches, nobody is in the middle. It stays the same if the connection drops and comes back, because the reconnecting browser has to prove it's the same one.</p>
       <div id="safetyNumber" class="safety-number" aria-label="Safety number"></div>
+      <p class="panel-note">Compare it with the other person by voice or in person. If it matches, nobody is in the middle. It stays the same across reconnects, because the returning browser has to prove it's the same one.</p>
       <div class="panel-row">
-        <button id="copySafety" class="btn btn-ghost btn-sm" type="button">Copy</button>
-        <button id="markVerified" class="btn btn-secondary btn-sm" type="button" aria-pressed="false">Mark as verified</button>
+        <button id="copySafety" class="btn btn-ghost btn-sm" type="button">Copy number</button>
       </div>
     </section>
 
@@ -246,6 +268,11 @@
     </section>
 
     <section class="panel-sec">
+      <h3>Theme</h3>
+      <div class="theme-grid" role="radiogroup" aria-label="Colour theme" data-theme-picker></div>
+    </section>
+
+    <section class="panel-sec">
       <h3>Connection</h3>
       <dl class="kv">
         <dt>Room</dt><dd id="kvRoom" class="mono">—</dd>
@@ -259,13 +286,6 @@
       </dl>
     </section>
 
-    <section class="panel-sec panel-end">
-      <div class="end-row">
-        <button id="endBtn" class="btn btn-danger" type="button">End session</button>
-        <button id="panicSheetBtn" class="btn btn-ghost btn-panic" type="button">Panic wipe</button>
-      </div>
-      <p class="panel-note">Panic wipe destroys everything immediately, with no confirmation, and leaves the page. On a keyboard, press <kbd>Esc</kbd> three times quickly.</p>
-    </section>
   </aside>
 </main>
 
@@ -281,6 +301,14 @@
     <input id="nameInput" class="input" maxlength="24" autocomplete="off" spellcheck="false" placeholder="Anonymous ghost" enterkeyhint="done">
   </label>
   <button id="meDone" class="btn btn-primary btn-xl" type="button" data-close-sheet>Done</button>
+</section>
+
+<section id="themeSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="themeTitle" hidden>
+  <div class="sheet-grip" aria-hidden="true"></div>
+  <h2 id="themeTitle" class="sheet-title">Theme</h2>
+  <p class="sheet-sub">Colours only; everything works the same. Your choice lasts for this tab and isn't saved anywhere.</p>
+  <div class="theme-grid" role="radiogroup" aria-label="Colour theme" data-theme-picker></div>
+  <button class="btn btn-primary btn-xl" type="button" data-close-sheet>Done</button>
 </section>
 
 <section id="privSheet" class="sheet privacy" role="dialog" aria-modal="true" aria-labelledby="privTitle" hidden>
@@ -337,9 +365,10 @@
 <div id="msgMenu" class="msg-menu" role="menu" hidden>
   <div id="reactRow" class="react-row" role="group" aria-label="React"></div>
   <button class="menu-item" data-act="reply" role="menuitem" type="button">Reply</button>
+  <button class="menu-item" data-act="edit" role="menuitem" type="button">Edit</button>
   <button class="menu-item" data-act="copy" role="menuitem" type="button">Copy text</button>
-  <button class="menu-item" data-act="hide" role="menuitem" type="button">Remove for me</button>
-  <button class="menu-item menu-danger" data-act="unsend" role="menuitem" type="button">Unsend for both</button>
+  <button class="menu-item" data-act="hide" role="menuitem" type="button">Delete for me</button>
+  <button class="menu-item menu-danger" data-act="unsend" role="menuitem" type="button">Delete for everyone</button>
 </div>
 
 <!-- Dialog -->

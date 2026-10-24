@@ -187,7 +187,7 @@ T('a wrong code finds nothing on the relay (rooms there are keyed by the full co
   const c = code.split('-'); c[3] = c[3] === 'EEEEE' ? 'FFFFF' : 'EEEEE';
   await join(B, viaRelay.url, c.join('-'));
   await B.waitForFunction(() => window.__ghost.session.state === 'failed', null, { timeout: 20000 });
-  assert(/No room with this code/.test(await B.textContent('#connectErrorText')), 'wrong message: ' + await B.textContent('#connectErrorText'));
+  assert(/This room isn.t open/.test(await B.textContent('#connectErrorText')), 'wrong message: ' + await B.textContent('#connectErrorText'));
   await a.close(); await b.close();
 });
 
@@ -326,6 +326,38 @@ T('an unused code expires: host is told, and the code stops working', async () =
   await B.waitForFunction(() => window.__ghost.session.state === 'failed', null, { timeout: 20000 });
   assert(/expire/.test(await B.textContent('#connectErrorText')), 'joiner not told codes expire');
   await a.close(); await b.close();
+});
+
+T('a host whose page is frozen (phone locked / browser in background) is reported quickly, not left hanging', async () => {
+  const a = await fresh(), b = await fresh();
+  const A = await page(a), B = await page(b);
+  const code = await host(A, liveRelay.url);
+  await A.waitForFunction(() => window.__ghost.session.state === 'waiting');
+  // A locked phone or a backgrounded browser stops running the page's code. Block the host
+  // page's main thread for 40 s to get the same effect (its sockets stay open, nothing answers).
+  A.evaluate(() => { const end = Date.now() + 40000; while (Date.now() < end) {} }).catch(() => {});
+  await new Promise((r) => setTimeout(r, 300));
+  const t0 = Date.now();
+  await join(B, liveRelay.url, code);
+  await B.waitForFunction(() => window.__ghost.session.state === 'failed', null, { timeout: 25000 });
+  const took = Date.now() - t0;
+  assert(/isn.t answering/.test(await B.textContent('#connectErrorText')), 'wrong message: ' + await B.textContent('#connectErrorText'));
+  assert(took < 15000, 'took too long: ' + took + ' ms');
+  await a.close(); await b.close();
+});
+
+T('after the host ends the session, the invite link stops working at once', async () => {
+  const a = await fresh(), b = await fresh(), c = await fresh();
+  const { A, B, code } = await pair(a, b, liveRelay.url);
+  await A.evaluate(() => window.__ghost.session.end());
+  await B.waitForSelector('#banner:not([hidden])', { timeout: 10000 });
+  const C = await page(c);
+  const t0 = Date.now();
+  await join(C, liveRelay.url, code);
+  await C.waitForFunction(() => window.__ghost.session.state === 'failed', null, { timeout: 20000 });
+  assert(/isn.t open/.test(await C.textContent('#connectErrorText')), 'wrong message: ' + await C.textContent('#connectErrorText'));
+  assert(Date.now() - t0 < 12000, 'took too long: ' + (Date.now() - t0) + ' ms');
+  await a.close(); await b.close(); await c.close();
 });
 
 let failed = 0;
