@@ -1,0 +1,24 @@
+{
+  "name": "ghostchat",
+  "version": "3.0.0",
+  "private": true,
+  "description": "End-to-end encrypted, post-quantum, browser-to-browser chat. No accounts, nothing stored.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/protocol.test.mjs tests/connectivity.test.mjs",
+    "test:e2e": "node tests/e2e.mjs && node tests/e2e-connectivity.mjs",
+    "serve": "node tests/serve.mjs",
+    "serve:local": "node tests/run-local.mjs",
+    "build": "node tools/build.mjs"
+  },
+  "devDependencies": {
+    "peer": "1.0.2",
+    "playwright": "1.56.0",
+    "ws": "^8.22.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/w3bcooki3/ghostchat.git"
+  }
+}

@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' blob:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com wss://ghostchat-relay.mrsaini281-678.workers.dev; worker-src blob:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F1F0EC">
+<meta name="description" content="Ghost Chat: end-to-end encrypted, browser-to-browser chat. No accounts, nothing stored. Close the tab and it's gone.">
+<title>Ghost Chat</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/app.css">
+<script src="vendor/peerjs-1.5.5.min.js" defer></script>
+<script src="js/app.js" type="module"></script>
+</head>
+<body>
+<svg class="sprite" width="0" height="0" aria-hidden="true"><defs><symbol id="dotGhost" viewBox="0 0 104 120"><circle cx="36" cy="4" r="3"/><circle cx="44" cy="4" r="3"/><circle cx="52" cy="4" r="3"/><circle cx="60" cy="4" r="3"/><circle cx="68" cy="4" r="3"/><circle cx="20" cy="12" r="3"/><circle cx="28" cy="12" r="3"/><circle cx="36" cy="12" r="3"/><circle cx="44" cy="12" r="3"/><circle cx="52" cy="12" r="3"/><circle cx="60" cy="12" r="3"/><circle cx="68" cy="12" r="3"/><circle cx="76" cy="12" r="3"/><circle cx="84" cy="12" r="3"/><circle cx="12" cy="20" r="3"/><circle cx="20" cy="20" r="3"/><circle cx="28" cy="20" r="3"/><circle cx="36" cy="20" r="3"/><circle cx="44" cy="20" r="3"/><circle cx="52" cy="20" r="3"/><circle cx="60" cy="20" r="3"/><circle cx="68" cy="20" r="3"/><circle cx="76" cy="20" r="3"/><circle cx="84" cy="20" r="3"/><circle cx="92" cy="20" r="3"/><circle cx="12" cy="28" r="3"/><circle cx="20" cy="28" r="3"/><circle cx="28" cy="28" r="3"/><circle cx="36" cy="28" r="3"/><circle cx="44" cy="28" r="3"/><circle cx="52" cy="28" r="3"/><circle cx="60" cy="28" r="3"/><circle cx="68" cy="28" r="3"/><circle cx="76" cy="28" r="3"/><circle cx="84" cy="28" r="3"/><circle cx="92" cy="28" r="3"/><circle cx="4" cy="36" r="3"/><circle cx="12" cy="36" r="3"/><circle cx="20" cy="36" r="3"/><circle cx="28" cy="36" r="3"/><circle cx="36" cy="36" r="3"/><circle cx="44" cy="36" r="3"/><circle cx="52" cy="36" r="3"/><circle cx="60" cy="36" r="3"/><circle cx="68" cy="36" r="3"/><circle cx="76" cy="36" r="3"/><circle cx="84" cy="36" r="3"/><circle cx="92" cy="36" r="3"/><circle cx="100" cy="36" r="3"/><circle cx="4" cy="44" r="3"/><circle cx="12" cy="44" r="3"/><circle cx="20" cy="44" r="3"/><circle cx="44" cy="44" r="3"/><circle cx="52" cy="44" r="3"/><circle cx="60" cy="44" r="3"/><circle cx="84" cy="44" r="3"/><circle cx="92" cy="44" r="3"/><circle cx="100" cy="44" r="3"/><circle cx="4" cy="52" r="3"/><circle cx="12" cy="52" r="3"/><circle cx="20" cy="52" r="3"/><circle cx="44" cy="52" r="3"/><circle cx="52" cy="52" r="3"/><circle cx="60" cy="52" r="3"/><circle cx="84" cy="52" r="3"/><circle cx="92" cy="52" r="3"/><circle cx="100" cy="52" r="3"/><circle cx="4" cy="60" r="3"/><circle cx="12" cy="60" r="3"/><circle cx="20" cy="60" r="3"/><circle cx="44" cy="60" r="3"/><circle cx="52" cy="60" r="3"/><circle cx="60" cy="60" r="3"/><circle cx="84" cy="60" r="3"/><circle cx="92" cy="60" r="3"/><circle cx="100" cy="60" r="3"/><circle cx="4" cy="68" r="3"/><circle cx="12" cy="68" r="3"/><circle cx="20" cy="68" r="3"/><circle cx="28" cy="68" r="3"/><circle cx="36" cy="68" r="3"/><circle cx="44" cy="68" r="3"/><circle cx="52" cy="68" r="3"/><circle cx="60" cy="68" r="3"/><circle cx="68" cy="68" r="3"/><circle cx="76" cy="68" r="3"/><circle cx="84" cy="68" r="3"/><circle cx="92" cy="68" r="3"/><circle cx="100" cy="68" r="3"/><circle cx="4" cy="76" r="3"/><circle cx="12" cy="76" r="3"/><circle cx="20" cy="76" r="3"/><circle cx="28" cy="76" r="3"/><circle cx="36" cy="76" r="3"/><circle cx="44" cy="76" r="3"/><circle cx="52" cy="76" r="3"/><circle cx="60" cy="76" r="3"/><circle cx="68" cy="76" r="3"/><circle cx="76" cy="76" r="3"/><circle cx="84" cy="76" r="3"/><circle cx="92" cy="76" r="3"/><circle cx="100" cy="76" r="3"/><circle cx="4" cy="84" r="3"/><circle cx="12" cy="84" r="3"/><circle cx="20" cy="84" r="3"/><circle cx="28" cy="84" r="3"/><circle cx="36" cy="84" r="3"/><circle cx="44" cy="84" r="3"/><circle cx="52" cy="84" r="3"/><circle cx="60" cy="84" r="3"/><circle cx="68" cy="84" r="3"/><circle cx="76" cy="84" r="3"/><circle cx="84" cy="84" r="3"/><circle cx="92" cy="84" r="3"/><circle cx="100" cy="84" r="3"/><circle cx="4" cy="92" r="3"/><circle cx="12" cy="92" r="3"/><circle cx="20" cy="92" r="3"/><circle cx="28" cy="92" r="3"/><circle cx="36" cy="92" r="3"/><circle cx="44" cy="92" r="3"/><circle cx="52" cy="92" r="3"/><circle cx="60" cy="92" r="3"/><circle cx="68" cy="92" r="3"/><circle cx="76" cy="92" r="3"/><circle cx="84" cy="92" r="3"/><circle cx="92" cy="92" r="3"/><circle cx="100" cy="92" r="3"/><circle cx="4" cy="100" r="3"/><circle cx="12" cy="100" r="3"/><circle cx="20" cy="100" r="3"/><circle cx="28" cy="100" r="3"/><circle cx="36" cy="100" r="3"/><circle cx="44" cy="100" r="3"/><circle cx="52" cy="100" r="3"/><circle cx="60" cy="100" r="3"/><circle cx="68" cy="100" r="3"/><circle cx="76" cy="100" r="3"/><circle cx="84" cy="100" r="3"/><circle cx="92" cy="100" r="3"/><circle cx="100" cy="100" r="3"/><circle cx="4" cy="108" r="3"/><circle cx="12" cy="108" r="3"/><circle cx="28" cy="108" r="3"/><circle cx="36" cy="108" r="3"/><circle cx="44" cy="108" r="3"/><circle cx="60" cy="108" r="3"/><circle cx="68" cy="108" r="3"/><circle cx="76" cy="108" r="3"/><circle cx="92" cy="108" r="3"/><circle cx="100" cy="108" r="3"/><circle cx="4" cy="116" r="3"/><circle cx="36" cy="116" r="3"/><circle cx="68" cy="116" r="3"/><circle cx="100" cy="116" r="3"/></symbol></defs></svg>
+
+<!-- ───────────── Home ───────────── -->
+<main id="home" class="screen is-on" aria-labelledby="brand">
+  <header class="home-top">
+    <h1 id="brand" class="brand"><svg class="brand-glyph" viewBox="0 0 40 48" aria-hidden="true"><path fill-rule="evenodd" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Zm-7 16a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm14 0a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/></svg>Ghost Chat</h1>
+    <button id="themeBtn" class="icon-btn theme-btn" type="button" data-sheet="themeSheet" aria-label="Colour theme"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.8 1.6-1.6 0-1-.9-1.3-.9-2.3 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/></svg></button>
+    <a class="icon-btn trust-icon" href="security.html" aria-label="Who can read what, and what Ghost Chat can't protect"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></a>
+  </header>
+
+  <section class="home-hero" aria-hidden="true">
+    <div class="hero-ghost"><svg class="ghost hero-glyph" viewBox="0 0 40 48" aria-hidden="true" id="heroGhost"><path class="ghost-body" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Z"/><g class="ghost-eyes"><g class="ghost-blink"><ellipse cx="13" cy="19.5" rx="3.6" ry="4.2"/><ellipse cx="27" cy="19.5" rx="3.6" ry="4.2"/></g></g></svg><span class="ghost-shadow"></span></div>
+    <div class="hero-word"><span id="heroLine">Say it once.</span><span class="gone">Then it's gone.</span></div>
+    <p class="hero-tag">Encrypted, browser to browser. No account. Close the tab and every message and key is wiped.</p>
+  </section>
+
+  <section class="home-intro">
+    <div class="status-pill" aria-hidden="true"><span class="sp-dot"></span><span id="statusPill">BROWSER TO BROWSER</span></div>
+    <h2 class="headline"><span id="headLine" class="hl-1">Say it once.</span><span class="gone hl-2">Then it's gone.</span></h2>
+    <p class="lede">An encrypted conversation between two browsers. No accounts, nothing stored, and the room code is the only way in. Close the tab and every message, file and key is wiped.</p>
+    <a class="trust-link" href="security.html"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>Who can read what, and what Ghost Chat can't protect</a>
+    <div id="apparition" class="apparition" aria-hidden="true"></div>
+  </section>
+
+  <section class="home-panel" aria-label="Start a conversation">
+    <h2 class="panel-title">Start a conversation</h2>
+    <div class="chips">
+        <button class="chip me-chip" type="button" data-sheet="meSheet" aria-label="Change your name and avatar"><span class="av" data-avatar>👻</span><span class="lbl" data-name>Anonymous ghost</span><svg class="ico caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        <button class="chip priv-chip" type="button" data-sheet="privSheet" aria-label="Privacy level"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/></svg><span class="lbl" data-priv-label>Standard</span><svg class="ico caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      </div>
+    <button id="createBtn" class="btn btn-primary btn-xl" type="button">Start a private chat</button>
+    <button id="openJoinBtn" class="btn btn-glass btn-xl" type="button">Join with a code</button>
+    <p class="dock-foot"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Encrypted. No account. Nothing stored.</p>
+    <nav class="home-links" aria-label="About Ghost Chat"><a href="guide.html">How it works</a><a href="security.html">Security</a><a href="legal.html">Privacy &amp; terms</a></nav>
+  </section>
+
+  <div class="ghost-stage" aria-hidden="true">
+    <div class="orbit orbit-3"></div>
+    <div class="orbit orbit-2"><i class="peer-dot a"></i><i class="peer-dot b"></i></div>
+    <div class="orbit orbit-1"><span class="orbit-label l">ML-KEM-1024</span><span class="orbit-label r">P-384</span></div>
+    <div class="stage-ghost"><svg class="ghost " viewBox="0 0 40 48" aria-hidden="true" id="stageGhost"><path class="ghost-body" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Z"/><g class="ghost-eyes"><g class="ghost-blink"><ellipse cx="13" cy="19.5" rx="3.6" ry="4.2"/><ellipse cx="27" cy="19.5" rx="3.6" ry="4.2"/></g></g></svg><span class="ghost-shadow"></span></div>
+  </div>
+  <div class="ticker" aria-hidden="true"><div class="ticker-track"><span>ML-KEM-1024 + ECDH P-384</span><i>✦</i><span>AES-256-GCM · a new key for every message</span><i>✦</i><span>The room locks after one join</span><i>✦</i><span>Nothing written to disk</span><i>✦</i><span>60-digit safety number</span><i>✦</i><span>Not independently audited</span><i>✦</i><span>ML-KEM-1024 + ECDH P-384</span><i>✦</i><span>AES-256-GCM · a new key for every message</span><i>✦</i><span>The room locks after one join</span><i>✦</i><span>Nothing written to disk</span><i>✦</i><span>60-digit safety number</span><i>✦</i><span>Not independently audited</span><i>✦</i></div></div>
+
+  <div id="homeMark" class="home-mark" aria-hidden="true"><span class="home-mark-text">GHOST CHAT</span></div>
+</main>
+
+<!-- ───────────── Join ───────────── -->
+<main id="joinScreen" class="screen" aria-labelledby="joinTitle">
+  <div class="join-wrap">
+    <header class="join-top">
+      <button id="joinBack" class="icon-btn" type="button" aria-label="Back"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <div class="brand brand-sm"><svg class="brand-glyph" viewBox="0 0 40 48" aria-hidden="true"><path fill-rule="evenodd" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Zm-7 16a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm14 0a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/></svg>Ghost Chat</div>
+      <a class="icon-btn" href="security.html" aria-label="Who can read what, and what Ghost Chat can't protect"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></a>
+    </header>
+
+    <section class="join-main">
+      <div class="join-key" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/></svg></div>
+      <h2 id="joinTitle" class="join-title">Join a private chat</h2>
+      <p id="joinSub" class="join-sub">Enter the code you were sent, or paste the invite link.</p>
+      <form id="joinForm" autocomplete="off" novalidate>
+        <div class="code" role="group" aria-label="Room code, 20 characters" aria-describedby="codeHelp">
+          <input id="code1" class="code-box" inputmode="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="next" aria-label="Room code, characters 1 to 5" placeholder="·····">
+          <input id="code2" class="code-box" inputmode="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="next" aria-label="Characters 6 to 10" placeholder="·····">
+          <input id="code3" class="code-box" inputmode="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="next" aria-label="Characters 11 to 15" placeholder="·····">
+          <input id="code4" class="code-box" inputmode="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-label="Characters 16 to 20" placeholder="·····">
+        </div>
+        <div class="code-row">
+          <span id="codeHelp" class="help" aria-live="polite">Letters and digits 2–9</span>
+          <button id="pasteBtn" class="paste-btn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="4" width="8" height="4" rx="1"/><path d="M8 6H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2"/></svg>Paste</button>
+        </div>
+        <button id="joinBtn" class="btn btn-primary btn-xl" type="submit">Join</button>
+      </form>
+
+      <div id="joinOr" class="join-or" role="separator">No code?</div>
+      <button id="joinCreateBtn" class="create-card" type="button">
+        <span class="create-ico" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
+        <span class="create-txt"><b>Start a new private chat</b><small>You'll get a code to share with one person</small></span>
+        <svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </section>
+
+    <footer class="join-bottom">
+      <div class="chips">
+        <button class="chip me-chip" type="button" data-sheet="meSheet" aria-label="Change your name and avatar"><span class="av" data-avatar>👻</span><span class="lbl" data-name>Anonymous ghost</span><svg class="ico caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        <button class="chip priv-chip" type="button" data-sheet="privSheet" aria-label="Privacy level"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/></svg><span class="lbl" data-priv-label>Standard</span><svg class="ico caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      </div>
+    </footer>
+  </div>
+</main>
+
+<!-- ───────────── Connecting ───────────── -->
+<main id="connect" class="screen" aria-labelledby="connectTitle">
+  <div class="connect-wrap">
+    <h2 id="connectTitle" class="connect-title">Your room</h2>
+    <div id="keycard" class="keycard">
+      <div id="codeGroups" class="code-groups" aria-live="polite"></div>
+      <div id="shareRow" class="share-row">
+        <button id="shareBtn" class="btn btn-primary" type="button" hidden>Share invite</button>
+        <button id="copyLinkBtn" class="btn btn-primary" type="button"><span class="lbl-long">Copy invite link</span><span class="lbl-short">Copy link</span></button>
+        <button id="copyCodeBtn" class="btn btn-ghost" type="button">Copy code</button>
+        <button id="qrBtn" class="btn btn-ghost" type="button" aria-expanded="false" aria-controls="qrBox">Show QR</button>
+      </div>
+      <div id="qrBox" class="qr-box" hidden></div>
+      <p id="expiryRow" class="expiry-row" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg><span id="expiryText" aria-live="off"></span><button id="extendBtn" class="expiry-btn" type="button">+10 min</button></p>
+      <p id="shareHint" class="share-hint">Send it over a channel you trust. Whoever has this code can join, so share it with one person only.</p>
+    </div>
+
+    <div id="hsStage" class="hs-stage is-waiting" aria-hidden="true">
+      <div class="hs-node hs-me"><svg class="ghost hs-ghost" viewBox="0 0 40 48" aria-hidden="true"><path class="ghost-body" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Z"/><g class="ghost-eyes"><g class="ghost-blink"><ellipse cx="13" cy="19.5" rx="3.6" ry="4.2"/><ellipse cx="27" cy="19.5" rx="3.6" ry="4.2"/></g></g></svg><span class="hs-name">You</span></div>
+      <div class="hs-lane"><span class="hs-wire"></span><span id="hsPkt" class="hs-pkt"><b id="hsPktLabel"></b><i></i></span>
+        <span class="hs-lock"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></div>
+      <div class="hs-node hs-them"><svg class="ghost hs-ghost" viewBox="0 0 40 48" aria-hidden="true"><path class="ghost-body" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Z"/><g class="ghost-eyes"><g class="ghost-blink"><ellipse cx="13" cy="19.5" rx="3.6" ry="4.2"/><ellipse cx="27" cy="19.5" rx="3.6" ry="4.2"/></g></g></svg><span id="hsThemName" class="hs-name">Waiting…</span></div>
+    </div>
+    <div id="hsSn" class="hs-sn" aria-hidden="true"></div>
+
+    <ol id="steps" class="steps" aria-live="polite">
+      <li data-step="signal"><span class="step-dot"></span><span class="step-text">Reaching the introduction server</span></li>
+      <li data-step="peer"><span class="step-dot"></span><span class="step-text" id="peerStepText">Waiting for the other person</span></li>
+      <li data-step="keys"><span class="step-dot"></span><span class="step-text">Proving you both hold the code, exchanging keys</span></li>
+      <li data-step="ready"><span class="step-dot"></span><span class="step-text">Encrypted channel open</span></li>
+    </ol>
+
+    <div id="connectError" class="connect-error" role="alert" hidden>
+      <p id="connectErrorText"></p>
+      <div class="error-actions">
+        <button id="retryBtn" class="btn btn-secondary" type="button">Try again</button>
+        <button id="netCheckBtn" class="btn btn-ghost" type="button" hidden>Check my network</button>
+      </div>
+      <div id="netResult" class="net-result" aria-live="polite" hidden></div>
+    </div>
+
+    <button id="cancelBtn" class="btn btn-text" type="button">Cancel</button>
+  </div>
+</main>
+
+<!-- ───────────── Chat ───────────── -->
+<main id="chat" class="screen" aria-label="Conversation">
+  <header class="chat-head">
+    <div class="peer">
+      <span id="peerAvatar" class="peer-avatar" aria-hidden="true">👤</span>
+      <div class="peer-meta">
+        <div id="peerName" class="peer-name">Peer</div>
+        <div id="linkState" class="link-state"><span class="link-dot"></span><span id="linkText">Connecting</span><span id="routeChip" class="route-chip" hidden></span></div>
+      </div>
+    </div>
+    <div class="ether" aria-hidden="true" title="Live view of your encrypted traffic">
+      <div class="ether-row out"><span id="etherOut" class="ether-txt"></span></div>
+      <span class="ether-lock"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+      <div class="ether-row in"><span id="etherIn" class="ether-txt"></span></div>
+    </div>
+    <div class="head-actions">
+      <button id="verifyChip" class="verify-chip" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path class="vc-check" d="M9 12l2 2 4-4"/></svg><span id="verifyText">Not verified</span></button>
+      <button id="panelBtn" class="icon-btn" type="button" aria-label="Session settings" aria-expanded="false" aria-controls="panel">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+      </button>
+      <button id="panicBtn" class="icon-btn icon-danger panic-btn" type="button" aria-label="Panic wipe" title="Panic wipe (Esc three times; hold on touch screens)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>
+        <svg class="panic-ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="20"/></svg>
+        <span class="pb-lbl" aria-hidden="true">Wipe</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" role="status" hidden></div>
+
+  <div class="chat-body">
+    <div class="watermark" aria-hidden="true">
+      <svg class="wm-dots" viewBox="0 0 104 120"><use href="#dotGhost"/></svg>
+      <span class="wm-word">Ghost Chat</span>
+      <span class="wm-by">end-to-end · by w3bcooki3</span>
+    </div>
+    <div id="messages" class="messages" role="log" aria-live="polite" aria-relevant="additions"></div>
+    <div id="veil" class="veil" hidden><button id="unveilBtn" class="btn btn-ghost" type="button">Show conversation</button></div>
+    <div id="dropzone" class="dropzone" hidden><span>Drop to send encrypted</span></div>
+  </div>
+
+  <div id="typing" class="typing" aria-live="polite" hidden><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span id="typingText"></span></div>
+
+  <footer class="composer">
+    <div id="replyBar" class="reply-bar" hidden>
+      <div class="reply-bar-body"><span id="replyName" class="reply-name"></span><span id="replyText" class="reply-text"></span></div>
+      <button id="replyCancel" class="icon-btn icon-sm" type="button" aria-label="Cancel reply"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div id="editBar" class="reply-bar edit-bar" hidden>
+      <div class="reply-bar-body"><span class="reply-name">Editing message</span><span id="editText" class="reply-text"></span></div>
+      <button id="editCancel" class="icon-btn icon-sm" type="button" aria-label="Cancel editing"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="composer-row">
+      <button id="attachBtn" class="icon-btn" type="button" aria-label="Send a file">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5l-7.8 7.8a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8"/></svg>
+      </button>
+      <input id="fileInput" type="file" multiple hidden>
+      <div class="composer-field">
+        <textarea id="input" rows="1" maxlength="8000" placeholder="Message" aria-label="Message"></textarea>
+        <span id="timerBadge" class="timer-badge" hidden></span>
+      </div>
+      <button id="sendBtn" class="send-btn" type="button" aria-label="Send" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </footer>
+
+  <div id="scrim" class="scrim" hidden></div>
+  <aside id="panel" class="panel" aria-label="Session" hidden>
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="panel-head">
+      <h2>Session <span id="phRoom" class="ph-room"></span></h2>
+      <button id="panelClose" class="icon-btn icon-sm" type="button" aria-label="Close"><svg class="pc-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><svg class="pc-collapse" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6l6 6-6 6M13 6l6 6-6 6"/></svg></button>
+    </div>
+
+    <div class="panel-id">
+      <span id="panelAvatar" class="pid-av" aria-hidden="true">👤</span>
+      <div class="pid-text"><b id="panelName" class="pid-name">Peer</b><small class="pid-sub">Nothing stored on this device</small></div>
+    </div>
+    <div class="qa-row">
+      <button id="qaVerify" class="qa qa-warn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Verify</button>
+      <button id="inviteNewBtn" class="qa" type="button" title="Open a separate private room for someone else, in a new tab"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/></svg>Invite</button>
+      <button id="endBtn" class="qa" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>End</button>
+      <button id="panicSheetBtn" class="qa qa-danger" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>Wipe</button>
+    </div>
+    <p class="panel-note qa-note">Rooms are for two: Invite opens a separate private room in a new tab. Wipe destroys everything at once, with no confirmation (<kbd>Esc</kbd> three times on a keyboard).</p>
+
+    <section id="snSec" class="panel-sec sn-sec">
+    <div id="trustBadge" class="trust-badge">
+      <span class="tb-orb"><i></i><i></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
+      <div class="tb-text"><b id="trustTitle">Not verified yet</b><small id="trustSub">Compare the safety number by voice to rule out anyone in the middle.</small></div>
+      <button id="markVerified" class="tb-action" type="button" aria-pressed="false">Mark as verified</button>
+    </div>
+      <div id="safetyNumber" class="safety-number" aria-label="Safety number"></div>
+      <p class="panel-note">Compare it with the other person by voice or in person. If it matches, nobody is in the middle. It stays the same across reconnects, because the returning browser has to prove it's the same one.</p>
+      <div class="panel-row">
+        <button id="copySafety" class="btn btn-ghost btn-sm" type="button">Copy number</button>
+      </div>
+    </section>
+
+    <section class="panel-sec">
+      <h3>Disappearing messages</h3>
+      <p class="panel-note">Applies to both of you. The countdown starts when a message is delivered (for you) or shown (for them).</p>
+      <div id="timerOptions" class="seg" role="radiogroup" aria-label="Disappearing timer"></div>
+    </section>
+
+    <section class="panel-sec">
+      <h3>Privacy</h3>
+      <label class="toggle"><input id="optReceipts" type="checkbox" checked><span class="toggle-ui" aria-hidden="true"></span><span>Send read receipts</span></label>
+      <label class="toggle"><input id="optTyping" type="checkbox" checked><span class="toggle-ui" aria-hidden="true"></span><span>Send typing indicator</span></label>
+      <label class="toggle"><input id="optVeil" type="checkbox"><span class="toggle-ui" aria-hidden="true"></span><span>Hide conversation when I switch away</span></label>
+      <label class="toggle"><input id="optShape" type="checkbox"><span class="toggle-ui" aria-hidden="true"></span><span>Constant-rate traffic <em>(for both of you; hides when you talk, about 60 MB an hour)</em></span></label>
+      <label class="toggle"><input id="optNotify" type="checkbox"><span class="toggle-ui" aria-hidden="true"></span><span>Notify me in the background <em>(no message content is shown)</em></span></label>
+    </section>
+
+    <section class="panel-sec">
+      <h3>Theme</h3>
+      <div class="theme-grid" role="radiogroup" aria-label="Colour theme" data-theme-picker></div>
+    </section>
+
+    <section class="panel-sec">
+      <h3>Connection</h3>
+      <dl class="kv">
+        <dt>Room</dt><dd id="kvRoom" class="mono">—</dd>
+        <dt>Route</dt><dd id="kvRoute">—</dd>
+        <dt>Latency</dt><dd id="kvLatency" class="mono">—</dd>
+        <dt>Encryption</dt><dd>AES-256-GCM, a new key per message</dd>
+        <dt>Access</dt><dd>Locked to the two of you</dd>
+        <dt>Message keys used</dt><dd id="kvKeys" class="mono">0</dd>
+        <dt>Live keys</dt><dd id="kvLive" class="mono">—</dd>
+        <dt>Key exchange</dt><dd>ECDH P-384 + ML-KEM-1024 (post-quantum), authenticated by the room code</dd>
+      </dl>
+    </section>
+
+  </aside>
+</main>
+
+<!-- Home sheets: your ghost, privacy -->
+<div id="sheetScrim" class="sheet-scrim" hidden></div>
+<section id="meSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="meTitle" hidden>
+  <div class="sheet-grip" aria-hidden="true"></div>
+  <h2 id="meTitle" class="sheet-title">Your ghost</h2>
+  <p class="sheet-sub">How you appear in this chat only. Nothing is saved; a new tab starts fresh.</p>
+  <div id="avatarGrid" class="avatar-grid" role="radiogroup" aria-label="Avatar"></div>
+  <label class="field sheet-field">
+    <span class="field-label">Name</span>
+    <input id="nameInput" class="input" maxlength="24" autocomplete="off" spellcheck="false" placeholder="Anonymous ghost" enterkeyhint="done">
+  </label>
+  <button id="meDone" class="btn btn-primary btn-xl" type="button" data-close-sheet>Done</button>
+</section>
+
+<section id="themeSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="themeTitle" hidden>
+  <div class="sheet-grip" aria-hidden="true"></div>
+  <h2 id="themeTitle" class="sheet-title">Theme</h2>
+  <p class="sheet-sub">Colours only; everything works the same. Your choice lasts for this tab and isn't saved anywhere.</p>
+  <div class="theme-grid" role="radiogroup" aria-label="Colour theme" data-theme-picker></div>
+  <button class="btn btn-primary btn-xl" type="button" data-close-sheet>Done</button>
+</section>
+
+<section id="privSheet" class="sheet privacy" role="dialog" aria-modal="true" aria-labelledby="privTitle" hidden>
+  <div class="sheet-grip" aria-hidden="true"></div>
+  <h2 id="privTitle" class="sheet-title">Privacy</h2>
+  <p class="sheet-sub">Both levels are end-to-end encrypted with post-quantum protection.</p>
+  <div class="opts" role="radiogroup" aria-describedby="privacyNote">
+    <label class="opt"><input type="radio" name="privacy" value="standard" checked>
+      <span class="opt-head"><b>Standard</b><span class="radio" aria-hidden="true"></span></span>
+      <span class="opt-body">Direct connection between your browsers. Fastest.</span></label>
+    <label class="opt"><input type="radio" name="privacy" value="max">
+      <span class="opt-head"><b>Maximum</b><span class="radio" aria-hidden="true"></span></span>
+      <span class="opt-body">Slower, and uses about 60 MB an hour.</span>
+      <span class="opt-list"><span>Your IP is hidden behind a relay</span><span>Steady traffic hides when you talk</span><span>No typing indicator or read receipts</span></span></label>
+  </div>
+  <p id="privacyNote" class="help privacy-note">On a direct connection you and the other person can see each other's IP address.</p>
+  <details class="advanced">
+    <summary>Customize</summary>
+    <label class="toggle">
+      <input id="relayOnly" type="checkbox">
+      <span class="toggle-ui" aria-hidden="true"></span>
+      <span><strong>Hide my IP address from the other person.</strong> Routes traffic through a relay server instead of directly. Fails if the relay is unreachable.</span>
+    </label>
+    <label class="toggle">
+      <input id="shapeInit" type="checkbox">
+      <span class="toggle-ui" aria-hidden="true"></span>
+      <span><strong>Constant-rate traffic.</strong> Sends identical encrypted packets four times a second, so nobody watching the network can tell when you type or send. About 60 MB an hour.</span>
+    </label>
+    <div class="relay-box">
+      <h3 class="relay-title">Your own relay server (TURN)</h3>
+      <p class="help">Strict networks (VPNs, symmetric NAT, some offices and carriers) can't connect browsers directly and need a relay. The relay only ever sees encrypted data. One of the two people having a relay is usually enough.</p>
+      <label class="field"><span class="field-label">Relay URL</span><input id="relayUrl" class="input" autocomplete="off" spellcheck="false" placeholder="turn:relay.example.org:3478"></label>
+      <div class="relay-creds">
+        <label class="field"><span class="field-label">Username</span><input id="relayUser" class="input" autocomplete="off" spellcheck="false"></label>
+        <label class="field"><span class="field-label">Password</span><input id="relayPass" class="input" type="password" autocomplete="off"></label>
+      </div>
+      <div class="relay-actions">
+        <button id="relaySave" class="btn btn-secondary btn-sm" type="button">Use this relay</button>
+        <button id="relayClear" class="btn btn-ghost btn-sm" type="button" hidden>Remove</button>
+      </div>
+      <p id="relayStatus" class="help" aria-live="polite"></p>
+    </div>
+    <div class="relay-box">
+      <h3 class="relay-title">Network check</h3>
+      <p class="help">See whether your network allows direct connections and whether a relay is reachable.</p>
+      <button id="privCheckBtn" class="btn btn-ghost btn-sm" type="button">Check my network</button>
+      <div id="privNetResult" class="net-result" aria-live="polite" hidden></div>
+    </div>
+  </details>
+  <button id="privDone" class="btn btn-primary btn-xl" type="button" data-close-sheet>Done</button>
+</section>
+
+<!-- Message actions -->
+<div id="msgMenu" class="msg-menu" role="menu" hidden>
+  <div id="reactRow" class="react-row" role="group" aria-label="React"></div>
+  <button class="menu-item" data-act="reply" role="menuitem" type="button">Reply</button>
+  <button class="menu-item" data-act="edit" role="menuitem" type="button">Edit</button>
+  <button class="menu-item" data-act="copy" role="menuitem" type="button">Copy text</button>
+  <button class="menu-item" data-act="hide" role="menuitem" type="button">Delete for me</button>
+  <button class="menu-item menu-danger" data-act="unsend" role="menuitem" type="button">Delete for everyone</button>
+</div>
+
+<!-- Dialog -->
+<div id="dialog" class="dialog-wrap" hidden>
+  <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dialogTitle" aria-describedby="dialogBody">
+    <h2 id="dialogTitle"></h2>
+    <p id="dialogBody"></p>
+    <p id="dialogDetail" class="dialog-detail" hidden></p>
+    <div class="dialog-actions">
+      <button id="dialogCancel" class="btn btn-ghost" type="button">Cancel</button>
+      <button id="dialogOk" class="btn btn-danger" type="button"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Image viewer -->
+<div id="viewer" class="viewer" hidden>
+  <img id="viewerImg" alt="">
+  <button id="viewerClose" class="icon-btn" type="button" aria-label="Close image"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+</div>
+
+<div id="wipe" class="wipe" hidden></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div class="boot-fail" role="alert"><b>Ghost Chat couldn't start.</b> If you opened <code>index.html</code> straight from a folder on your computer, the browser blocks its scripts. Open <code>dist/ghostchat.html</code> instead (a single file that works offline from disk), or serve the folder with <code>npm run serve</code>.</div>
+<noscript><p class="noscript">Ghost Chat needs JavaScript: all encryption happens in your browser.</p></noscript>
+</body>
+</html>

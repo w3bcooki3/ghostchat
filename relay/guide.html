@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#05080A">
+<meta name="description" content="How Ghost Chat works: the technology, how two browsers find each other, the handshake, the encryption of every message, and the code behind it.">
+<title>How Ghost Chat Works</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/pages.css">
+<script src="js/pages.js" defer></script>
+</head>
+<body>
+<div class="backdrop" aria-hidden="true"></div>
+
+<header class="top">
+  <a class="brand" href="index.html" aria-label="Back to Ghost Chat">
+    <svg class="glyph" viewBox="0 0 40 48" aria-hidden="true"><path fill-rule="evenodd" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Zm-7 16a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm14 0a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/></svg>
+    <span>Ghost Chat</span>
+  </a>
+  <nav class="nav" aria-label="Pages">
+    <a href="guide.html" aria-current="page">How it works</a>
+    <a href="security.html">Security</a>
+    <a href="legal.html">Privacy &amp; terms</a>
+    <a class="btn-open" href="index.html">Open Ghost Chat</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero wrap">
+    <div class="kicker">The guide</div>
+    <h1>How Ghost Chat <span class="glow">works</span></h1>
+    <p class="lede">Two browsers, one code, no accounts and no server that can read a word. This page walks through every piece: what runs where, how your browsers find each other on any network, how the keys are made, and what happens to a message between your keyboard and their screen.</p>
+    <div class="stats">
+      <div class="stat"><b>0</b><span>accounts, cookies or stored messages</span></div>
+      <div class="stat"><b>2&times;</b><span>key exchanges at once: classic + post-quantum</span></div>
+      <div class="stat"><b>1</b><span>fresh AES-256 key for every single message</span></div>
+      <div class="stat"><b>60</b><span>digit safety number to check nobody is in between</span></div>
+    </div>
+    <ul class="toc" aria-label="On this page">
+      <li><a href="#stack"><span>01</span>Tech stack</a></li>
+      <li><a href="#map"><span>02</span>The big picture</a></li>
+      <li><a href="#code"><span>03</span>The room code</a></li>
+      <li><a href="#connect"><span>04</span>Connecting</a></li>
+      <li><a href="#handshake"><span>05</span>Handshake</a></li>
+      <li><a href="#message"><span>06</span>A message's journey</a></li>
+      <li><a href="#files"><span>07</span>Files</a></li>
+      <li><a href="#life"><span>08</span>Lifecycle &amp; panic</a></li>
+      <li><a href="#modules"><span>09</span>Code map</a></li>
+      <li><a href="#faq"><span>10</span>FAQ</a></li>
+    </ul>
+  </section>
+
+  <!-- 01 stack -->
+  <section id="stack" class="wrap reveal" aria-labelledby="stackTitle">
+    <div class="kicker">01 · Tech stack</div>
+    <h2 id="stackTitle">Built from browser standards, not frameworks</h2>
+    <p>Ghost Chat is a static web page. There's no backend of its own, no build-time framework and no CDN: every line of code that runs is served from this site, and the only network connections the page is allowed to make are listed in its Content-Security-Policy.</p>
+    <div class="grid g4">
+      <div class="card"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M7 6.5h.01M10 6.5h.01"/></svg><span class="tag">Interface</span><h3>Plain HTML, CSS, JavaScript</h3><p>ES modules with no framework. Every piece of text from the other person goes into the page as text, never parsed as HTML.</p></div>
+      <div class="card"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span class="tag">Crypto</span><h3>Web Crypto API</h3><p>The browser's own audited primitives: AES-256-GCM, ECDH P-384, HKDF and HMAC with SHA-384. The one-time ECDH private key is created non-extractable.</p></div>
+      <div class="card"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1z"/></svg><span class="tag t-cyan">Post-quantum</span><h3>ML-KEM-1024</h3><p>NIST's FIPS 203 standard, via the vendored <code>@noble/post-quantum</code> 0.7.1. Combined with ECDH, so breaking one is not enough.</p></div>
+      <div class="card"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="12" r="2.5"/><path d="M7.5 12h9"/></svg><span class="tag">Transport</span><h3>WebRTC DataChannel</h3><p>A direct, DTLS-encrypted pipe between the two browsers when the network allows it. STUN servers help each side find its public address.</p></div>
+      <div class="card"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 16 0M8 12a4 4 0 0 1 8 0"/><circle cx="12" cy="12" r="1"/></svg><span class="tag t-cyan">Signaling</span><h3>PeerJS 1.5.5</h3><p>The public PeerJS server introduces the two browsers so WebRTC can start. It passes connection details, never keys or messages.</p></div>
+      <div class="card"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg><span class="tag t-amber">Relay</span><h3>Cloudflare Worker</h3><p>A WebSocket relay on a Durable Object (free plan). Used when a direct link is impossible: VPNs, mobile data, strict NAT. It forwards sealed bytes.</p></div>
+      <div class="card"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3z"/><path d="M14 14h3v3h-3zM18 18h3v3h-3z"/></svg><span class="tag">Sharing</span><h3>QR codes, Web Share</h3><p>The invite is drawn as a QR code locally (vendored <code>uqr</code>), or handed to your phone's share sheet. The secret part of the link never reaches a server.</p></div>
+      <div class="card"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg><span class="tag">Quality</span><h3>Tests and a deterministic build</h3><p><code>node --test</code> for the protocol, Playwright driving real Chromium browsers for end-to-end runs, and a single-file build with a hashed CSP.</p></div>
+    </div>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Job</th><th>Technology</th><th>Why this one</th></tr></thead>
+        <tbody>
+          <tr><td>Hosting</td><td>GitHub Pages (static files over HTTPS)</td><td>No server code to trust or breach. The single-file build can be self-hosted or opened from disk.</td></tr>
+          <tr><td>Key exchange</td><td>ECDH P-384 + ML-KEM-1024, mixed with HKDF-SHA-384</td><td>Hybrid: secure if either one holds. Recordings made today stay safe against future quantum computers.</td></tr>
+          <tr><td>Authentication</td><td>HMAC-SHA-384 proofs keyed by the room code</td><td>Only someone with the full code can complete the handshake, including against the introduction server.</td></tr>
+          <tr><td>Message encryption</td><td>AES-256-GCM, a new key per message from a hash ratchet</td><td>Forward secrecy inside a conversation; any tampered, replayed or reordered message ends it.</td></tr>
+          <tr><td>Connection</td><td>WebRTC, then a WebSocket relay on port 443</td><td>Direct when possible for speed, relayed when not, so it works through VPNs and carrier networks.</td></tr>
+          <tr><td>Storage</td><td>None (memory only)</td><td>No cookies, localStorage, IndexedDB or cache. Closing the tab is the delete button.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 02 map -->
+  <section id="map" class="wrap reveal" aria-labelledby="mapTitle">
+    <div class="kicker">02 · The big picture</div>
+    <h2 id="mapTitle">Who is involved in one conversation</h2>
+    <p>Two browsers do all the work. Two helper servers exist only so they can find each other and, when the network gets in the way, pass sealed packets along. Neither helper ever holds a key.</p>
+    <figure class="fig">
+      <svg viewBox="0 0 1000 460" role="img" aria-labelledby="archT archD">
+        <title id="archT">Architecture</title>
+        <desc id="archD">Your browser and the other person's browser connect directly over WebRTC. An introduction server helps them find each other. A relay forwards encrypted packets only when a direct link fails.</desc>
+        <!-- signaling -->
+        <path class="d-sig" d="M140 170 C140 90 290 63 390 63"/>
+        <path class="d-sig" d="M860 170 C860 90 710 63 610 63"/>
+        <text class="d-m" x="500" y="132" text-anchor="middle">introductions: offer · answer · network routes</text>
+        <!-- relay -->
+        <path id="rlA" class="d-relay" d="M140 290 C140 372 290 393 390 393"/>
+        <path id="rlB" class="d-relay" d="M610 393 C710 393 860 372 860 290"/>
+        <text class="d-m d-amber" x="500" y="334" text-anchor="middle">only if direct fails: VPN · mobile data · strict NAT</text>
+        <!-- direct -->
+        <path id="direct" class="d-direct" d="M250 230 H750"/>
+        <path class="d-direct d-flow" d="M250 230 H750" stroke-width="5" opacity=".35"/>
+        <text class="d-mono" x="500" y="214" text-anchor="middle">direct WebRTC DataChannel</text>
+        <text class="d-m" x="500" y="256" text-anchor="middle">sealed by Ghost Chat, then by DTLS</text>
+        <circle class="d-pkt d-anim-hide" r="5"><animateMotion dur="2.4s" repeatCount="indefinite" path="M250 230 H750"/></circle>
+        <circle class="d-pkt d-anim-hide" r="4" opacity=".7"><animateMotion dur="2.4s" begin="1.2s" repeatCount="indefinite" path="M750 230 H250"/></circle>
+        <circle class="d-pkt-a d-anim-hide" r="4"><animateMotion dur="3.4s" repeatCount="indefinite" path="M140 290 C140 372 290 393 390 393 H610 C710 393 860 372 860 290"/></circle>
+
+        <!-- browser A -->
+        <rect class="d-box-hi" x="30" y="170" width="220" height="120" rx="18"/>
+        <g transform="translate(52 194) scale(.62)"><path class="d-ghost" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Z"/><ellipse class="d-ghost-eye" cx="13" cy="19.5" rx="3.6" ry="4.2"/><ellipse class="d-ghost-eye" cx="27" cy="19.5" rx="3.6" ry="4.2"/></g>
+        <text class="d-t" x="90" y="210">Your browser</text>
+        <text class="d-s" x="90" y="230">holds its own keys</text>
+        <text class="d-mono" x="52" y="270">AES-256-GCM · ML-KEM</text>
+        <!-- browser B -->
+        <rect class="d-box-hi" x="750" y="170" width="220" height="120" rx="18"/>
+        <g transform="translate(772 194) scale(.62)"><path class="d-ghost" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Z"/><ellipse class="d-ghost-eye" cx="13" cy="19.5" rx="3.6" ry="4.2"/><ellipse class="d-ghost-eye" cx="27" cy="19.5" rx="3.6" ry="4.2"/></g>
+        <text class="d-t" x="810" y="210">Their browser</text>
+        <text class="d-s" x="810" y="230">the only other keys</text>
+        <text class="d-mono" x="772" y="270">AES-256-GCM · ML-KEM</text>
+        <!-- signaling server -->
+        <rect class="d-box-sig" x="390" y="20" width="220" height="88" rx="16"/>
+        <text class="d-t" x="500" y="50" text-anchor="middle">Introduction server</text>
+        <text class="d-s" x="500" y="70" text-anchor="middle">PeerJS · 0.peerjs.com</text>
+        <text class="d-m" x="500" y="92" text-anchor="middle">SEES: ROOM NAME, IPs</text>
+        <!-- relay -->
+        <rect class="d-box-relay" x="390" y="350" width="220" height="88" rx="16"/>
+        <text class="d-t" x="500" y="380" text-anchor="middle">Relay</text>
+        <text class="d-s" x="500" y="400" text-anchor="middle">Cloudflare Worker · port 443</text>
+        <text class="d-m d-amber" x="500" y="422" text-anchor="middle">SEES: SEALED BYTES, IPs</text>
+      </svg>
+      <div class="legend"><span><i></i>Direct, peer to peer</span><span><i class="l-relay"></i>Relayed fallback</span><span><i class="l-sig"></i>Introductions only</span></div>
+      <figcaption>Every arrow carries data that was already encrypted in a browser. The <a href="security.html">security page</a> lets you look through each party's eyes.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 03 code -->
+  <section id="code" class="wrap reveal" aria-labelledby="codeTitle">
+    <div class="kicker">03 · The room code</div>
+    <h2 id="codeTitle">Twenty characters: a name and a secret</h2>
+    <p>When you start a chat, your browser draws 100 random bits and writes them as 20 characters (no 0/O or 1/I to misread). The first five name the room on the introduction server. The other fifteen, 75 bits of secret, never leave the two browsers.</p>
+    <figure class="fig">
+      <div class="code-anat" aria-label="Example room code">
+        <div class="cg pub"><b>K7QXM</b><small>Room name · seen by the introduction server</small></div>
+        <div class="cg sec"><b>3HPRW</b><small>Secret</small></div>
+        <div class="cg sec"><b>N9TFA</b><small>Secret</small></div>
+        <div class="cg sec"><b>V2CJE</b><small>Secret · never sent anywhere</small></div>
+      </div>
+      <div class="url-demo">https://w3bcooki3.github.io/ghostchat/<span class="frag">#K7QXM-3HPRW-N9TFA-V2CJE</span></div>
+      <figcaption>Invite links put the code after the <code>#</code>. Browsers never send that part to the web server, and Ghost Chat erases it from the address bar the moment it's read. Example code only.</figcaption>
+    </figure>
+    <div class="grid g3">
+      <div class="card"><h3>Room key</h3><p>The full code is stretched with HKDF into a 384-bit room key. It salts the handshake, so only someone holding all 20 characters can prove themselves.</p></div>
+      <div class="card"><h3>Relay room</h3><p>On the relay, the room is named by a 128-bit hash of the room key. The relay can't reverse it, and can't link it to the public room name.</p></div>
+      <div class="card"><h3>Expiry</h3><p>An unused code expires after 10 minutes (you can extend it to an hour). Once someone joins, the code stops working altogether: the room locks.</p></div>
+    </div>
+  </section>
+
+  <!-- 04 connecting -->
+  <section id="connect" class="wrap reveal" aria-labelledby="connectTitle">
+    <div class="kicker">04 · Connecting</div>
+    <h2 id="connectTitle">Finding each other on any network</h2>
+    <p>Direct connections are fastest but many networks block them. Ghost Chat tries direct first and, if nothing has opened after two and a half seconds (or the attempt fails), dials the relay at the same time. Whichever pipe opens first carries the handshake. Pick a situation to follow its path.</p>
+    <figure class="fig">
+      <div class="scen" id="scen" role="group" aria-label="Choose a situation">
+        <button type="button" data-scen="home" aria-pressed="true">Home Wi-Fi</button>
+        <button type="button" data-scen="vpn" aria-pressed="false">VPN or mobile data</button>
+        <button type="button" data-scen="max" aria-pressed="false">Maximum privacy</button>
+        <button type="button" data-scen="wrong" aria-pressed="false">Wrong code</button>
+      </div>
+      <div class="flow-layout">
+        <svg id="flow" class="fc" viewBox="0 0 560 850" role="img" aria-labelledby="flowT flowD">
+          <title id="flowT">Connection flowchart</title>
+          <desc id="flowD">Host opens a room and registers with the introduction server and relay. The joiner enters the code and tries a direct link. If none opens within 2.5 seconds, it also dials the relay. The first pipe to open carries a three-message handshake. If the proofs match, the room locks and the chat opens; otherwise the connection is refused.</desc>
+          <path class="e" data-e="e12" d="M160 62 V90"/>
+          <path class="e" data-e="e23" d="M160 152 V180"/>
+          <path class="e" data-e="e34" d="M160 232 V260"/>
+          <path class="e" data-e="e45" d="M160 322 V350"/>
+          <path class="e" data-e="e57" d="M160 440 V480"/>
+          <path class="e is-relay" data-e="e56" d="M280 395 H340"/>
+          <path class="e is-relay" data-e="e67" d="M440 432 V511 H300"/>
+          <path class="e is-relay" data-e="e36" d="M300 206 H440 V370"/>
+          <path class="e" data-e="e78" d="M160 542 V570"/>
+          <path class="e" data-e="e89" d="M160 632 V660"/>
+          <path class="e" data-e="e910" d="M160 750 V780"/>
+          <path class="e is-bad" data-e="e911" d="M280 705 H340"/>
+          <text class="el" data-e="e57" x="172" y="466">yes</text>
+          <text class="el" data-e="e56" x="292" y="386">no</text>
+          <text class="el" data-e="e36" x="452" y="292">relay</text>
+          <text class="el" data-e="e36" x="452" y="306">only</text>
+          <text class="el" data-e="e910" x="172" y="770">yes</text>
+          <text class="el" data-e="e911" x="292" y="696">no</text>
+
+          <g class="n" data-n="n1"><rect x="20" y="10" width="280" height="52" rx="14"/><text class="d-t" x="160" y="42" text-anchor="middle">Host opens a room</text></g>
+          <g class="n" data-n="n2"><rect x="20" y="90" width="280" height="62" rx="14"/><text class="d-t" x="160" y="116" text-anchor="middle">Waits on two doors</text><text class="d-s" x="160" y="137" text-anchor="middle">introduction server + relay</text></g>
+          <g class="n" data-n="n3"><rect x="20" y="180" width="280" height="52" rx="14"/><text class="d-t" x="160" y="212" text-anchor="middle">Joiner enters the code</text></g>
+          <g class="n" data-n="n4"><rect x="20" y="260" width="280" height="62" rx="14"/><text class="d-t" x="160" y="286" text-anchor="middle">Try a direct WebRTC link</text><text class="d-s" x="160" y="307" text-anchor="middle">STUN finds each side's address</text></g>
+          <g class="n" data-n="n5"><path class="shape" d="M160 350 L280 395 L160 440 L40 395Z"/><text class="d-t" x="160" y="392" text-anchor="middle">Direct link</text><text class="d-s" x="160" y="410" text-anchor="middle">open within 2.5 s?</text></g>
+          <g class="n is-relay" data-n="n6"><rect x="340" y="370" width="200" height="62" rx="14"/><text class="d-t" x="440" y="396" text-anchor="middle">Dial the relay</text><text class="d-s" x="440" y="417" text-anchor="middle">WebSocket, port 443</text></g>
+          <g class="n" data-n="n7"><rect x="20" y="480" width="280" height="62" rx="14"/><text class="d-t" x="160" y="506" text-anchor="middle">First pipe to open wins</text><text class="d-s" x="160" y="527" text-anchor="middle">the other is closed</text></g>
+          <g class="n" data-n="n8"><rect x="20" y="570" width="280" height="62" rx="14"/><text class="d-t" x="160" y="596" text-anchor="middle">Three-message handshake</text><text class="d-s" x="160" y="617" text-anchor="middle">both prove they hold the code</text></g>
+          <g class="n" data-n="n9"><path class="shape" d="M160 660 L280 705 L160 750 L40 705Z"/><text class="d-t" x="160" y="710" text-anchor="middle">Proofs match?</text></g>
+          <g class="n" data-n="n10"><rect x="20" y="780" width="280" height="52" rx="14"/><text class="d-t" x="160" y="812" text-anchor="middle">Room locks. Chat opens.</text></g>
+          <g class="n is-bad" data-n="n11"><rect x="340" y="680" width="200" height="52" rx="14"/><text class="d-t" x="440" y="711" text-anchor="middle">Refused</text></g>
+        </svg>
+        <div>
+          <p id="scenNote" class="scen-note" aria-live="polite">On an ordinary home network the browsers connect straight to each other. The relay is never used.</p>
+          <ol id="scenSteps" class="steps-list">
+            <li><b>Host opens a room</b>Your browser registers the room name with the introduction server and keeps a door open on the relay.</li>
+            <li><b>Joiner tries direct</b>WebRTC asks STUN servers for each side's public address and opens a peer-to-peer pipe.</li>
+            <li><b>Handshake</b>Three messages trade fresh keys and prove both sides hold the code.</li>
+            <li><b>Locked</b>The room accepts no one else. Messages flow directly between you.</li>
+          </ol>
+        </div>
+      </div>
+    </figure>
+  </section>
+
+  <!-- 05 handshake -->
+  <section id="handshake" class="wrap reveal" aria-labelledby="hsTitle">
+    <div class="kicker">05 · Handshake</div>
+    <h2 id="hsTitle">Three messages, two key exchanges, one proof</h2>
+    <p>The handshake does three jobs at once: it agrees on fresh keys (twice, with two unrelated kinds of math), it proves both sides hold the room code, and it produces a safety number you can compare by voice.</p>
+    <figure class="fig">
+      <svg viewBox="0 0 1000 580" role="img" aria-labelledby="hsT hsD">
+        <title id="hsT">Handshake sequence</title>
+        <desc id="hsD">The joiner sends a hello with one-time elliptic-curve and post-quantum public keys. The host replies with its own one-time key, a post-quantum ciphertext and a proof. The joiner replies with its proof. Both now share session keys, a resume secret and a safety number.</desc>
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#62F2B4"/></marker>
+          <marker id="ahc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5BC8F2"/></marker>
+        </defs>
+        <!-- heads -->
+        <rect class="d-box-hi" x="90" y="16" width="180" height="56" rx="14"/><text class="d-t" x="180" y="40" text-anchor="middle">Joiner</text><text class="d-s" x="180" y="59" text-anchor="middle">typed the code</text>
+        <rect class="d-box-hi" x="730" y="16" width="180" height="56" rx="14"/><text class="d-t" x="820" y="40" text-anchor="middle">Host</text><text class="d-s" x="820" y="59" text-anchor="middle">made the code</text>
+        <line class="d-life" x1="180" y1="72" x2="180" y2="460"/><line class="d-life" x1="820" y1="72" x2="820" y2="460"/>
+        <!-- 1 -->
+        <rect class="d-box" x="20" y="92" width="320" height="48" rx="12"/><text class="d-s" x="180" y="113" text-anchor="middle">New one-time P-384 key pair,</text><text class="d-s" x="180" y="130" text-anchor="middle">new ML-KEM-1024 key pair, random nonce</text>
+        <line class="d-arrow" x1="190" y1="170" x2="810" y2="170" marker-end="url(#ah)"/>
+        <text class="d-mono" x="500" y="160" text-anchor="middle">① HELLO</text>
+        <text class="d-m" x="500" y="190" text-anchor="middle">nonce · P-384 public key · ML-KEM public key</text>
+        <!-- host compute -->
+        <rect class="d-box" x="620" y="206" width="370" height="66" rx="12"/>
+        <text class="d-s" x="805" y="228" text-anchor="middle">ECDH with its own one-time key → secret 1</text>
+        <text class="d-s" x="805" y="245" text-anchor="middle">ML-KEM encapsulate → secret 2 + ciphertext</text>
+        <text class="d-s" x="805" y="262" text-anchor="middle">HKDF-SHA-384(secret 1 ‖ secret 2, salt = room key)</text>
+        <!-- 2 -->
+        <line class="d-arrow-c" x1="810" y1="300" x2="190" y2="300" marker-end="url(#ahc)"/>
+        <text class="d-mono" x="500" y="290" text-anchor="middle">② HELLO + PROOF</text>
+        <text class="d-m" x="500" y="320" text-anchor="middle">P-384 public key · ML-KEM ciphertext · HMAC proof of the code</text>
+        <!-- joiner compute -->
+        <rect class="d-box" x="10" y="336" width="360" height="50" rx="12"/>
+        <text class="d-s" x="190" y="357" text-anchor="middle">Decapsulate, derive the same keys,</text>
+        <text class="d-s" x="190" y="374" text-anchor="middle">check the host's proof (wrong code → stop)</text>
+        <!-- 3 -->
+        <line class="d-arrow" x1="190" y1="412" x2="810" y2="412" marker-end="url(#ah)"/>
+        <text class="d-mono" x="500" y="402" text-anchor="middle">③ CONFIRM</text>
+        <text class="d-m" x="500" y="432" text-anchor="middle">the joiner's HMAC proof · host checks it</text>
+        <!-- result -->
+        <rect class="d-box-hi" x="20" y="470" width="960" height="96" rx="16"/>
+        <g transform="translate(46 488)"><rect x="0" y="14" width="28" height="22" rx="4" fill="none" stroke="#62F2B4" stroke-width="2"/><path d="M6 14V9a8 8 0 0 1 16 0v5" fill="none" stroke="#62F2B4" stroke-width="2"/></g>
+        <text class="d-t" x="94" y="500">Both browsers now hold, and nobody else does:</text>
+        <text class="d-s" x="94" y="524">· two message-key chains, one per direction · a resume secret that locks the room</text>
+        <text class="d-s" x="94" y="546">· a 60-digit safety number, from a SHA-512 of the whole exchange</text>
+      </svg>
+      <figcaption>The one-time keys are thrown away after the handshake. A new connection always means new keys.</figcaption>
+    </figure>
+    <div class="grid g3">
+      <div class="card"><span class="tag t-cyan">Why two exchanges</span><p>ECDH P-384 is battle-tested; ML-KEM-1024 resists quantum computers. The session key needs both secrets, so an attacker must break both.</p></div>
+      <div class="card"><span class="tag">Why the proof</span><p>The introduction server could try to sit in the middle. Without the 15 secret characters it can't produce a valid HMAC, and the connection is refused.</p></div>
+      <div class="card"><span class="tag t-amber">Why the safety number</span><p>If someone saw the code before your friend joined, they could get in first. Comparing the 60 digits by voice rules that out.</p></div>
+    </div>
+  </section>
+
+  <!-- 06 message -->
+  <section id="message" class="wrap reveal" aria-labelledby="msgTitle">
+    <div class="kicker">06 · A message's journey</div>
+    <h2 id="msgTitle">From your keyboard to their screen</h2>
+    <p>Every message, read receipt, reaction and typing signal goes through the same pipeline. The receiving browser runs it backwards and checks everything on the way.</p>
+    <ol class="pipe" aria-label="Encryption pipeline">
+      <li><b>You type</b><span class="pv">“meet at ten”</span><small>Text stays in memory only.</small></li>
+      <li><b>Packaged</b><span class="pv">{t:"msg", mid, text}</span><small>A small JSON object with a random 64-bit id.</small></li>
+      <li><b>Padded</b><span class="pv">256 B</span><small>Rounded up to 256 B, 1 KB, 4 KB, 16 KB or 64 KB, so length gives little away.</small></li>
+      <li><b>New key</b><span class="pv">key #42</span><small>The ratchet turns once: a fresh AES key, used once, then deleted.</small></li>
+      <li class="sealed"><b>Sealed</b><span class="pv">9f3a…c1e7</span><small>AES-256-GCM. The message counter is bound in, so replays and reordering are caught.</small></li>
+      <li><b>Sent</b><span class="pv">direct or relay</span><small>The transport only ever carries this sealed frame.</small></li>
+    </ol>
+    <figure class="fig">
+      <svg viewBox="0 0 1000 230" role="img" aria-labelledby="rtT rtD">
+        <title id="rtT">Hash ratchet</title>
+        <desc id="rtD">A chain key is hashed forward with HMAC-SHA-384. Each step yields a one-time message key and the next chain key. Old keys are deleted, so they cannot be recomputed.</desc>
+        <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#62F2B4"/></marker></defs>
+        <g opacity=".38">
+          <rect class="d-box" x="20" y="30" width="150" height="52" rx="12"/><text class="d-t" x="95" y="62" text-anchor="middle">chain key 40</text>
+          <line class="d-arrow" x1="95" y1="82" x2="95" y2="140" marker-end="url(#ah2)"/>
+          <rect class="d-box" x="30" y="146" width="130" height="44" rx="10"/><text class="d-s" x="95" y="173" text-anchor="middle">msg key 40</text>
+          <text class="d-m" x="95" y="214" text-anchor="middle">DELETED</text>
+        </g>
+        <line class="d-arrow" x1="170" y1="56" x2="262" y2="56" marker-end="url(#ah2)" opacity=".5"/>
+        <text class="d-m" x="216" y="46" text-anchor="middle">HMAC</text>
+        <g opacity=".6">
+          <rect class="d-box" x="270" y="30" width="150" height="52" rx="12"/><text class="d-t" x="345" y="62" text-anchor="middle">chain key 41</text>
+          <line class="d-arrow" x1="345" y1="82" x2="345" y2="140" marker-end="url(#ah2)"/>
+          <rect class="d-box" x="280" y="146" width="130" height="44" rx="10"/><text class="d-s" x="345" y="173" text-anchor="middle">msg key 41</text>
+          <text class="d-m" x="345" y="214" text-anchor="middle">DELETED</text>
+        </g>
+        <line class="d-arrow" x1="420" y1="56" x2="512" y2="56" marker-end="url(#ah2)"/>
+        <text class="d-m" x="466" y="46" text-anchor="middle">HMAC</text>
+        <rect class="d-box-hi" x="520" y="30" width="150" height="52" rx="12"/><text class="d-t" x="595" y="62" text-anchor="middle">chain key 42</text>
+        <line class="d-arrow" x1="595" y1="82" x2="595" y2="140" marker-end="url(#ah2)"/>
+        <rect class="d-box-hi" x="530" y="146" width="130" height="44" rx="10"/><text class="d-mono" x="595" y="173" text-anchor="middle">msg key 42</text>
+        <text class="d-m" x="595" y="214" text-anchor="middle" fill="#62F2B4">SEALS “meet at ten”</text>
+        <line class="d-arrow" x1="670" y1="56" x2="762" y2="56" marker-end="url(#ah2)" stroke-dasharray="4 5"/>
+        <text class="d-m" x="716" y="46" text-anchor="middle">next</text>
+        <rect class="d-box-sig" x="770" y="30" width="200" height="52" rx="12"/><text class="d-s" x="870" y="62" text-anchor="middle">chain key 43 …</text>
+      </svg>
+      <figcaption>Forward secrecy inside the conversation: a key that has been used is gone, and the hash can only run forwards.</figcaption>
+    </figure>
+    <div class="note"><b>If anything is off, the chat ends.</b> A frame that fails authentication, arrives twice, out of order or with a skipped counter closes the connection instead of being shown. Silence is safer than a forged message.</div>
+  </section>
+
+  <!-- 07 files -->
+  <section id="files" class="wrap reveal" aria-labelledby="filesTitle">
+    <div class="kicker">07 · Files</div>
+    <h2 id="filesTitle">Files travel the same way, and never open by themselves</h2>
+    <p>A file is cut into 60 KB pieces. Each piece is padded to 64 KB and sealed with its own message key, exactly like a text message, and checked for completeness at the end. Up to 100 MB per file.</p>
+    <div class="grid g4">
+      <div class="card"><span class="tag">1 · Recognise</span><p>The real type is read from the file's first bytes, not from its name or the sender's claim.</p></div>
+      <div class="card"><span class="tag">2 · Hold</span><p>Nothing is shown or played automatically. Photos appear only when you press View, and only PNG, JPEG, GIF or WebP.</p></div>
+      <div class="card"><span class="tag t-amber">3 · Warn</span><p>Programs, scripts, installers and documents with macros are flagged, and saving them asks first.</p></div>
+      <div class="card"><span class="tag t-cyan">4 · Save safely</span><p>Saved as plain bytes under a cleaned name, so the browser can't render or run them on the way.</p></div>
+    </div>
+  </section>
+
+  <!-- 08 lifecycle -->
+  <section id="life" class="wrap reveal" aria-labelledby="lifeTitle">
+    <div class="kicker">08 · Lifecycle &amp; panic</div>
+    <h2 id="lifeTitle">From first hello to nothing left</h2>
+    <div class="states" aria-label="Session states">
+      <span class="state">Waiting for a join</span><span class="arrow">→</span>
+      <span class="state">Handshake</span><span class="arrow">→</span>
+      <span class="state s-ok">Locked &amp; chatting</span><span class="arrow">⇄</span>
+      <span class="state s-warn">Reconnecting</span><span class="arrow">→</span>
+      <span class="state s-end">Ended &amp; wiped</span>
+    </div>
+    <div class="grid g3">
+      <div class="card"><h3>Reconnecting</h3><p>If the network drops, the browsers retry for up to three minutes. The returning side must prove the resume secret, so the safety number stays the same and nobody new can slip in.</p></div>
+      <div class="card"><h3>Ending</h3><p>When one side ends the session or closes the tab, it sends an authenticated goodbye: a random token it handed over inside the encrypted channel. The other side ends at once.</p></div>
+      <div class="card"><h3>Panic wipe</h3><p>The panic button (or <code>Esc</code> three times) sends the goodbye, blanks the page, clears the clipboard, drops every key and leaves for another site. On phones you hold it briefly so a stray tap can't trigger it.</p></div>
+    </div>
+    <div class="note"><b>What a wipe can't reach.</b> Screenshots, copies the other person keeps, and anything malware on a device has already seen. Ghost Chat stores nothing, but it can't un-see for someone else.</div>
+  </section>
+
+  <!-- 09 modules -->
+  <section id="modules" class="wrap reveal" aria-labelledby="modTitle">
+    <div class="kicker">09 · Code map</div>
+    <h2 id="modTitle">Separate engines, one small page</h2>
+    <p>The code is split into modules with one job each. The crypto never touches the page, the interface never touches a key, and every transport is just a pipe for bytes that are already sealed.</p>
+    <div class="layers">
+      <div class="layer l-ui"><div class="layer-name"><b>Interface</b><small>what you see</small></div><div class="mods">
+        <div class="mod"><code>js/app.js</code><span>Screens, conversation, menus, settings, panic.</span></div>
+        <div class="mod"><code>js/ui/*.js</code><span>Input cleaning, file handling, the handshake animation, shared DOM helpers.</span></div>
+        <div class="mod"><code>js/fx.js</code><span>Motion and effects, respecting reduced-motion. Seven colour themes share one stylesheet.</span></div>
+      </div></div>
+      <div class="layer"><div class="layer-name"><b>Session</b><small>the conversation engine</small></div><div class="mods">
+        <div class="mod"><code>js/session.js</code><span>Runs the handshake over whichever pipe opens first, delivery and receipts, reconnects, file chunks, goodbye.</span></div>
+      </div></div>
+      <div class="layer"><div class="layer-name"><b>Crypto</b><small>pure, no DOM, no network</small></div><div class="mods">
+        <div class="mod"><code>js/protocol.js</code><span>Room keys, hybrid handshake, ratchet, padding, framing, safety numbers.</span></div>
+        <div class="mod"><code>vendor/noble-ml-kem1024</code><span>ML-KEM-1024 (FIPS 203).</span></div>
+      </div></div>
+      <div class="layer l-net"><div class="layer-name"><b>Transports</b><small>byte pipes</small></div><div class="mods">
+        <div class="mod"><code>PeerJS + WebRTC</code><span>Direct link; <code>js/ice.js</code> picks STUN/TURN.</span></div>
+        <div class="mod"><code>js/relay.js</code><span>WebSocket relay client, host-side multiplexing.</span></div>
+        <div class="mod"><code>js/local.js</code><span>Two tabs on one device, via BroadcastChannel.</span></div>
+        <div class="mod"><code>js/netcheck.js</code><span>The "Check my network" diagnostic.</span></div>
+      </div></div>
+      <div class="layer l-srv"><div class="layer-name"><b>Servers</b><small>optional, see nothing</small></div><div class="mods">
+        <div class="mod"><code>relay/ws-relay.js</code><span>Cloudflare Worker + Durable Object: rooms by hash, origin check, size and rate limits.</span></div>
+        <div class="mod"><code>relay/turn-credentials.js</code><span>Optional short-lived TURN credentials.</span></div>
+      </div></div>
+    </div>
+    <div class="grid g3">
+      <div class="card"><span class="tag">Build</span><p><code>npm run build</code> inlines everything into one HTML file with a hash-based CSP and prints its SHA-256, so anyone can check they're running the published code.</p></div>
+      <div class="card"><span class="tag t-cyan">Tests</span><p>Unit tests for the protocol and input cleaning, and end-to-end runs where real browsers connect, chat, transfer files, reconnect, get refused and panic.</p></div>
+      <div class="card"><span class="tag t-amber">Honest status</span><p>Not independently audited. Standard algorithms, automated tests and an internal review. For life-or-death situations, use Signal.</p></div>
+    </div>
+  </section>
+
+  <!-- 10 FAQ -->
+  <section id="faq" class="wrap reveal" aria-labelledby="faqTitle">
+    <div class="kicker">10 · FAQ</div>
+    <h2 id="faqTitle">Questions people ask</h2>
+    <div class="faq">
+      <details><summary>Can I add a third person to a chat?</summary><p>Not into the same room. Each room's keys and safety number belong to one pair, and it locks once both are in. To talk to someone else, use "New room for someone else" in the session panel: it opens a separate private room in a new tab. True group rooms need a bigger protocol (keys and safety numbers for every pair) and aren't built yet.</p></details>
+      <details><summary>Does it work with a VPN, on mobile data or at work?</summary><p>Yes. If a direct link can't open, Ghost Chat uses the relay over an ordinary HTTPS WebSocket on port 443, which those networks allow. The relay only sees sealed bytes.</p></details>
+      <details><summary>Are my messages saved anywhere?</summary><p>No. Not on a server, and not in your browser: there are no cookies, no localStorage, no IndexedDB. Close the tab and they're gone on your side.</p></details>
+      <details><summary>Can the other person see my IP address?</summary><p>On a direct link, yes, as with any peer-to-peer call. Choose Maximum privacy before connecting to go through the relay instead; then only the relay sees it.</p></details>
+      <details><summary>What can I do with a message after sending it?</summary><p>Edit it (the other side sees it marked "edited"), delete it for both of you, or delete it only from your screen. Only the author can edit or delete for both; the other browser checks that.</p></details>
+      <details><summary>How do I know the page itself wasn't tampered with?</summary><p>You're trusting whoever serves the page, as with any web app. The build prints a SHA-256 of the single-file version; you can rebuild it from the source and compare, or host that file yourself.</p></details>
+    </div>
+  </section>
+</main>
+
+<footer class="foot wrap">
+  <span>Ghost Chat · by w3bcooki3 · MIT licensed</span>
+  <nav aria-label="Footer"><a href="index.html">Open the app</a><a href="guide.html">How it works</a><a href="security.html">Security</a><a href="legal.html">Privacy &amp; terms</a><a href="https://github.com/w3bcooki3/ghostchat" rel="noopener noreferrer">Source code</a></nav>
+</footer>
+</body>
+</html>

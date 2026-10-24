@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#05080A">
+<meta name="description" content="Ghost Chat's privacy policy, terms of use, acceptable use, disclaimers and open-source licenses.">
+<title>Privacy and Terms</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/pages.css">
+<script src="js/pages.js" defer></script>
+</head>
+<body>
+<div class="backdrop" aria-hidden="true"></div>
+
+<header class="top">
+  <a class="brand" href="index.html" aria-label="Back to Ghost Chat">
+    <svg class="glyph" viewBox="0 0 40 48" aria-hidden="true"><path fill-rule="evenodd" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Zm-7 16a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm14 0a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/></svg>
+    <span>Ghost Chat</span>
+  </a>
+  <nav class="nav" aria-label="Pages">
+    <a href="guide.html">How it works</a>
+    <a href="security.html">Security</a>
+    <a href="legal.html" aria-current="page">Privacy &amp; terms</a>
+    <a class="btn-open" href="index.html">Open Ghost Chat</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero wrap">
+    <div class="kicker">Legal</div>
+    <h1>Privacy &amp; <span class="glow">terms</span></h1>
+    <p class="lede">The short version: Ghost Chat has no accounts, keeps no messages, sets no cookies and runs no analytics. The longer version is below, in plain language.</p>
+    <p class="meta-line">Effective October 23, 2026 · Applies to the Ghost Chat site at w3bcooki3.github.io/ghostchat and copies built from this source</p>
+  </section>
+
+  <div class="wrap legal">
+    <nav class="legal-nav" aria-label="Sections">
+      <a href="#privacy">Privacy policy</a>
+      <a href="#third">Services involved</a>
+      <a href="#terms">Terms of use</a>
+      <a href="#aup">Acceptable use</a>
+      <a href="#disclaimer">Disclaimers</a>
+      <a href="#requests">Data requests</a>
+      <a href="#licenses">Open-source licenses</a>
+      <a href="#contact">Contact &amp; changes</a>
+    </nav>
+
+    <article class="legal-doc">
+      <section id="privacy" aria-labelledby="privacyTitle">
+        <h2 id="privacyTitle">Privacy policy</h2>
+        <div class="tldr"><b>In one line</b><p>We can't read your conversations, we don't keep them, and we don't know who you are.</p></div>
+        <h3>What Ghost Chat does not collect</h3>
+        <ul>
+          <li>No account, phone number, email address or contact list. You never sign up.</li>
+          <li>No message content, files, names or avatars on any server. They exist only in the two browsers in the conversation, encrypted end to end while in transit.</li>
+          <li>No cookies, localStorage, IndexedDB or offline cache. Closing the tab removes everything on your side.</li>
+          <li>No analytics, advertising, tracking pixels, fingerprinting or third-party scripts.</li>
+        </ul>
+        <h3>What is processed, and by whom</h3>
+        <p>To connect two browsers over the internet, some technical data has to pass through servers. None of it includes the content of your conversation or the secret part of your room code.</p>
+        <ul>
+          <li><strong>IP addresses</strong> are seen by the site host when it serves the page, by the introduction server when browsers find each other, and by the relay when it is used. On a direct connection, the other person's browser also sees your IP address; choose Maximum privacy to avoid that.</li>
+          <li><strong>The room name</strong> (the first five characters of the code) is seen by the introduction server. The relay sees only a one-way hash of the full code that it can't reverse.</li>
+          <li><strong>Timing and sizes</strong> of encrypted packets are visible to the relay and to network operators. Sizes are padded; constant-rate mode also hides timing.</li>
+        </ul>
+        <h3>Legal basis and retention</h3>
+        <p>Processing is limited to what is technically necessary to deliver the service you request (connecting you to the person you invited). Ghost Chat's relay holds a room only while a connection is open; its code writes no logs and Cloudflare's Workers Logs are switched off for it. Cloudflare still processes connection metadata on its network under its own policy. The site host and introduction server are operated by third parties under their own policies, listed below, and may keep standard server logs.</p>
+        <h3>Your choices and rights</h3>
+        <p>Because we hold no personal data about you, there is nothing for us to access, correct, export or delete on request. Depending on where you live, you may have rights under laws such as the GDPR or CCPA; for data held by the third-party services below, contact them directly. You can reduce what any party sees by choosing Maximum privacy, using a VPN or Tor, or hosting your own copy with your own servers.</p>
+        <h3>Children</h3>
+        <p>Ghost Chat is not directed at children under 13 (or the minimum age for online services where you live), and we don't knowingly collect data from anyone, of any age.</p>
+      </section>
+
+      <section id="third" aria-labelledby="thirdTitle">
+        <h2 id="thirdTitle">Services involved</h2>
+        <div class="tbl-scroll">
+          <table>
+            <thead><tr><th>Service</th><th>Role</th><th>What it can see</th></tr></thead>
+            <tbody>
+              <tr><td>GitHub Pages</td><td>Hosts the web page</td><td>Your IP address and the page you request, under GitHub's privacy statement. Never your room code: invite links keep it after the <code>#</code>, which browsers don't send.</td></tr>
+              <tr><td>PeerJS cloud server</td><td>Introduces the two browsers (signaling)</td><td>IP addresses, the room name, and connection details needed to set up WebRTC. Never keys or messages.</td></tr>
+              <tr><td>Public STUN servers</td><td>Cloudflare and Google STUN help each browser learn its public address</td><td>Your IP address, for a single lookup.</td></tr>
+              <tr><td>Cloudflare Workers</td><td>Runs Ghost Chat's relay, used when a direct link fails or for Maximum privacy</td><td>IP addresses, a hashed room identifier, timing and sizes of sealed packets, under Cloudflare's privacy policy. Never content.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>If you host your own copy, you choose these services, and this table describes your setup only if you keep the defaults.</p>
+      </section>
+
+      <section id="terms" aria-labelledby="termsTitle">
+        <h2 id="termsTitle">Terms of use</h2>
+        <div class="tldr"><b>In one line</b><p>Free, open-source software, provided as-is; use it lawfully and you're responsible for what you send.</p></div>
+        <ul>
+          <li><strong>Acceptance.</strong> By using Ghost Chat you agree to these terms. If you don't agree, don't use it.</li>
+          <li><strong>The service.</strong> Ghost Chat is free software that runs in your browser and connects you directly to one other person. It is provided without charge, without accounts and without any guarantee of availability. It may change or stop at any time.</li>
+          <li><strong>Your content.</strong> You keep all rights to what you send. Because we can't see or store it, we don't review, moderate, back up or recover it.</li>
+          <li><strong>Your responsibility.</strong> You are responsible for what you send and for complying with the laws that apply to you, including laws on encryption, communications and data protection in your country.</li>
+          <li><strong>The code.</strong> The source code is licensed under the MIT License. These terms cover your use of the hosted site; the license governs copying, modifying and distributing the code.</li>
+          <li><strong>Eligibility.</strong> You must be old enough to use online services where you live, and at least 13.</li>
+        </ul>
+      </section>
+
+      <section id="aup" aria-labelledby="aupTitle">
+        <h2 id="aupTitle">Acceptable use</h2>
+        <p>Privacy tools protect journalists, survivors, activists and ordinary people. Please don't use Ghost Chat to harm others. In particular, don't use it to:</p>
+        <ul>
+          <li>share child sexual abuse material or exploit, groom or endanger minors in any way;</li>
+          <li>harass, threaten, stalk, extort or incite violence against anyone;</li>
+          <li>distribute malware, or attack, overload or abuse the relay, the introduction server or other people's devices;</li>
+          <li>infringe others' intellectual-property or privacy rights, or commit fraud or other illegal acts.</li>
+        </ul>
+        <p>Abuse of the relay (for example floods or automated misuse) may be blocked by rate limits and origin checks without notice.</p>
+      </section>
+
+      <section id="disclaimer" aria-labelledby="discTitle">
+        <h2 id="discTitle">Disclaimers and limitation of liability</h2>
+        <ul>
+          <li><strong>No warranty.</strong> Ghost Chat is provided "as is" and "as available", without warranties of any kind, express or implied, including merchantability, fitness for a particular purpose and non-infringement.</li>
+          <li><strong>Security limits.</strong> Ghost Chat uses standard, well-reviewed cryptography and is covered by automated tests, but it has not been independently audited. It can't protect against a compromised device, a code that leaks before your contact joins, or the other person keeping a copy. The <a href="security.html">security page</a> describes these limits. For situations where your safety depends on it, use a professionally audited tool such as Signal.</li>
+          <li><strong>Not "military grade".</strong> It uses algorithms that appear in government suites (AES-256, ML-KEM-1024, SHA-384, P-384) but is not certified, FIPS-validated or approved for classified information.</li>
+          <li><strong>Liability.</strong> To the fullest extent allowed by law, the authors and contributors are not liable for any indirect, incidental, special, consequential or punitive damages, or any loss of data, profits or goodwill, arising from your use of or inability to use Ghost Chat. Where liability can't be excluded, it is limited to the amount you paid to use it, which is zero.</li>
+          <li>Some jurisdictions don't allow certain exclusions; in those, the exclusions apply as far as the law permits.</li>
+        </ul>
+      </section>
+
+      <section id="requests" aria-labelledby="reqTitle">
+        <h2 id="reqTitle">Requests for data</h2>
+        <p>Ghost Chat is built so that there is nothing useful to hand over. We have no message content, no keys, no contact lists and no accounts. The relay keeps no records of past rooms. Requests concerning data held by GitHub, PeerJS or Cloudflare should be sent to those services. We will not add a backdoor, and the open-source code lets anyone check that.</p>
+      </section>
+
+      <section id="licenses" aria-labelledby="licTitle">
+        <h2 id="licTitle">Open-source licenses</h2>
+        <div class="tbl-scroll">
+          <table>
+            <thead><tr><th>Component</th><th>License</th><th>Copyright</th></tr></thead>
+            <tbody>
+              <tr><td>Ghost Chat</td><td>MIT</td><td>Ghost Chat contributors</td></tr>
+              <tr><td>PeerJS 1.5.5</td><td>MIT</td><td>Michelle Bu and Eric Zhang</td></tr>
+              <tr><td>@noble/post-quantum 0.7.1 (ML-KEM-1024)</td><td>MIT</td><td>Paul Miller</td></tr>
+              <tr><td>uqr 0.1.2 (QR codes)</td><td>MIT</td><td>Project Nayuki and contributors</td></tr>
+              <tr><td>Manrope, Doto, JetBrains Mono, Space Grotesk, Bebas Neue</td><td>SIL Open Font License 1.1</td><td>Their respective authors</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Full license texts are in the <a href="https://github.com/w3bcooki3/ghostchat" rel="noopener noreferrer">source repository</a> (<code>LICENSE</code>, <code>vendor/*.LICENSE</code> and <code>fonts/OFL-*.txt</code>).</p>
+      </section>
+
+      <section id="contact" aria-labelledby="contactTitle">
+        <h2 id="contactTitle">Contact and changes</h2>
+        <p>Questions about these terms: open an issue on the <a href="https://github.com/w3bcooki3/ghostchat" rel="noopener noreferrer">GitHub repository</a>. Security problems: please report them privately through a security advisory on the repository rather than a public issue.</p>
+        <p>If these terms change, the new version will be posted here with a new effective date. Because Ghost Chat has no accounts, we can't notify you directly; continued use after a change means you accept it.</p>
+        <p class="meta-line">This page is a plain-language summary written for an open-source project. It is not legal advice.</p>
+      </section>
+    </article>
+  </div>
+</main>
+
+<footer class="foot wrap">
+  <span>Ghost Chat · by w3bcooki3 · MIT licensed</span>
+  <nav aria-label="Footer"><a href="index.html">Open the app</a><a href="guide.html">How it works</a><a href="security.html">Security</a><a href="legal.html">Privacy &amp; terms</a><a href="https://github.com/w3bcooki3/ghostchat" rel="noopener noreferrer">Source code</a></nav>
+</footer>
+</body>
+</html>
