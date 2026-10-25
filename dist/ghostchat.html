@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/51UcYAVCDMgBTJSL3dvQcmY+PnXKbGOzweMdOWJZ+Q=' 'sha256-7CSWLgV80RvdL65uqlvC0O4KSpRenqAdO6dVVWGaYtM='; style-src 'sha256-ZXM8QpJ26bKu4Y/v6IRoc2y7bolUniYMZrGWMF/JP7s='; font-src data:; img-src blob: data:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com wss://ghostchat-relay.mrsaini281-678.workers.dev; worker-src blob:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/51UcYAVCDMgBTJSL3dvQcmY+PnXKbGOzweMdOWJZ+Q=' 'sha256-6M+7cOslYvYPfTPuVp60r5dWYDapj1UVF5wOz2rI/dU='; style-src 'sha256-gwAS827BzgrraBa97WqWTF4bnY7IulYrEZbC4RqUnl4='; font-src data:; img-src blob: data:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com wss://ghostchat-relay.mrsaini281-678.workers.dev; worker-src blob:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F1F0EC">
@@ -27,7 +27,9 @@
    variables. No data-theme attribute = Auto: Signal in light mode, Phosphor in dark mode.
    The choice lasts for the tab only; nothing is stored. */
 :root {
-  --f-ui: 'Manrope', system-ui, sans-serif;
+  --f-ui: var(--f-theme, 'Manrope', system-ui, sans-serif);
+  /* chat surfaces; themes may override */
+  --them-bg: var(--hull); --them-line: var(--line-2); --them-text: var(--paper); --wall: none;
   --f-mono: 'JetBrains Mono', ui-monospace, monospace;
   --f-display: 'Doto', 'JetBrains Mono', monospace;
   --r-s: 8px; --r-m: 12px; --r-l: 16px; --r-bubble: 18px;
@@ -142,6 +144,56 @@
   --ghost: #E6E9EF; --ghost-eye: #0A0C10;
   --shade: #000000; --shade-k: 1; --glow-k: .5;
   --grid: rgba(148, 163, 184, .07); --chrome: #0A0C10;
+}
+/* Apple — Messages-style: white page, blue and grey bubbles, the system typeface */
+:root[data-theme="apple"] {
+  color-scheme: light;
+  --f-theme: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
+  --r-bubble: 20px;
+  --ink: #FFFFFF; --hull: #F5F5F7; --hull-2: #EDEDF0; --hull-3: #E3E3E7;
+  --line: rgba(0, 0, 0, .08); --line-2: rgba(0, 0, 0, .14);
+  --paper: #1D1D1F; --fog: #636366; --fog-2: #424245; --mist: #636366;
+  --ecto: #0A6CF0; --ecto-ink: #FFFFFF; --ok: #1F7A35; --signal: #0A6CF0;
+  --amber: #A34A00; --red: #D70015; --red-text: #C00013; --red-ink: #FFFFFF; --cool: #5E5CE6;
+  --me-bg: #0A6CF0; --me-border: transparent; --me-text: #FFFFFF;
+  --them-bg: #E9E9EB; --them-line: transparent; --them-text: #1D1D1F;
+  --ghost: #1D1D1F; --ghost-eye: #FFFFFF;
+  --shade: #000000; --shade-k: .25; --glow-k: 0;
+  --grid: rgba(0, 0, 0, 0); --chrome: #F5F5F7;
+}
+/* Haven — calm teal on soft stone */
+:root[data-theme="haven"] {
+  color-scheme: light;
+  --r-bubble: 16px;
+  --ink: #F3F3F0; --hull: #FFFFFF; --hull-2: #F8F8F5; --hull-3: #ECECE7;
+  --line: rgba(23, 35, 33, .08); --line-2: rgba(23, 35, 33, .15);
+  --paper: #172321; --fog: #56625F; --fog-2: #33403D; --mist: #5F6B68;
+  --ecto: #0B6B6B; --ecto-ink: #FFFFFF; --ok: #0B6B6B; --signal: #0B6B6B;
+  --amber: #9A4A06; --red: #C2261C; --red-text: #B42318; --red-ink: #FFFFFF; --cool: #4F6BD5;
+  --me-bg: #0B6B6B; --me-border: transparent; --me-text: #FFFFFF;
+  --them-bg: #FFFFFF; --them-line: rgba(23, 35, 33, .10); --them-text: #172321;
+  --ghost: #0B6B6B; --ghost-eye: #F3F3F0;
+  --shade: #1B2B28; --shade-k: .25; --glow-k: 0;
+  --grid: rgba(23, 35, 33, .05); --chrome: #F3F3F0;
+}
+/* Telegram — patterned wallpaper, white and pale-green bubbles */
+:root[data-theme="telegram"] {
+  color-scheme: light;
+  --f-theme: 'Roboto', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --r-bubble: 14px;
+  --ink: #EEF1F4; --hull: #FFFFFF; --hull-2: #F4F5F7; --hull-3: #E8EBEF;
+  --line: rgba(0, 0, 0, .08); --line-2: rgba(0, 0, 0, .13);
+  --paper: #0F1419; --fog: #5F6670; --fog-2: #3A4048; --mist: #6A717A;
+  --ecto: #1F74C0; --ecto-ink: #FFFFFF; --ok: #2E8B3A; --signal: #1F74C0;
+  --amber: #A35200; --red: #D93F3F; --red-text: #C42F2F; --red-ink: #FFFFFF; --cool: #6C5BD5;
+  --me-bg: #E3FBD0; --me-border: rgba(70, 140, 60, .16); --me-text: #0F1419;
+  --them-bg: #FFFFFF; --them-line: transparent; --them-text: #0F1419;
+  --wall: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, .22) 0 2px, transparent 3px) 0 0 / 46px 46px,
+          radial-gradient(circle at 70% 70%, rgba(60, 110, 40, .10) 0 3px, transparent 4px) 0 0 / 62px 62px,
+          linear-gradient(160deg, #C4DBA8 0%, #DEE6B4 45%, #B9D3B0 100%);
+  --ghost: #1F74C0; --ghost-eye: #FFFFFF;
+  --shade: #000000; --shade-k: .2; --glow-k: 0;
+  --grid: rgba(0, 0, 0, 0); --chrome: #FFFFFF;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -1514,7 +1566,7 @@ html.dock .panel { background: color-mix(in srgb, var(--ink) 92%, transparent); 
 .inv-qr { margin: 14px auto 0; }
 
 /* ── text styles: Terminal (dot-matrix + mono labels) is the default ── */
-html[data-type="clean"] { --f-display: 'Manrope', system-ui, sans-serif; }
+html[data-type="clean"] { --f-display: var(--f-ui); }
 html[data-type="clean"] :is(.sys, .link-state, .btn-sm, .typing, .pid-sub, .pb-lbl, .seg button, .toast, .file-act, .panel-head h2, .panel-sec h3, .sheet-h3, .tb-action, .route-chip, .kv, .kv dt, .meta, .status-pill, .wm-by, .pid-trust, .pp-tag, .bubble .edited, .file-sub, #input) {
   font-family: var(--f-ui); letter-spacing: .02em;
 }
@@ -1582,6 +1634,215 @@ html[data-type="mono"] :is(.qa-txt b, .pp-text b, .kn-text b, .sn-who) { font-we
   .join-sub { font-size: 16px; color: var(--fog-2); }
 }
 .join-main .help { font-size: 13px; color: var(--fog); }
+
+/* ═════════════════════════ v4 chat: three columns ═════════════════════════
+   Room rail (who's here, how you're connected, you) · conversation · details panel.
+   Below 900px the rail is a sheet from the left; the details panel keeps its own rules
+   (docked on wide screens, a drawer or bottom sheet elsewhere). Everything here is scoped
+   to #chat so it wins over the older layers above without !important. */
+#chat.is-on { --rail-w: 0px; padding-left: var(--rail-w); }
+@media (min-width: 900px) { #chat.is-on { --rail-w: 272px; } }
+@media (min-width: 1360px) { #chat.is-on { --rail-w: 296px; } }
+
+/* ── room rail ── */
+html #chat .rail { position: absolute; z-index: 21; left: 0; top: 0; bottom: 0; width: var(--rail-w); display: flex; flex-direction: column; background: var(--hull); border-right: 1px solid var(--line-2); }
+html #chat .rail-top { flex: none; display: flex; align-items: center; gap: 10px; height: 64px; padding: 0 14px 0 18px; }
+html #chat .rail-brand { display: flex; align-items: center; gap: 10px; font: 900 19px/1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; color: var(--paper); white-space: nowrap; }
+html #chat .rail-brand svg { width: 20px; height: 24px; fill: var(--paper); flex: none; }
+html[data-type] #chat .rail-brand { font-weight: 800; letter-spacing: -.01em; text-transform: none; font-size: 17px; }
+html #chat .rail-close { display: none; margin-left: auto; }
+html #chat .rail-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 22px; padding: 6px 12px 18px; scrollbar-width: thin; scrollbar-color: var(--hull-3) transparent; }
+html #chat .rail-h { margin: 0 0 8px; padding: 0 6px; font: 600 10.5px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--fog); }
+html[data-type="clean"] #chat .rail-h { font-family: var(--f-ui); letter-spacing: .08em; }
+html #chat .room-card { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 12px; border-radius: 14px; border: 1px solid var(--line-2); background: var(--hull-2); }
+html #chat .room-code { display: flex; align-items: center; gap: 6px; }
+html #chat .room-code code { flex: 1; min-width: 0; font: 600 13px/1.55 var(--f-mono); letter-spacing: .05em; color: var(--paper); overflow-wrap: anywhere; }
+html #chat .rail-invite { width: 100%; min-height: 40px; gap: 8px; font-size: 14px; }
+html #chat .rail-invite svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+html #chat .rail-note { margin: 0; font-size: 12.5px; color: var(--fog); }
+html #chat .rail .people-list { gap: 0; margin: 0; }
+html #chat .rail .pp-row { gap: 10px; min-height: 52px; padding: 6px; border-radius: 10px; }
+html #chat .rail .pp-row + .pp-row { border-top: 0; }
+html #chat .rail .pp-row:hover { background: var(--hull-2); }
+html #chat .rail .pp-av { width: 36px; height: 36px; border-radius: 50%; font-size: 18px; }
+html #chat .rail .pp-row.is-unverified small { color: var(--amber); }
+html #chat .rail .pp-row.is-verified small { color: color-mix(in srgb, var(--ok) 78%, var(--paper)); }
+html #chat .rail .pp-row.is-knock { flex-wrap: wrap; }
+html #chat .rail .pp-row.is-knock .pp-text { flex-basis: calc(100% - 46px); }
+html #chat .rail .pp-row.is-knock .pp-btn { margin-left: 0; }
+html #chat .rail .pp-row.is-knock .pp-btn:first-of-type { margin-left: 46px; }
+html #chat .pp-btn { flex: none; min-height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--hull); color: var(--paper); font: 600 12px var(--f-ui); cursor: pointer; }
+html #chat .pp-btn:has(svg) { width: 32px; padding: 0; display: grid; place-items: center; color: var(--fog-2); border-color: transparent; background: none; }
+html #chat .pp-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+html #chat .pp-btn:hover { border-color: var(--line-2); background: var(--hull); color: var(--paper); }
+html #chat .pp-btn.is-danger:hover { color: var(--red-text); border-color: color-mix(in srgb, var(--red) 45%, transparent); }
+html #chat .pp-btn.is-primary { background: var(--ecto); border-color: var(--ecto); color: var(--ecto-ink); }
+html #chat .rail #canInviteRow { margin: 6px 6px 0; padding: 10px 0 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; font-size: 13px; font-weight: 600; }
+html #chat .rail #canInviteRow > .toggle-ui { grid-column: 2; grid-row: 1; }
+html #chat .rail #canInviteRow > span:last-child { grid-column: 1; grid-row: 1; }
+html #chat .rail #canInviteRow[hidden] { display: none; }
+html #chat .rail #canInviteRow em { display: block; font-style: normal; font-weight: 500; font-size: 12px; color: var(--fog); }
+html #chat .rail-kv { margin: 0; padding: 12px 14px; gap: 10px 12px; border: 1px solid var(--line-2); border-radius: 14px; font: 500 12.5px var(--f-ui); }
+html #chat .rail-kv dt { color: var(--fog); text-transform: none; letter-spacing: 0; }
+html #chat .rail-kv dd { color: var(--paper); font-variant-numeric: tabular-nums; }
+html #chat .rail-kv dd.is-good { color: color-mix(in srgb, var(--ok) 78%, var(--paper)); }
+html #chat .rail-me { flex: none; display: flex; align-items: center; gap: 10px; padding: 12px 12px calc(12px + var(--safe-b)); border-top: 1px solid var(--line-2); }
+html #chat .rail-me-av { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: var(--hull-3); font-size: 19px; }
+html #chat .rail-me-txt { flex: 1; min-width: 0; display: grid; gap: 1px; }
+html #chat .rail-me-txt b { font: 700 14px/1.2 var(--f-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html #chat .rail-me-txt small { font: 500 12px var(--f-ui); color: var(--fog); }
+html #chat .rail-wipe { position: relative; flex: none; display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--red) 50%, transparent); background: color-mix(in srgb, var(--red) 9%, transparent); color: var(--red-text); font: 700 13px var(--f-ui); cursor: pointer; }
+html #chat .rail-wipe:hover { background: var(--red); border-color: var(--red); color: var(--red-ink); }
+html #chat .rail-wipe svg:first-child { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+html #chat .rail-wipe .panic-ring circle { stroke: var(--red); }
+html #chat .rail-scrim { position: fixed; inset: 0; z-index: 20; background: color-mix(in srgb, var(--ink) 55%, transparent); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); animation: fadeIn .2s ease; }
+html #chat .rail-btn { display: none; }
+@media (min-width: 900px) {
+  html #chat #panicBtn { display: none; }
+  html #chat .rail-scrim { display: none; }
+}
+@media (max-width: 899px) {
+  html #chat .rail { width: min(320px, 88vw); transform: translateX(-104%); transition: transform .28s var(--ease), visibility 0s .28s; visibility: hidden; box-shadow: 24px 0 60px color-mix(in srgb, var(--shade) calc(50% * var(--shade-k)), transparent); padding-left: env(safe-area-inset-left, 0px); }
+  html #chat.rail-open .rail { transform: none; visibility: visible; transition: transform .28s var(--ease); }
+  html #chat .rail-top { padding-top: env(safe-area-inset-top, 0px); height: calc(64px + env(safe-area-inset-top, 0px)); }
+  html #chat .rail-close { display: inline-grid; }
+  html #chat .rail-btn { display: inline-grid; }
+}
+
+/* ── header ── */
+html #chat .chat-head { gap: 12px; min-height: 64px; padding: 8px 14px 8px 20px; background: var(--hull); border-bottom: 1px solid var(--line-2); }
+html #chat .peer { flex: 1; min-width: 0; }
+html #chat .peer-avatar { width: 40px; height: 40px; border-radius: 50%; font-size: 20px; }
+html #chat .peer-name { margin: 0; font-size: 20px; line-height: 1.1; }
+html[data-type] #chat .peer-name { font-size: 17px; font-weight: 750; }
+html #chat .link-state { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; margin-top: 3px; }
+html #chat .head-count:not(:empty)::before { content: '·'; margin: 0 6px 0 2px; color: var(--mist); }
+html #chat .head-actions { flex: none; gap: 6px; }
+html #chat .head-actions .icon-btn svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── the wire: live ciphertext as a strip under the header ── */
+html #chat .ether { position: static; flex: none; max-width: none; margin: 0; display: grid; gap: 2px; padding: 6px 20px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: color-mix(in srgb, var(--hull) 72%, transparent); opacity: 1; -webkit-mask-image: none; mask-image: none; }
+html #chat .ether::before, html #chat .ether-lock { display: none; }
+html #chat .ether-row { font-size: 10.5px; min-height: 13px; }
+html.no-wire #chat .ether { display: none; }
+
+/* ── conversation column ── */
+html #chat .chat-body { background: var(--wall); }
+html #chat .messages { padding: 22px max(20px, calc((100% - 860px) / 2)) 12px; }
+html #chat .typing { padding: 2px max(24px, calc((100% - 860px) / 2 + 4px)) 6px; }
+html #chat .composer { position: relative; padding: 10px max(16px, calc((100% - 860px) / 2)) calc(8px + var(--safe-b)); }
+html #chat .banner { padding-left: 20px; padding-right: 20px; }
+html #chat .sys { max-width: min(560px, 92%); }
+
+/* bubbles (default) */
+html #chat .them .bubble { background: var(--them-bg); border-color: var(--them-line); color: var(--them-text); }
+html #chat .bubble { border-radius: var(--r-bubble); }
+html #chat .me:not(.last) .bubble { border-bottom-right-radius: 6px; }
+html #chat .me:not(.first) .bubble { border-top-right-radius: 6px; }
+html #chat .them:not(.last) .bubble { border-bottom-left-radius: 6px; }
+html #chat .them:not(.first) .bubble { border-top-left-radius: 6px; }
+html #chat .bubble.emoji-only { background: none; border-color: transparent; }
+html #chat .msg-av, html #chat .msg-when { display: none; }
+html #chat .msg.me .msg-name { display: none; }
+html #chat:not(.is-group) .msg.them .msg-name { display: none; }
+html #chat .msg-name { margin: 0 12px 4px; font: 650 12.5px var(--f-ui); color: var(--fog-2); letter-spacing: 0; text-transform: none; }
+/* groups: an avatar beside each run from someone else */
+html #chat.is-group .msg.them { padding-left: 42px; }
+html #chat.is-group .msg.them .msg-av { display: grid; place-items: center; position: absolute; left: 0; top: 21px; width: 32px; height: 32px; border-radius: 50%; background: var(--hull-3); font-size: 16px; }
+html #chat.is-group .msg.them:not(.first) .msg-av { visibility: hidden; }
+html[data-layout="lines"] #chat .msg.them .msg-av { top: 2px; }
+
+/* lines: a left-aligned log, everyone with a name and time, no bubbles */
+html[data-layout="lines"] #chat .messages { gap: 0; }
+html[data-layout="lines"] #chat .msg, html[data-layout="lines"] #chat .msg.me, html[data-layout="lines"] #chat .msg.them {
+  align-self: stretch; align-items: stretch; max-width: none; margin: 0 -10px; padding: 2px 10px 2px 56px; border-radius: 10px;
+}
+html[data-layout="lines"] #chat .msg.first { margin-top: 12px; padding-top: 6px; }
+html[data-layout="lines"] #chat .msg:hover { background: color-mix(in srgb, var(--hull) 70%, transparent); }
+html[data-layout="lines"] #chat .msg .msg-av { display: grid; place-items: center; position: absolute; left: 10px; top: 6px; width: 34px; height: 34px; border-radius: 50%; background: var(--hull-3); font-size: 17px; visibility: visible; }
+html[data-layout="lines"] #chat .msg:not(.first) .msg-av { visibility: hidden; }
+html[data-layout="lines"] #chat .msg .msg-name { display: flex; align-items: baseline; gap: 8px; margin: 0 0 2px; }
+html[data-layout="lines"] #chat .msg-who { font: 700 14px var(--f-ui); color: var(--paper); }
+html[data-layout="lines"] #chat .msg.me .msg-who { color: var(--ecto); }
+html[data-layout="lines"] #chat .msg-when { display: inline; font: 500 11px var(--f-mono); color: var(--mist); }
+html[data-layout="lines"] #chat .bubble, html[data-layout="lines"] #chat .me .bubble, html[data-layout="lines"] #chat .them .bubble {
+  padding: 0; border: 0; border-radius: 0; background: none; color: var(--paper); box-shadow: none; font-size: 15px;
+}
+html[data-layout="lines"] #chat .quote { margin: 2px 0 6px; max-width: min(100%, 560px); }
+html[data-layout="lines"] #chat .file-card, html[data-layout="lines"] #chat .img-wrap { margin-top: 2px; }
+html[data-layout="lines"] #chat .me .file-card { background: var(--hull); border-color: var(--line-2); }
+html[data-layout="lines"] #chat .reacts { margin: 4px 0 0; }
+html[data-layout="lines"] #chat .meta { margin: 2px 0 0; }
+html[data-layout="lines"] #chat .msg-more { left: auto; right: 10px; top: 4px; }
+html[data-layout="lines"] #chat.is-group .msg.them { padding-left: 56px; }
+
+/* ── composer: field with the timer inside, a hint line below ── */
+html #chat .composer-field { padding-right: 4px; }
+html #chat .timer-btn { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 9px; margin: 0 2px 0 0; border: 0; border-radius: 9px; background: none; color: var(--fog); font: 650 12.5px var(--f-ui); cursor: pointer; }
+html #chat .timer-btn:hover { background: var(--hull-2); color: var(--paper); }
+html #chat .timer-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+html #chat .timer-btn.is-on { color: var(--amber); }
+html #chat .timer-badge { margin: 0; padding: 0; border-radius: 0; background: none; color: inherit; font: inherit; }
+html #chat .timer-menu { position: absolute; z-index: 30; right: max(16px, calc((100% - 860px) / 2)); bottom: calc(100% - 6px); min-width: 230px; padding: 6px; border-radius: 14px; background: var(--hull); border: 1px solid var(--line-2); box-shadow: 0 18px 50px color-mix(in srgb, var(--shade) calc(45% * var(--shade-k)), transparent); display: grid; gap: 1px; }
+html #chat .timer-menu[hidden] { display: none; }
+html #chat .tm-h { margin: 4px 10px 6px; font: 600 11.5px var(--f-ui); color: var(--fog); }
+html #chat .tm-item { display: flex; align-items: center; justify-content: space-between; min-height: 38px; padding: 0 12px; border: 0; border-radius: 9px; background: none; color: var(--paper); font: 500 14px var(--f-ui); text-align: left; cursor: pointer; }
+html #chat .tm-item:hover, html #chat .tm-item:focus-visible { background: var(--hull-2); }
+html #chat .tm-item[aria-checked="true"]::after { content: '✓'; color: var(--ecto); font-weight: 800; }
+html #chat .composer-hint { display: flex; justify-content: space-between; gap: 12px; margin: 7px 4px 0; font: 500 12px var(--f-ui); color: var(--fog); }
+html #chat .enc-for { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+html #chat .enc-for > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html #chat .enc-for svg { flex: none; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+html #chat .kb-hint { flex: none; }
+html #chat .composer-hint kbd { font: 500 10.5px var(--f-mono); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line-2); background: var(--hull); }
+@media (max-width: 760px), (pointer: coarse) { html #chat .kb-hint { display: none; } }
+
+/* ── details panel: tabs on top, one pane at a time ── */
+html #chat .panel { background: var(--hull); }
+html.dock #chat .panel { background: var(--hull); border-left: 1px solid var(--line-2); backdrop-filter: none; -webkit-backdrop-filter: none; }
+html #chat .panel-head h2 { font: 700 16px var(--f-ui); letter-spacing: 0; text-transform: none; color: var(--paper); }
+html #chat .ph-room { font: 500 12px var(--f-mono); color: var(--fog); }
+html #chat .ptabs { position: sticky; top: -16px; z-index: 2; display: flex; gap: 2px; margin: 8px -22px 4px; padding: 0 14px; background: var(--hull); border-bottom: 1px solid var(--line-2); }
+html #chat .ptabs button { flex: 1; min-width: 0; height: 42px; padding: 0 4px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; color: var(--fog); font: 650 13px var(--f-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+html #chat .ptabs button:hover { color: var(--paper); }
+html #chat .ptabs button[aria-selected="true"] { color: var(--paper); border-bottom-color: var(--ecto); }
+html #chat .ppane[hidden] { display: none; }
+html #chat .panel .panel-id { display: none; }
+html #chat .panel .sn-sec h3 { margin-bottom: 12px; }
+html #chat .panel .look-toggle { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+html #chat .panel .look-note { margin: 12px 0 0; }
+html #chat .layout-seg { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html #chat .layout-seg button { text-transform: none; letter-spacing: 0; font: 600 12.5px var(--f-ui); }
+html #chat .panel .theme-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html #chat .panel .toggle em { font-style: normal; color: var(--fog); }
+@media (max-width: 640px), (pointer: coarse) {
+  html #chat .ptabs { top: 52px; margin-left: -20px; margin-right: -20px; padding: 0 8px; }
+}
+
+/* ── phones ── */
+@media (max-width: 640px) {
+  html #chat .chat-head { min-height: 0; padding: calc(6px + env(safe-area-inset-top, 0px)) 8px 6px 6px; gap: 4px; }
+  html #chat .peer { gap: 10px; }
+  html #chat .peer-avatar { width: 36px; height: 36px; font-size: 18px; }
+  html #chat .peer-name { font-size: 17px; }
+  html #chat .link-state { font-size: 10.5px; }
+  html #chat .ether { padding: 4px 12px; }
+  html #chat .ether-row { font-size: 9px; min-height: 11px; }
+  html #chat .messages { padding: 14px 12px 10px; }
+  html #chat.is-group .msg.them { padding-left: 38px; }
+  html #chat.is-group .msg.them .msg-av { width: 30px; height: 30px; font-size: 15px; }
+  html[data-layout="lines"] #chat .msg, html[data-layout="lines"] #chat .msg.me, html[data-layout="lines"] #chat .msg.them, html[data-layout="lines"] #chat.is-group .msg.them { padding-left: 50px; }
+  html #chat .composer { padding: 8px 10px calc(8px + var(--safe-b)); }
+  html #chat .composer-hint { margin-top: 5px; font-size: 11.5px; }
+  html #chat .timer-btn { padding: 0 7px; }
+  html #chat .timer-menu { right: 10px; left: 10px; min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) { html #chat .rail { transition: none; } }
+html #chat .room-code code { display: grid; grid-template-columns: repeat(2, max-content); gap: 2px 14px; font-size: 14px; letter-spacing: .08em; }
+html[data-layout="lines"] #chat .msg.first .meta .time { display: none; }
+html[data-layout="lines"] #chat .msg.first .meta:not(:has(.status:not(:empty), .burn:not(:empty), button)) { display: none; }
+@media (max-width: 1199px) { html #chat .kb-hint { display: none; } }
+@media (max-width: 640px) { html #chat .head-count { display: none; } }
 </style>
 
 </head>
@@ -1722,25 +1983,65 @@ html[data-type="mono"] :is(.qa-txt b, .pp-text b, .kn-text b, .sn-who) { font-we
   </div>
 </main>
 
-<!-- ───────────── Chat ───────────── -->
+<!-- ───────────── Chat ─────────────
+     Three columns on wide screens: the room (who's here, how you're connected, you), the
+     conversation, and details. On phones the room and details slide in as sheets. -->
 <main id="chat" class="screen" aria-label="Conversation">
+  <aside id="rail" class="rail" aria-label="Room">
+    <div class="rail-top">
+      <span class="rail-brand"><svg viewBox="0 0 40 48" aria-hidden="true"><path fill-rule="evenodd" d="M20 0C9 0 0 9 0 20v28l6.7-5 6.6 5 6.7-5 6.7 5 6.6-5 6.7 5V20C40 9 31 0 20 0Zm-7 16a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm14 0a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/></svg>Ghost Chat</span>
+      <button id="railClose" class="icon-btn icon-sm rail-close" type="button" aria-label="Close room panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="rail-scroll">
+      <section class="rail-sec" aria-labelledby="roomH">
+        <h2 id="roomH" class="rail-h">Room</h2>
+        <div class="room-card">
+          <div class="room-code"><code id="railCode" class="mono">—</code><button id="railCopy" class="icon-btn icon-sm" type="button" aria-label="Copy room code"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button></div>
+          <button id="railInvite" class="btn btn-primary rail-invite" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/></svg>Invite someone</button>
+          <p id="railInviteNote" class="rail-note" hidden>Only the host can invite people to this room.</p>
+        </div>
+      </section>
+      <section class="rail-sec" aria-labelledby="peoplesTitle">
+        <h2 id="peoplesTitle" class="rail-h">People</h2>
+        <div id="peopleList" class="people-list"></div>
+        <label id="canInviteRow" class="toggle" hidden><input id="optCanInvite" type="checkbox"><span class="toggle-ui" aria-hidden="true"></span><span>Members can invite <em>Off: only you can share the invite. You always decide who comes in.</em></span></label>
+      </section>
+      <section class="rail-sec" aria-labelledby="connH">
+        <h2 id="connH" class="rail-h">Connection</h2>
+        <dl class="kv rail-kv">
+          <dt>Route</dt><dd id="railRoute">—</dd>
+          <dt>Latency</dt><dd id="railLatency" class="mono">—</dd>
+          <dt>Message keys used</dt><dd id="railKeys" class="mono">0</dd>
+          <dt>Disappearing</dt><dd id="railTimer">Off</dd>
+        </dl>
+      </section>
+    </div>
+    <div class="rail-me">
+      <span class="rail-me-av" data-avatar aria-hidden="true"></span>
+      <div class="rail-me-txt"><b data-name></b><small id="railMeSub">You</small></div>
+      <button id="railLook" class="icon-btn" type="button" aria-label="Appearance"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.8 1.6-1.6 0-1-.9-1.3-.9-2.3 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.1"/><circle cx="10.5" cy="7" r="1.1"/><circle cx="15" cy="7.5" r="1.1"/></svg></button>
+      <button id="railWipe" class="rail-wipe panic-btn" type="button" aria-label="Panic wipe" title="Panic wipe (Esc three times; hold on touch screens)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>
+        <svg class="panic-ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="20"/></svg>
+        <span>Wipe</span>
+      </button>
+    </div>
+  </aside>
+  <div id="railScrim" class="rail-scrim" hidden></div>
+
   <header class="chat-head">
+    <button id="railBtn" class="icon-btn rail-btn" type="button" aria-label="Room and people" aria-expanded="false" aria-controls="rail"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
     <div class="peer">
       <span id="peerAvatar" class="peer-avatar" aria-hidden="true">👤</span>
       <div class="peer-meta">
-        <div id="peerName" class="peer-name">Peer</div>
-        <div id="linkState" class="link-state"><span class="link-dot"></span><span id="linkText">Connecting</span><span id="routeChip" class="route-chip" hidden></span></div>
+        <h1 id="peerName" class="peer-name">Peer</h1>
+        <div id="linkState" class="link-state"><span class="link-dot"></span><span id="linkText">Connecting</span><span id="routeChip" class="route-chip" hidden></span><span id="headCount" class="head-count"></span></div>
       </div>
-    </div>
-    <div class="ether" aria-hidden="true" title="Live view of your encrypted traffic">
-      <div class="ether-row out"><span id="etherOut" class="ether-txt"></span></div>
-      <span class="ether-lock"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
-      <div class="ether-row in"><span id="etherIn" class="ether-txt"></span></div>
     </div>
     <div class="head-actions">
       <button id="verifyChip" class="verify-chip" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path class="vc-check" d="M9 12l2 2 4-4"/></svg><span id="verifyText">Not verified</span></button>
-      <button id="panelBtn" class="icon-btn" type="button" aria-label="Session settings" aria-expanded="false" aria-controls="panel">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+      <button id="panelBtn" class="icon-btn" type="button" aria-label="Room details" aria-expanded="false" aria-controls="panel">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M15 4v16"/></svg>
       </button>
       <button id="panicBtn" class="icon-btn icon-danger panic-btn" type="button" aria-label="Panic wipe" title="Panic wipe (Esc three times; hold on touch screens)">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>
@@ -1749,6 +2050,11 @@ html[data-type="mono"] :is(.qa-txt b, .pp-text b, .kn-text b, .sn-who) { font-we
       </button>
     </div>
   </header>
+  <div class="ether" aria-hidden="true" title="What the network carries: encrypted bytes only">
+    <div class="ether-row out"><span id="etherOut" class="ether-txt"></span></div>
+    <span class="ether-lock"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+    <div class="ether-row in"><span id="etherIn" class="ether-txt"></span></div>
+  </div>
 
   <div id="banner" class="banner" role="status" hidden></div>
 
@@ -1781,42 +2087,41 @@ html[data-type="mono"] :is(.qa-txt b, .pp-text b, .kn-text b, .sn-who) { font-we
       <input id="fileInput" type="file" multiple hidden>
       <div class="composer-field">
         <textarea id="input" rows="1" maxlength="8000" placeholder="Message" aria-label="Message"></textarea>
-        <span id="timerBadge" class="timer-badge" hidden></span>
+        <button id="timerBtn" class="timer-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="timerMenu" aria-label="Disappearing messages: off" title="Disappearing messages">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9.5 2.5h5"/></svg><span id="timerBadge" class="timer-badge" hidden></span>
+        </button>
       </div>
       <button id="sendBtn" class="send-btn" type="button" aria-label="Send" disabled>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
       </button>
     </div>
+    <div id="timerMenu" class="timer-menu" role="menu" aria-label="Disappearing messages, for everyone" hidden><p class="tm-h">Disappear after reading, for everyone</p></div>
+    <div class="composer-hint"><span class="enc-for"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span id="encFor">End-to-end encrypted</span></span><span class="kb-hint"><kbd>Enter</kbd> to send · <kbd>Shift</kbd> + <kbd>Enter</kbd> for a new line</span></div>
   </footer>
 
   <div id="scrim" class="scrim" hidden></div>
-  <aside id="panel" class="panel" aria-label="Session" hidden>
+  <aside id="panel" class="panel" aria-label="Room details" hidden>
     <div class="sheet-handle" aria-hidden="true"></div>
     <div class="panel-head">
-      <h2>Session <span id="phRoom" class="ph-room"></span></h2>
+      <h2>Details <span id="phRoom" class="ph-room"></span></h2>
       <button id="panelClose" class="icon-btn icon-sm" type="button" aria-label="Close"><svg class="pc-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><svg class="pc-collapse" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6l6 6-6 6M13 6l6 6-6 6"/></svg></button>
     </div>
+    <div class="ptabs" role="tablist" aria-label="Details">
+      <button id="ptab-safety" role="tab" type="button" data-ptab="safety" aria-selected="true" aria-controls="pane-safety">Safety</button>
+      <button id="ptab-privacy" role="tab" type="button" data-ptab="privacy" aria-selected="false" aria-controls="pane-privacy" tabindex="-1">Privacy</button>
+      <button id="ptab-look" role="tab" type="button" data-ptab="look" aria-selected="false" aria-controls="pane-look" tabindex="-1">Theme</button>
+      <button id="ptab-keys" role="tab" type="button" data-ptab="keys" aria-selected="false" aria-controls="pane-keys" tabindex="-1">Keys</button>
+    </div>
 
+    <div id="pane-safety" class="ppane" role="tabpanel" aria-labelledby="ptab-safety" data-pane="safety">
     <div class="panel-id">
       <span id="panelAvatar" class="pid-av" aria-hidden="true">👤</span>
       <div class="pid-text"><b id="panelName" class="pid-name">Peer</b><small id="pidSub" class="pid-sub">Nothing stored on this device</small></div>
       <span id="pidTrust" class="pid-trust">Not verified</span>
     </div>
-    <div class="qa-row">
-      <button id="qaVerify" class="qa qa-verify" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="qa-txt"><b>Verify</b><small id="qaVerifySub">Compare safety numbers</small></span></button>
-      <button id="qaInvite" class="qa" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/></svg></span><span class="qa-txt"><b>Invite</b><small>Link, QR or code</small></span></button>
-      <button id="endBtn" class="qa" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg></span><span class="qa-txt"><b id="qaEndLbl">Leave</b><small id="qaEndSub">Others are told</small></span></button>
-      <button id="panicSheetBtn" class="qa qa-danger" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></svg></span><span class="qa-txt"><b>Wipe</b><small>Instant, no undo</small></span></button>
-    </div>
-    <p class="panel-note qa-note">Wipe destroys this tab's copy of everything at once, with no confirmation (<kbd>Esc</kbd> three times on a keyboard). To remove your messages from everyone's screens, use <em>Unsend all</em> below.</p>
-
-    <section class="panel-sec">
-      <h3 id="peoplesTitle">People</h3>
-      <div id="peopleList" class="people-list"></div>
-      <label id="canInviteRow" class="toggle" hidden><input id="optCanInvite" type="checkbox"><span class="toggle-ui" aria-hidden="true"></span><span>Members can invite <em>(off: only you can share the invite; you always decide who comes in)</em></span></label>
-    </section>
 
     <section id="snSec" class="panel-sec sn-sec">
+      <h3>Safety number</h3>
       <div id="snPick" class="sn-pick" role="radiogroup" aria-label="Whose safety number" hidden></div>
     <div id="trustBadge" class="trust-badge">
       <span class="tb-orb"><i></i><i></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
@@ -1842,21 +2147,45 @@ html[data-type="mono"] :is(.qa-txt b, .pp-text b, .kn-text b, .sn-who) { font-we
     </section>
 
     <section class="panel-sec">
-      <h3>Privacy</h3>
-      <label class="toggle"><input id="optReceipts" type="checkbox" checked><span class="toggle-ui" aria-hidden="true"></span><span>Send read receipts</span></label>
-      <label class="toggle"><input id="optTyping" type="checkbox" checked><span class="toggle-ui" aria-hidden="true"></span><span>Send typing indicator</span></label>
-      <label class="toggle"><input id="optVeil" type="checkbox"><span class="toggle-ui" aria-hidden="true"></span><span>Hide conversation when I switch away</span></label>
-      <label class="toggle"><input id="optShape" type="checkbox"><span class="toggle-ui" aria-hidden="true"></span><span>Constant-rate traffic <em>(for both of you; hides when you talk, about 60 MB an hour)</em></span></label>
-      <label class="toggle"><input id="optNotify" type="checkbox"><span class="toggle-ui" aria-hidden="true"></span><span>Notify me in the background <em>(no message content is shown)</em></span></label>
+      <h3>Session</h3>
+      <div class="qa-row">
+        <button id="qaVerify" class="qa qa-verify" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="qa-txt"><b>Verify</b><small id="qaVerifySub">Compare safety numbers</small></span></button>
+        <button id="qaInvite" class="qa" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/></svg></span><span class="qa-txt"><b>Invite</b><small>Link, QR or code</small></span></button>
+        <button id="endBtn" class="qa" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg></span><span class="qa-txt"><b id="qaEndLbl">Leave</b><small id="qaEndSub">Others are told</small></span></button>
+        <button id="panicSheetBtn" class="qa qa-danger" type="button"><span class="qa-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></svg></span><span class="qa-txt"><b>Wipe</b><small>Instant, no undo</small></span></button>
+      </div>
+      <p class="panel-note qa-note">Wipe destroys this tab's copy of everything at once, with no confirmation (<kbd>Esc</kbd> three times on a keyboard). To remove your messages from everyone's screens, use <em>Unsend all mine</em> above.</p>
     </section>
+    </div>
 
+    <div id="pane-privacy" class="ppane" role="tabpanel" aria-labelledby="ptab-privacy" data-pane="privacy" hidden>
+    <section class="panel-sec">
+      <h3>Sharing</h3>
+      <label class="toggle"><input id="optReceipts" type="checkbox" checked><span class="toggle-ui" aria-hidden="true"></span><span>Send read receipts <em>Others see when you've read their messages.</em></span></label>
+      <label class="toggle"><input id="optTyping" type="checkbox" checked><span class="toggle-ui" aria-hidden="true"></span><span>Send typing indicator <em>Others see when you're typing.</em></span></label>
+      <label class="toggle"><input id="optNotify" type="checkbox"><span class="toggle-ui" aria-hidden="true"></span><span>Notify me in the background <em>Only says something arrived. No message content is shown.</em></span></label>
+    </section>
+    <section class="panel-sec">
+      <h3>Hiding</h3>
+      <label class="toggle"><input id="optVeil" type="checkbox"><span class="toggle-ui" aria-hidden="true"></span><span>Hide conversation when I switch away <em>Blurs the chat when this tab loses focus.</em></span></label>
+      <label class="toggle"><input id="optShape" type="checkbox"><span class="toggle-ui" aria-hidden="true"></span><span>Constant-rate traffic <em>For everyone in the room. Hides when you talk; about 60 MB an hour.</em></span></label>
+    </section>
+    </div>
+
+    <div id="pane-look" class="ppane" role="tabpanel" aria-labelledby="ptab-look" data-pane="look" hidden>
     <section class="panel-sec">
       <h3>Theme</h3>
       <div class="theme-grid" role="radiogroup" aria-label="Colour theme" data-theme-picker></div>
+      <h3 class="h3-sub">Message layout</h3>
+      <div class="seg layout-seg" role="radiogroup" aria-label="Message layout" data-layout-picker></div>
       <h3 class="h3-sub">Text style</h3>
       <div class="seg type-seg" role="radiogroup" aria-label="Text style" data-type-picker></div>
+      <label class="toggle look-toggle"><input id="optWire" type="checkbox" checked><span class="toggle-ui" aria-hidden="true"></span><span>Show the wire <em>A live strip of the encrypted bytes you send and receive.</em></span></label>
+      <p class="panel-note look-note">Looks only. Your choice lasts for this tab and isn't saved anywhere.</p>
     </section>
+    </div>
 
+    <div id="pane-keys" class="ppane" role="tabpanel" aria-labelledby="ptab-keys" data-pane="keys" hidden>
     <section class="panel-sec">
       <h3>Connection</h3>
       <dl class="kv">
@@ -1870,7 +2199,7 @@ html[data-type="mono"] :is(.qa-txt b, .pp-text b, .kn-text b, .sn-who) { font-we
         <dt>Key exchange</dt><dd>ECDH P-384 + ML-KEM-1024 (post-quantum), authenticated by the room code</dd>
       </dl>
     </section>
-
+    </div>
   </aside>
 </main>
 
@@ -5624,6 +5953,9 @@ const THEMES = [
   ['graphite', 'Graphite', ['#0E1012', '#45D69A', '#E8EAED']],
   ['ledger', 'Ledger', ['#13110F', '#8CC7B0', '#E0A458']],
   ['vault', 'Vault', ['#0A0C10', '#7AA2FF', '#E6E9EF']],
+  ['apple', 'Apple', ['#FFFFFF', '#0A6CF0', '#E9E9EB']],
+  ['haven', 'Haven', ['#F3F3F0', '#0B6B6B', '#FFFFFF']],
+  ['telegram', 'Telegram', ['#CFE0B4', '#2479C9', '#E3FBD0']],
 ];
 let theme = 'auto';
 let typeStyle;
@@ -5639,7 +5971,7 @@ function applyTheme(t) {
 // ── text style: separate from colour. Auto picks what suits the theme (dot-matrix for the
 // hacker palettes, clean type for the softer ones). Also lasts for this tab only. ──
 const TYPES = [['auto', 'Auto'], ['terminal', 'Terminal'], ['clean', 'Clean'], ['mono', 'Mono']];
-const THEME_TYPE = { signal: 'terminal', phosphor: 'terminal', graphite: 'terminal', vault: 'mono', aurora: 'clean', daylight: 'clean', ledger: 'clean' };
+const THEME_TYPE = { signal: 'terminal', phosphor: 'terminal', graphite: 'terminal', vault: 'mono', aurora: 'clean', daylight: 'clean', ledger: 'clean', apple: 'clean', haven: 'clean', telegram: 'clean' };
 typeStyle = 'auto';
 function applyType(t) {
   typeStyle = TYPES.some(([id]) => id === t) ? t : 'auto';
@@ -5673,6 +6005,23 @@ for (const grid of document.querySelectorAll('[data-theme-picker]')) {
   }
 }
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (theme === 'auto') applyTheme('auto'); });
+// ── message layout: bubbles, or lines (a left-aligned log). Lasts for this tab only. ──
+const LAYOUTS = [['bubbles', 'Bubbles'], ['lines', 'Lines']];
+let layout = 'bubbles';
+function applyLayout(l) {
+  layout = LAYOUTS.some(([id]) => id === l) ? l : 'bubbles';
+  if (layout === 'bubbles') delete document.documentElement.dataset.layout; else document.documentElement.dataset.layout = layout;
+  for (const b of document.querySelectorAll('[data-layout-picker] button')) b.setAttribute('aria-checked', String(b.dataset.ly === layout));
+}
+for (const grid of document.querySelectorAll('[data-layout-picker]')) {
+  for (const [id, label] of LAYOUTS) {
+    const b = h('button', null, label);
+    b.type = 'button'; b.dataset.ly = id; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(id === layout));
+    b.onclick = () => applyLayout(id);
+    grid.append(b);
+  }
+}
+$('optWire').onchange = (e) => document.documentElement.classList.toggle('no-wire', !e.target.checked);
 applyTheme('auto');
 $('sheetScrim').addEventListener('click', () => closeSheet());
 for (const sh of document.querySelectorAll('.sheet')) { // drag the grip down to dismiss (phones)
@@ -6011,7 +6360,7 @@ function wire(s) {
   });
   s.on('latency', ({ ms, from }) => {
     if (selPerson && from !== selPerson) return;
-    $('kvLatency').textContent = ms + ' ms';
+    $('kvLatency').textContent = ms + ' ms'; $('railLatency').textContent = ms + ' ms';
     setLink(ms < 250 ? 'is-good' : 'is-fair', `${ms} ms`);
   });
   s.on('delivered', ({ mid, from }) => {
@@ -6043,6 +6392,8 @@ async function onJoined() {
   etherOut.clear(); etherIn.clear();
   $('kvRoom').textContent = roomIdFromCode(code).replace(/^ghostchat-v\d+-/, '').toUpperCase();
   $('phRoom').textContent = '· ' + $('kvRoom').textContent;
+  $('railCode').replaceChildren(...code.split('-').map((g) => h('span', null, g)));
+  $('railCode').setAttribute('aria-label', 'Room code ' + code);
   sys(role === 'host'
     ? 'End-to-end encrypted with post-quantum protection. Only someone holding the room code could have joined, and anyone else who uses it has to wait for you to let them in.'
     : 'End-to-end encrypted with post-quantum protection. Only someone holding the room code could have joined. Every pair of people in this room has its own keys.', 'is-good');
@@ -6159,6 +6510,8 @@ async function refreshRoute() {
   const route = await session?.getRoute(selPerson);
   const label = { direct: 'Direct, peer-to-peer', local: 'Direct, same network', relay: 'Relayed via TURN server', 'relay-ws': 'Via the Ghost Chat relay (end-to-end encrypted)', device: 'Same browser on this device (no network)' }[route] || 'Unknown';
   $('kvRoute').textContent = label;
+  $('railRoute').textContent = { direct: 'Direct · P2P', local: 'Direct · LAN', relay: 'Relayed (TURN)', 'relay-ws': 'Ghost Chat relay', device: 'This device' }[route] || '—';
+  $('railRoute').classList.toggle('is-good', route === 'direct' || route === 'local' || route === 'device');
   const chip = $('routeChip');
   chip.hidden = !route;
   chip.textContent = { direct: 'P2P', local: 'LAN', relay: 'Relay', 'relay-ws': 'Relay', device: 'This device' }[route] || '';
@@ -6242,12 +6595,19 @@ function sysSafety(id) {
   const grid = h('div', 'sn-card-grid mono');
   for (const g of p.sn.split(' ')) grid.append(h('span', null, g));
   const btn = h('button', 'btn btn-ghost btn-sm sn-open', 'Compare and verify');
-  btn.type = 'button'; btn.onclick = () => { selPerson = id; renderSafety(); openPanel(true); setTimeout(() => { $('snSec').scrollIntoView({ block: 'start' }); $('markVerified').focus({ preventScroll: true }); }, 60); };
+  btn.type = 'button'; btn.onclick = () => showSafetyFor(id);
   card.append(head, grid, btn);
   $('messages').append(card);
   scrollDown(stick);
 }
 
+/** Opens the details panel on someone's safety number. */
+function showSafetyFor(id) {
+  if (id) { selPerson = id; renderSafety(); refreshRoute(); }
+  closeRail();
+  openPanel(true, 'safety');
+  setTimeout(() => { $('snSec').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); $('markVerified').focus({ preventScroll: true }); }, 60);
+}
 /** The panel's safety number: for the selected person (a picker appears in groups). */
 function renderSafety() {
   const list = present().filter((p) => p.sn);
@@ -6310,15 +6670,40 @@ function renderHead() {
   $('qaEndLbl').textContent = role === 'host' && list.length ? 'End' : 'Leave';
   $('qaEndSub').textContent = role === 'host' && list.length ? 'For everyone' : 'Others are told';
   $('peoplesTitle').textContent = `People · ${list.length + 1} of ${MAX_MEMBERS}`;
+  $('headCount').textContent = list.length > 1 ? `${list.length + 1} people` : '';
+  $('chat').classList.toggle('is-group', list.length > 1);
+  $('railInvite').hidden = !canInviteNow();
+  $('railInviteNote').hidden = canInviteNow() || !session || session.ended;
+  $('railMeSub').textContent = role === 'host' ? 'You · host' : 'You';
+  $('encFor').textContent = !list.length ? 'End-to-end encrypted'
+    : list.length <= 3 ? `Encrypted for ${list.length === 1 ? names[0] : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]} only`
+    : `Encrypted for the ${list.length} people here only`;
+  $('input').placeholder = list.length === 1 ? `Message ${names[0]}` : list.length ? 'Message everyone' : 'Message';
   $('canInviteRow').hidden = role !== 'host';
   $('clearAllBtn').hidden = role !== 'host';
   $('kvAccess').textContent = role === 'host' ? 'Anyone else with the code waits for you to let them in' : 'Newcomers wait for the host to let them in';
-  for (const n of document.querySelectorAll('.msg-name[data-from]')) n.textContent = nameOf(n.dataset.from);
+  for (const n of document.querySelectorAll('.msg-name[data-from] .msg-who')) n.textContent = nameOf(n.parentElement.dataset.from);
+  for (const a of document.querySelectorAll('.msg-av[data-from]')) a.textContent = people.get(a.dataset.from)?.avatar || '👤';
   applyVerified();
   renderPeople();
   renderTyping();
 }
 
+/** A small icon button; the label is for screen readers and the tooltip. */
+const SVGNS = 'http://www.w3.org/2000/svg';
+function iconBtn(cls, label, paths) {
+  const b = h('button', cls); b.type = 'button';
+  b.setAttribute('aria-label', label); b.title = label;
+  const svg = document.createElementNS(SVGNS, 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true');
+  // Fixed, trusted markup from this file only; never message content.
+  for (const m of paths.matchAll(/<(path|circle) ([^>]*)\/>/g)) {
+    const el = document.createElementNS(SVGNS, m[1]);
+    for (const [, k, v] of m[2].matchAll(/([a-z]+)="([^"]*)"/g)) el.setAttribute(k, v);
+    svg.append(el);
+  }
+  b.append(svg);
+  return b;
+}
 /** The People section: everyone here, their state, and the host's controls. */
 function renderPeople() {
   const box = $('peopleList');
@@ -6338,14 +6723,14 @@ function renderPeople() {
   row(me.avatar, me.name + ' (you)', role === 'host' ? 'Host' : '', 'This browser', 'is-me');
   for (const p of present()) {
     const sub = !p.ready ? (p.state === 'reconnecting' ? 'Reconnecting…' : 'Connecting…') : p.verified ? 'Verified' : 'Not verified';
-    const r = row(p.avatar, p.name || '…', isHostId(p.id) ? 'Host' : '', sub, p.verified ? 'is-verified' : '');
+    const r = row(p.avatar, p.name || '…', isHostId(p.id) ? 'Host' : '', sub, p.verified ? 'is-verified' : p.ready ? 'is-unverified' : '');
     if (p.sn) {
-      const b = h('button', 'pp-btn', 'Safety no.'); b.type = 'button';
-      b.onclick = () => { selPerson = p.id; renderSafety(); refreshRoute(); $('snSec').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); };
+      const b = iconBtn('pp-btn', `Safety number with ${p.name || 'them'}`, '<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/>');
+      b.onclick = () => showSafetyFor(p.id);
       r.append(b);
     }
     if (role === 'host') {
-      const b = h('button', 'pp-btn is-danger', 'Remove'); b.type = 'button';
+      const b = iconBtn('pp-btn is-danger', `Remove ${p.name || 'them'}`, '<circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 11h6"/>');
       b.onclick = async () => {
         if (!(await confirmDialog(`Remove ${p.name || 'them'}?`, 'Everyone disconnects from them at once. They can only come back if they ask again with the code and you let them in.', 'Remove', { danger: true }))) return;
         session?.remove(p.id);
@@ -6372,7 +6757,7 @@ function onWire(dir, bytes) {
   wireLast[dir] = now;
   (dir === 'out' ? etherOut : etherIn).push(bytes);
   const ch = session?.active?.channel;
-  if (ch) $('kvKeys').textContent = String(ch.tx.n + ch.rx.n);
+  if (ch) $('kvKeys').textContent = $('railKeys').textContent = String(ch.tx.n + ch.rx.n);
 }
 $('markVerified').onclick = () => {
   const p = selPerson && people.get(selPerson);
@@ -6381,7 +6766,10 @@ $('markVerified').onclick = () => {
   if (p.verified) { sys(inGroup() ? `You marked your safety number with ${nameOf(p.id)} as verified.` : 'You marked the safety number as verified.', 'is-good'); flash($('trustBadge'), 'is-pop', 900); }
 };
 $('copySafety').onclick = () => copy($('safetyNumber').dataset.value || '', 'Safety number');
-$('verifyChip').onclick = () => openPanel(true);
+$('verifyChip').onclick = () => {
+  const next = present().find((p) => p.sn && !p.verified);
+  showSafetyFor(next ? next.id : null);
+};
 // One verify control on screen at a time: the header chip only shows while the panel is hidden.
 function syncHead() {
   const panelShown = !$('panel').hidden;
@@ -6439,7 +6827,8 @@ function placeRecord(r, body) {
   const grouped = prevRec && prevRec.side === r.side && prevRec.from === r.from && r.ts - prevRec.ts < GROUP_GAP_MS;
   if (grouped) prevRec.el.classList.remove('last'); else r.el.classList.add('first');
   r.el.classList.add('last');
-  if (!grouped && r.side === 'them') r.el.append(nameTag(r.from));
+  r.el.append(avatarTag(r));
+  if (!grouped) r.el.append(nameTag(r));
   r.el.append(body);
   // A visible way into the actions (edit, delete, reply…) for mouse users; touch uses long-press.
   const more = h('button', 'msg-more');
@@ -6449,7 +6838,7 @@ function placeRecord(r, body) {
   r.el.append(more);
   r.reactsEl = h('div', 'reacts'); r.reactsEl.hidden = true;
   r.metaEl = h('div', 'meta');
-  r.timeEl = h('span', null, fmtTime(r.ts));
+  r.timeEl = h('span', 'time', fmtTime(r.ts));
   r.statusEl = h('span', 'status');
   r.burnEl = h('span', 'burn');
   r.metaEl.append(r.burnEl, r.timeEl, r.statusEl);
@@ -6464,10 +6853,17 @@ function placeRecord(r, body) {
   if (r.side === 'them') markSeenSoon();
 }
 
-function nameTag(from) {
-  const n = h('div', 'msg-name', nameOf(from));
-  if (from) n.dataset.from = from;
+function nameTag(r) {
+  const n = h('div', 'msg-name');
+  n.append(h('span', 'msg-who', r.side === 'me' ? 'You' : nameOf(r.from)), h('span', 'msg-when', fmtTime(r.ts)));
+  if (r.side === 'them' && r.from) n.dataset.from = r.from;
   return n;
+}
+function avatarTag(r) {
+  const a = h('span', 'msg-av', r.side === 'me' ? me.avatar : people.get(r.from)?.avatar || '👤');
+  a.setAttribute('aria-hidden', 'true');
+  if (r.side === 'them' && r.from) a.dataset.from = r.from;
+  return a;
 }
 function regroup() {
   let prev = null;
@@ -6480,7 +6876,7 @@ function regroup() {
     if (prev) prev.el.classList.toggle('last', !grouped);
     r.el.classList.add('last');
     const nameEl = r.el.querySelector('.msg-name');
-    if (r.side === 'them' && !grouped && !nameEl) r.el.prepend(nameTag(r.from));
+    if (!grouped && !nameEl) r.el.querySelector('.msg-av').after(nameTag(r));
     if (grouped && nameEl) nameEl.remove();
     prev = r;
   }
@@ -6601,18 +6997,34 @@ function setTimer(secs, by) {
   burnSecs = secs;
   for (const b of $('timerOptions').children) b.setAttribute('aria-checked', String(Number(b.dataset.secs) === secs));
   $('timerBadge').hidden = !secs;
-  $('timerBadge').textContent = secs ? '⏱ ' + fmtSecs(secs) : '';
+  $('timerBadge').textContent = secs ? fmtSecs(secs) : '';
+  $('timerBtn').classList.toggle('is-on', !!secs);
+  $('timerBtn').setAttribute('aria-label', 'Disappearing messages: ' + (secs ? fmtSecs(secs) : 'off'));
+  $('railTimer').textContent = secs ? fmtSecs(secs) : 'Off';
+  for (const b of $('timerMenu').querySelectorAll('[data-secs]')) b.setAttribute('aria-checked', String(Number(b.dataset.secs) === secs));
   const who = by === 'me' ? 'You' : nameOf(by);
   sys(secs ? `${who} set messages to disappear after ${fmtSecs(secs)}.` : `${who} turned off disappearing messages.`, secs ? 'is-warn' : '');
 }
+function chooseTimer(secs) { if (secs === burnSecs || !session || session.ended) return; setTimer(secs, 'me'); session.send({ t: 'timer', secs }); }
 (function buildTimers() {
   for (const [secs, label] of TIMERS) {
     const b = h('button', null, label);
     b.type = 'button'; b.dataset.secs = secs; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(secs === 0));
-    b.onclick = () => { if (secs === burnSecs) return; setTimer(secs, 'me'); session?.send({ t: 'timer', secs }); };
+    b.onclick = () => chooseTimer(secs);
     $('timerOptions').append(b);
+    const m = h('button', 'tm-item', secs ? label : 'Off');
+    m.type = 'button'; m.dataset.secs = secs; m.setAttribute('role', 'menuitemradio'); m.setAttribute('aria-checked', String(secs === 0));
+    m.onclick = () => { closeTimerMenu(); chooseTimer(secs); $('input').focus(); };
+    $('timerMenu').append(m);
   }
 })();
+function closeTimerMenu() { $('timerMenu').hidden = true; $('timerBtn').setAttribute('aria-expanded', 'false'); }
+$('timerBtn').onclick = () => {
+  const open = $('timerMenu').hidden;
+  $('timerMenu').hidden = !open; $('timerBtn').setAttribute('aria-expanded', String(open));
+  if (open) $('timerMenu').querySelector('[aria-checked="true"]')?.focus();
+};
+document.addEventListener('pointerdown', (e) => { if (!$('timerMenu').hidden && !e.target.closest('#timerMenu, #timerBtn')) closeTimerMenu(); });
 
 // ───────────────────────────── read receipts ─────────────────────────────
 let seenTimer = null;
@@ -7074,7 +7486,26 @@ function applyDock() {
 }
 dockMQ.addEventListener?.('change', applyDock);
 applyDock();
-function openPanel(force) {
+// Details tabs: Safety, Privacy, Appearance, Keys.
+function showTab(t) {
+  for (const b of document.querySelectorAll('[data-ptab]')) {
+    const on = b.dataset.ptab === t;
+    b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1;
+  }
+  for (const p of document.querySelectorAll('[data-pane]')) p.hidden = p.dataset.pane !== t;
+  $('panel').scrollTop = 0;
+}
+for (const b of document.querySelectorAll('[data-ptab]')) {
+  b.onclick = () => showTab(b.dataset.ptab);
+  b.onkeydown = (e) => {
+    const tabs = [...document.querySelectorAll('[data-ptab]')];
+    const i = tabs.indexOf(b), d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!d) return;
+    e.preventDefault(); const n = tabs[(i + d + tabs.length) % tabs.length]; showTab(n.dataset.ptab); n.focus();
+  };
+}
+function openPanel(force, tab) {
+  if (tab) showTab(tab);
   if (docked()) {
     const open = force ?? $('panel').hidden;
     dockCollapsed = !open;
@@ -7109,6 +7540,26 @@ function openPanel(force) {
   }, { passive: true });
 })();
 $('panelBtn').onclick = () => openPanel();
+const railMQ = matchMedia('(min-width: 900px)');
+function openRail() {
+  if (railMQ.matches) return;
+  if (!$('panel').hidden && !docked()) openPanel(false);
+  $('chat').classList.add('rail-open'); $('railScrim').hidden = false;
+  $('railBtn').setAttribute('aria-expanded', 'true');
+  $('railClose').focus({ preventScroll: true });
+}
+function closeRail() {
+  if (!$('chat').classList.contains('rail-open')) return;
+  $('chat').classList.remove('rail-open'); $('railScrim').hidden = true;
+  $('railBtn').setAttribute('aria-expanded', 'false');
+}
+$('railBtn').onclick = () => ($('chat').classList.contains('rail-open') ? closeRail() : openRail());
+$('railClose').onclick = () => { closeRail(); $('railBtn').focus({ preventScroll: true }); };
+$('railScrim').onclick = closeRail;
+railMQ.addEventListener?.('change', closeRail);
+$('railLook').onclick = () => { closeRail(); openPanel(true, 'look'); };
+$('railCopy').onclick = () => code && copy(code, 'Room code');
+$('railInvite').onclick = () => { closeRail(); openInvite(); };
 $('qaVerify').onclick = () => {
   // Jump to the first person not yet verified.
   const next = present().find((p) => p.sn && !p.verified);
@@ -7300,6 +7751,10 @@ function resetChat() {
   $('safetyNumber').replaceChildren(); delete $('safetyNumber').dataset.value; $('snPick').replaceChildren();
   $('optCanInvite').checked = false;
   $('kvRoute').textContent = '—'; $('kvLatency').textContent = '—'; $('kvRoom').textContent = '—';
+  $('railRoute').textContent = '—'; $('railLatency').textContent = '—'; $('railKeys').textContent = '0'; $('railTimer').textContent = 'Off'; $('railCode').textContent = '—';
+  $('timerBtn').classList.remove('is-on'); $('timerBtn').setAttribute('aria-label', 'Disappearing messages: off'); closeTimerMenu();
+  for (const b of $('timerMenu').querySelectorAll('[data-secs]')) b.setAttribute('aria-checked', String(b.dataset.secs === '0'));
+  $('chat').classList.remove('is-group'); closeRail(); showTab('safety');
   setLink('', 'Connecting');
   closeMenu(); closeViewer();
 }
@@ -7326,8 +7781,7 @@ function panic() {
 }
 // Header panic button. Mouse and keyboard: instant. Touch: press and hold briefly, so a pocket
 // tap or a slip of the thumb can't wipe a conversation (the ring fills while you hold).
-(() => {
-  const b = $('panicBtn');
+for (const b of [$('panicBtn'), $('railWipe')]) {
   const HOLD_MS = 600;
   let t = 0, lastTouch = 0;
   const cancel = (hint) => {
@@ -7348,7 +7802,7 @@ function panic() {
   b.addEventListener('pointerleave', () => cancel(false));
   b.addEventListener('contextmenu', (e) => e.preventDefault());
   b.addEventListener('click', () => { if (Date.now() - lastTouch < 1500) return; panic(); });
-})();
+}
 $('panicSheetBtn').onclick = panic;
 
 // Keep the chat sized to the visible viewport when the on-screen keyboard opens (iOS ignores
@@ -7374,6 +7828,8 @@ document.addEventListener('keydown', (e) => {
   if ($('joinScreen').classList.contains('is-on')) return leaveJoin();
   if (!$('viewer').hidden) return closeViewer();
   if (!$('msgMenu').hidden) return closeMenu();
+  if (!$('timerMenu').hidden) { closeTimerMenu(); $('timerBtn').focus(); return; }
+  if ($('chat').classList.contains('rail-open')) return closeRail();
   if (!$('panel').hidden) return openPanel(false);
   if (editing) { clearEdit(); return; }
   if (replyTo) clearReply();

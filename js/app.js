@@ -148,6 +148,9 @@ const THEMES = [
   ['graphite', 'Graphite', ['#0E1012', '#45D69A', '#E8EAED']],
   ['ledger', 'Ledger', ['#13110F', '#8CC7B0', '#E0A458']],
   ['vault', 'Vault', ['#0A0C10', '#7AA2FF', '#E6E9EF']],
+  ['apple', 'Apple', ['#FFFFFF', '#0A6CF0', '#E9E9EB']],
+  ['haven', 'Haven', ['#F3F3F0', '#0B6B6B', '#FFFFFF']],
+  ['telegram', 'Telegram', ['#CFE0B4', '#2479C9', '#E3FBD0']],
 ];
 let theme = 'auto';
 let typeStyle;
@@ -163,7 +166,7 @@ function applyTheme(t) {
 // ── text style: separate from colour. Auto picks what suits the theme (dot-matrix for the
 // hacker palettes, clean type for the softer ones). Also lasts for this tab only. ──
 const TYPES = [['auto', 'Auto'], ['terminal', 'Terminal'], ['clean', 'Clean'], ['mono', 'Mono']];
-const THEME_TYPE = { signal: 'terminal', phosphor: 'terminal', graphite: 'terminal', vault: 'mono', aurora: 'clean', daylight: 'clean', ledger: 'clean' };
+const THEME_TYPE = { signal: 'terminal', phosphor: 'terminal', graphite: 'terminal', vault: 'mono', aurora: 'clean', daylight: 'clean', ledger: 'clean', apple: 'clean', haven: 'clean', telegram: 'clean' };
 typeStyle = 'auto';
 function applyType(t) {
   typeStyle = TYPES.some(([id]) => id === t) ? t : 'auto';
@@ -197,6 +200,23 @@ for (const grid of document.querySelectorAll('[data-theme-picker]')) {
   }
 }
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (theme === 'auto') applyTheme('auto'); });
+// ── message layout: bubbles, or lines (a left-aligned log). Lasts for this tab only. ──
+const LAYOUTS = [['bubbles', 'Bubbles'], ['lines', 'Lines']];
+let layout = 'bubbles';
+function applyLayout(l) {
+  layout = LAYOUTS.some(([id]) => id === l) ? l : 'bubbles';
+  if (layout === 'bubbles') delete document.documentElement.dataset.layout; else document.documentElement.dataset.layout = layout;
+  for (const b of document.querySelectorAll('[data-layout-picker] button')) b.setAttribute('aria-checked', String(b.dataset.ly === layout));
+}
+for (const grid of document.querySelectorAll('[data-layout-picker]')) {
+  for (const [id, label] of LAYOUTS) {
+    const b = h('button', null, label);
+    b.type = 'button'; b.dataset.ly = id; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(id === layout));
+    b.onclick = () => applyLayout(id);
+    grid.append(b);
+  }
+}
+$('optWire').onchange = (e) => document.documentElement.classList.toggle('no-wire', !e.target.checked);
 applyTheme('auto');
 $('sheetScrim').addEventListener('click', () => closeSheet());
 for (const sh of document.querySelectorAll('.sheet')) { // drag the grip down to dismiss (phones)
@@ -535,7 +555,7 @@ function wire(s) {
   });
   s.on('latency', ({ ms, from }) => {
     if (selPerson && from !== selPerson) return;
-    $('kvLatency').textContent = ms + ' ms';
+    $('kvLatency').textContent = ms + ' ms'; $('railLatency').textContent = ms + ' ms';
     setLink(ms < 250 ? 'is-good' : 'is-fair', `${ms} ms`);
   });
   s.on('delivered', ({ mid, from }) => {
@@ -567,6 +587,8 @@ async function onJoined() {
   etherOut.clear(); etherIn.clear();
   $('kvRoom').textContent = roomIdFromCode(code).replace(/^ghostchat-v\d+-/, '').toUpperCase();
   $('phRoom').textContent = '· ' + $('kvRoom').textContent;
+  $('railCode').replaceChildren(...code.split('-').map((g) => h('span', null, g)));
+  $('railCode').setAttribute('aria-label', 'Room code ' + code);
   sys(role === 'host'
     ? 'End-to-end encrypted with post-quantum protection. Only someone holding the room code could have joined, and anyone else who uses it has to wait for you to let them in.'
     : 'End-to-end encrypted with post-quantum protection. Only someone holding the room code could have joined. Every pair of people in this room has its own keys.', 'is-good');
@@ -683,6 +705,8 @@ async function refreshRoute() {
   const route = await session?.getRoute(selPerson);
   const label = { direct: 'Direct, peer-to-peer', local: 'Direct, same network', relay: 'Relayed via TURN server', 'relay-ws': 'Via the Ghost Chat relay (end-to-end encrypted)', device: 'Same browser on this device (no network)' }[route] || 'Unknown';
   $('kvRoute').textContent = label;
+  $('railRoute').textContent = { direct: 'Direct · P2P', local: 'Direct · LAN', relay: 'Relayed (TURN)', 'relay-ws': 'Ghost Chat relay', device: 'This device' }[route] || '—';
+  $('railRoute').classList.toggle('is-good', route === 'direct' || route === 'local' || route === 'device');
   const chip = $('routeChip');
   chip.hidden = !route;
   chip.textContent = { direct: 'P2P', local: 'LAN', relay: 'Relay', 'relay-ws': 'Relay', device: 'This device' }[route] || '';
@@ -766,12 +790,19 @@ function sysSafety(id) {
   const grid = h('div', 'sn-card-grid mono');
   for (const g of p.sn.split(' ')) grid.append(h('span', null, g));
   const btn = h('button', 'btn btn-ghost btn-sm sn-open', 'Compare and verify');
-  btn.type = 'button'; btn.onclick = () => { selPerson = id; renderSafety(); openPanel(true); setTimeout(() => { $('snSec').scrollIntoView({ block: 'start' }); $('markVerified').focus({ preventScroll: true }); }, 60); };
+  btn.type = 'button'; btn.onclick = () => showSafetyFor(id);
   card.append(head, grid, btn);
   $('messages').append(card);
   scrollDown(stick);
 }
 
+/** Opens the details panel on someone's safety number. */
+function showSafetyFor(id) {
+  if (id) { selPerson = id; renderSafety(); refreshRoute(); }
+  closeRail();
+  openPanel(true, 'safety');
+  setTimeout(() => { $('snSec').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); $('markVerified').focus({ preventScroll: true }); }, 60);
+}
 /** The panel's safety number: for the selected person (a picker appears in groups). */
 function renderSafety() {
   const list = present().filter((p) => p.sn);
@@ -834,15 +865,40 @@ function renderHead() {
   $('qaEndLbl').textContent = role === 'host' && list.length ? 'End' : 'Leave';
   $('qaEndSub').textContent = role === 'host' && list.length ? 'For everyone' : 'Others are told';
   $('peoplesTitle').textContent = `People · ${list.length + 1} of ${MAX_MEMBERS}`;
+  $('headCount').textContent = list.length > 1 ? `${list.length + 1} people` : '';
+  $('chat').classList.toggle('is-group', list.length > 1);
+  $('railInvite').hidden = !canInviteNow();
+  $('railInviteNote').hidden = canInviteNow() || !session || session.ended;
+  $('railMeSub').textContent = role === 'host' ? 'You · host' : 'You';
+  $('encFor').textContent = !list.length ? 'End-to-end encrypted'
+    : list.length <= 3 ? `Encrypted for ${list.length === 1 ? names[0] : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]} only`
+    : `Encrypted for the ${list.length} people here only`;
+  $('input').placeholder = list.length === 1 ? `Message ${names[0]}` : list.length ? 'Message everyone' : 'Message';
   $('canInviteRow').hidden = role !== 'host';
   $('clearAllBtn').hidden = role !== 'host';
   $('kvAccess').textContent = role === 'host' ? 'Anyone else with the code waits for you to let them in' : 'Newcomers wait for the host to let them in';
-  for (const n of document.querySelectorAll('.msg-name[data-from]')) n.textContent = nameOf(n.dataset.from);
+  for (const n of document.querySelectorAll('.msg-name[data-from] .msg-who')) n.textContent = nameOf(n.parentElement.dataset.from);
+  for (const a of document.querySelectorAll('.msg-av[data-from]')) a.textContent = people.get(a.dataset.from)?.avatar || '👤';
   applyVerified();
   renderPeople();
   renderTyping();
 }
 
+/** A small icon button; the label is for screen readers and the tooltip. */
+const SVGNS = 'http://www.w3.org/2000/svg';
+function iconBtn(cls, label, paths) {
+  const b = h('button', cls); b.type = 'button';
+  b.setAttribute('aria-label', label); b.title = label;
+  const svg = document.createElementNS(SVGNS, 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true');
+  // Fixed, trusted markup from this file only; never message content.
+  for (const m of paths.matchAll(/<(path|circle) ([^>]*)\/>/g)) {
+    const el = document.createElementNS(SVGNS, m[1]);
+    for (const [, k, v] of m[2].matchAll(/([a-z]+)="([^"]*)"/g)) el.setAttribute(k, v);
+    svg.append(el);
+  }
+  b.append(svg);
+  return b;
+}
 /** The People section: everyone here, their state, and the host's controls. */
 function renderPeople() {
   const box = $('peopleList');
@@ -862,14 +918,14 @@ function renderPeople() {
   row(me.avatar, me.name + ' (you)', role === 'host' ? 'Host' : '', 'This browser', 'is-me');
   for (const p of present()) {
     const sub = !p.ready ? (p.state === 'reconnecting' ? 'Reconnecting…' : 'Connecting…') : p.verified ? 'Verified' : 'Not verified';
-    const r = row(p.avatar, p.name || '…', isHostId(p.id) ? 'Host' : '', sub, p.verified ? 'is-verified' : '');
+    const r = row(p.avatar, p.name || '…', isHostId(p.id) ? 'Host' : '', sub, p.verified ? 'is-verified' : p.ready ? 'is-unverified' : '');
     if (p.sn) {
-      const b = h('button', 'pp-btn', 'Safety no.'); b.type = 'button';
-      b.onclick = () => { selPerson = p.id; renderSafety(); refreshRoute(); $('snSec').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); };
+      const b = iconBtn('pp-btn', `Safety number with ${p.name || 'them'}`, '<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/>');
+      b.onclick = () => showSafetyFor(p.id);
       r.append(b);
     }
     if (role === 'host') {
-      const b = h('button', 'pp-btn is-danger', 'Remove'); b.type = 'button';
+      const b = iconBtn('pp-btn is-danger', `Remove ${p.name || 'them'}`, '<circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 11h6"/>');
       b.onclick = async () => {
         if (!(await confirmDialog(`Remove ${p.name || 'them'}?`, 'Everyone disconnects from them at once. They can only come back if they ask again with the code and you let them in.', 'Remove', { danger: true }))) return;
         session?.remove(p.id);
@@ -896,7 +952,7 @@ function onWire(dir, bytes) {
   wireLast[dir] = now;
   (dir === 'out' ? etherOut : etherIn).push(bytes);
   const ch = session?.active?.channel;
-  if (ch) $('kvKeys').textContent = String(ch.tx.n + ch.rx.n);
+  if (ch) $('kvKeys').textContent = $('railKeys').textContent = String(ch.tx.n + ch.rx.n);
 }
 $('markVerified').onclick = () => {
   const p = selPerson && people.get(selPerson);
@@ -905,7 +961,10 @@ $('markVerified').onclick = () => {
   if (p.verified) { sys(inGroup() ? `You marked your safety number with ${nameOf(p.id)} as verified.` : 'You marked the safety number as verified.', 'is-good'); flash($('trustBadge'), 'is-pop', 900); }
 };
 $('copySafety').onclick = () => copy($('safetyNumber').dataset.value || '', 'Safety number');
-$('verifyChip').onclick = () => openPanel(true);
+$('verifyChip').onclick = () => {
+  const next = present().find((p) => p.sn && !p.verified);
+  showSafetyFor(next ? next.id : null);
+};
 // One verify control on screen at a time: the header chip only shows while the panel is hidden.
 function syncHead() {
   const panelShown = !$('panel').hidden;
@@ -963,7 +1022,8 @@ function placeRecord(r, body) {
   const grouped = prevRec && prevRec.side === r.side && prevRec.from === r.from && r.ts - prevRec.ts < GROUP_GAP_MS;
   if (grouped) prevRec.el.classList.remove('last'); else r.el.classList.add('first');
   r.el.classList.add('last');
-  if (!grouped && r.side === 'them') r.el.append(nameTag(r.from));
+  r.el.append(avatarTag(r));
+  if (!grouped) r.el.append(nameTag(r));
   r.el.append(body);
   // A visible way into the actions (edit, delete, reply…) for mouse users; touch uses long-press.
   const more = h('button', 'msg-more');
@@ -973,7 +1033,7 @@ function placeRecord(r, body) {
   r.el.append(more);
   r.reactsEl = h('div', 'reacts'); r.reactsEl.hidden = true;
   r.metaEl = h('div', 'meta');
-  r.timeEl = h('span', null, fmtTime(r.ts));
+  r.timeEl = h('span', 'time', fmtTime(r.ts));
   r.statusEl = h('span', 'status');
   r.burnEl = h('span', 'burn');
   r.metaEl.append(r.burnEl, r.timeEl, r.statusEl);
@@ -988,10 +1048,17 @@ function placeRecord(r, body) {
   if (r.side === 'them') markSeenSoon();
 }
 
-function nameTag(from) {
-  const n = h('div', 'msg-name', nameOf(from));
-  if (from) n.dataset.from = from;
+function nameTag(r) {
+  const n = h('div', 'msg-name');
+  n.append(h('span', 'msg-who', r.side === 'me' ? 'You' : nameOf(r.from)), h('span', 'msg-when', fmtTime(r.ts)));
+  if (r.side === 'them' && r.from) n.dataset.from = r.from;
   return n;
+}
+function avatarTag(r) {
+  const a = h('span', 'msg-av', r.side === 'me' ? me.avatar : people.get(r.from)?.avatar || '👤');
+  a.setAttribute('aria-hidden', 'true');
+  if (r.side === 'them' && r.from) a.dataset.from = r.from;
+  return a;
 }
 function regroup() {
   let prev = null;
@@ -1004,7 +1071,7 @@ function regroup() {
     if (prev) prev.el.classList.toggle('last', !grouped);
     r.el.classList.add('last');
     const nameEl = r.el.querySelector('.msg-name');
-    if (r.side === 'them' && !grouped && !nameEl) r.el.prepend(nameTag(r.from));
+    if (!grouped && !nameEl) r.el.querySelector('.msg-av').after(nameTag(r));
     if (grouped && nameEl) nameEl.remove();
     prev = r;
   }
@@ -1125,18 +1192,34 @@ function setTimer(secs, by) {
   burnSecs = secs;
   for (const b of $('timerOptions').children) b.setAttribute('aria-checked', String(Number(b.dataset.secs) === secs));
   $('timerBadge').hidden = !secs;
-  $('timerBadge').textContent = secs ? '⏱ ' + fmtSecs(secs) : '';
+  $('timerBadge').textContent = secs ? fmtSecs(secs) : '';
+  $('timerBtn').classList.toggle('is-on', !!secs);
+  $('timerBtn').setAttribute('aria-label', 'Disappearing messages: ' + (secs ? fmtSecs(secs) : 'off'));
+  $('railTimer').textContent = secs ? fmtSecs(secs) : 'Off';
+  for (const b of $('timerMenu').querySelectorAll('[data-secs]')) b.setAttribute('aria-checked', String(Number(b.dataset.secs) === secs));
   const who = by === 'me' ? 'You' : nameOf(by);
   sys(secs ? `${who} set messages to disappear after ${fmtSecs(secs)}.` : `${who} turned off disappearing messages.`, secs ? 'is-warn' : '');
 }
+function chooseTimer(secs) { if (secs === burnSecs || !session || session.ended) return; setTimer(secs, 'me'); session.send({ t: 'timer', secs }); }
 (function buildTimers() {
   for (const [secs, label] of TIMERS) {
     const b = h('button', null, label);
     b.type = 'button'; b.dataset.secs = secs; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(secs === 0));
-    b.onclick = () => { if (secs === burnSecs) return; setTimer(secs, 'me'); session?.send({ t: 'timer', secs }); };
+    b.onclick = () => chooseTimer(secs);
     $('timerOptions').append(b);
+    const m = h('button', 'tm-item', secs ? label : 'Off');
+    m.type = 'button'; m.dataset.secs = secs; m.setAttribute('role', 'menuitemradio'); m.setAttribute('aria-checked', String(secs === 0));
+    m.onclick = () => { closeTimerMenu(); chooseTimer(secs); $('input').focus(); };
+    $('timerMenu').append(m);
   }
 })();
+function closeTimerMenu() { $('timerMenu').hidden = true; $('timerBtn').setAttribute('aria-expanded', 'false'); }
+$('timerBtn').onclick = () => {
+  const open = $('timerMenu').hidden;
+  $('timerMenu').hidden = !open; $('timerBtn').setAttribute('aria-expanded', String(open));
+  if (open) $('timerMenu').querySelector('[aria-checked="true"]')?.focus();
+};
+document.addEventListener('pointerdown', (e) => { if (!$('timerMenu').hidden && !e.target.closest('#timerMenu, #timerBtn')) closeTimerMenu(); });
 
 // ───────────────────────────── read receipts ─────────────────────────────
 let seenTimer = null;
@@ -1598,7 +1681,26 @@ function applyDock() {
 }
 dockMQ.addEventListener?.('change', applyDock);
 applyDock();
-function openPanel(force) {
+// Details tabs: Safety, Privacy, Appearance, Keys.
+function showTab(t) {
+  for (const b of document.querySelectorAll('[data-ptab]')) {
+    const on = b.dataset.ptab === t;
+    b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1;
+  }
+  for (const p of document.querySelectorAll('[data-pane]')) p.hidden = p.dataset.pane !== t;
+  $('panel').scrollTop = 0;
+}
+for (const b of document.querySelectorAll('[data-ptab]')) {
+  b.onclick = () => showTab(b.dataset.ptab);
+  b.onkeydown = (e) => {
+    const tabs = [...document.querySelectorAll('[data-ptab]')];
+    const i = tabs.indexOf(b), d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!d) return;
+    e.preventDefault(); const n = tabs[(i + d + tabs.length) % tabs.length]; showTab(n.dataset.ptab); n.focus();
+  };
+}
+function openPanel(force, tab) {
+  if (tab) showTab(tab);
   if (docked()) {
     const open = force ?? $('panel').hidden;
     dockCollapsed = !open;
@@ -1633,6 +1735,26 @@ function openPanel(force) {
   }, { passive: true });
 })();
 $('panelBtn').onclick = () => openPanel();
+const railMQ = matchMedia('(min-width: 900px)');
+function openRail() {
+  if (railMQ.matches) return;
+  if (!$('panel').hidden && !docked()) openPanel(false);
+  $('chat').classList.add('rail-open'); $('railScrim').hidden = false;
+  $('railBtn').setAttribute('aria-expanded', 'true');
+  $('railClose').focus({ preventScroll: true });
+}
+function closeRail() {
+  if (!$('chat').classList.contains('rail-open')) return;
+  $('chat').classList.remove('rail-open'); $('railScrim').hidden = true;
+  $('railBtn').setAttribute('aria-expanded', 'false');
+}
+$('railBtn').onclick = () => ($('chat').classList.contains('rail-open') ? closeRail() : openRail());
+$('railClose').onclick = () => { closeRail(); $('railBtn').focus({ preventScroll: true }); };
+$('railScrim').onclick = closeRail;
+railMQ.addEventListener?.('change', closeRail);
+$('railLook').onclick = () => { closeRail(); openPanel(true, 'look'); };
+$('railCopy').onclick = () => code && copy(code, 'Room code');
+$('railInvite').onclick = () => { closeRail(); openInvite(); };
 $('qaVerify').onclick = () => {
   // Jump to the first person not yet verified.
   const next = present().find((p) => p.sn && !p.verified);
@@ -1824,6 +1946,10 @@ function resetChat() {
   $('safetyNumber').replaceChildren(); delete $('safetyNumber').dataset.value; $('snPick').replaceChildren();
   $('optCanInvite').checked = false;
   $('kvRoute').textContent = '—'; $('kvLatency').textContent = '—'; $('kvRoom').textContent = '—';
+  $('railRoute').textContent = '—'; $('railLatency').textContent = '—'; $('railKeys').textContent = '0'; $('railTimer').textContent = 'Off'; $('railCode').textContent = '—';
+  $('timerBtn').classList.remove('is-on'); $('timerBtn').setAttribute('aria-label', 'Disappearing messages: off'); closeTimerMenu();
+  for (const b of $('timerMenu').querySelectorAll('[data-secs]')) b.setAttribute('aria-checked', String(b.dataset.secs === '0'));
+  $('chat').classList.remove('is-group'); closeRail(); showTab('safety');
   setLink('', 'Connecting');
   closeMenu(); closeViewer();
 }
@@ -1850,8 +1976,7 @@ function panic() {
 }
 // Header panic button. Mouse and keyboard: instant. Touch: press and hold briefly, so a pocket
 // tap or a slip of the thumb can't wipe a conversation (the ring fills while you hold).
-(() => {
-  const b = $('panicBtn');
+for (const b of [$('panicBtn'), $('railWipe')]) {
   const HOLD_MS = 600;
   let t = 0, lastTouch = 0;
   const cancel = (hint) => {
@@ -1872,7 +1997,7 @@ function panic() {
   b.addEventListener('pointerleave', () => cancel(false));
   b.addEventListener('contextmenu', (e) => e.preventDefault());
   b.addEventListener('click', () => { if (Date.now() - lastTouch < 1500) return; panic(); });
-})();
+}
 $('panicSheetBtn').onclick = panic;
 
 // Keep the chat sized to the visible viewport when the on-screen keyboard opens (iOS ignores
@@ -1898,6 +2023,8 @@ document.addEventListener('keydown', (e) => {
   if ($('joinScreen').classList.contains('is-on')) return leaveJoin();
   if (!$('viewer').hidden) return closeViewer();
   if (!$('msgMenu').hidden) return closeMenu();
+  if (!$('timerMenu').hidden) { closeTimerMenu(); $('timerBtn').focus(); return; }
+  if ($('chat').classList.contains('rail-open')) return closeRail();
   if (!$('panel').hidden) return openPanel(false);
   if (editing) { clearEdit(); return; }
   if (replyTo) clearReply();

@@ -90,3 +90,7 @@ A full pass over the code, the deployment files and the documentation, with the 
 | Low (accessibility) | In the light themes the *Join* button was white text on a transparent background until the code was complete; several text colours on the info pages and the TX/RX strip failed WCAG AA contrast; the join and connect screens had no level-one heading; a table header was empty. | Fixed. axe-core reports no violations on the home, join, connect and chat screens (light and dark) or the three info pages. |
 | Info | The chat watermark sat behind message text. | It fades out once the conversation has messages. |
 | Info | Development dependency `body-parser` (via the local PeerJS test server) had a published DoS advisory. | Updated through `npm audit fix`; `npm audit` is clean. Nothing from `node_modules` ships to users. |
+
+## Chat layout (October 2026)
+
+The chat screen became three columns: room, conversation, details. No protocol, crypto or session code changed. The UI work stays inside the existing rules: peer names and avatars still go into the page as text only, and the new icon buttons are built from fixed SVG paths in `js/app.js`, never from message content. The rail's **Wipe** button runs the same panic routine as the header button, so it's instant with a mouse and needs a hold on touch screens. Theme, message layout and the wire toggle last for the tab only and are never stored. axe-core reports no colour-contrast or ARIA violations on the chat screen in any of the ten themes, in either message layout, on any of the four details tabs.

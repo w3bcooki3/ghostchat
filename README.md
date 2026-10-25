@@ -50,11 +50,12 @@ That's it. Chat, send files, and close the tab when you're done.
 - **Maximum privacy** (on the home screen): hides your IP address from the other person and sends steady traffic so nobody watching the network can tell when you type.
 
 **Make it yours**
-- **Seven colour themes**: Signal, Phosphor, Aurora, Daylight, Graphite, Ledger and Vault, plus **Auto**, which is Signal by day and Phosphor by night. Your choice lasts for the tab and isn't saved anywhere.
+- **Ten colour themes**: Signal, Phosphor, Aurora, Daylight, Graphite, Ledger, Vault, Apple, Haven and Telegram, plus **Auto**, which is Signal by day and Phosphor by night. Messages show as **bubbles** or as **lines** (a left-aligned log), and the live strip of encrypted bytes can be hidden. Your choices last for the tab and aren't saved anywhere.
+- **A three-column room on wide screens**: the room code, the people here and how you're connected on the left; the conversation in the middle; details (safety numbers, privacy, theme, keys) on the right. On phones both side columns slide in as sheets.
 - Pick a name and an avatar for the conversation. They're forgotten when you leave.
 
 **Group rooms**
-- **Up to 6 people per room.** Tap **Invite** in the session panel for the same link, a QR code or the code. The first person you invite joins straight away. After that, everyone who uses the code shows up as *"wants to join"*, and the host taps **Let in** or **Deny**.
+- **Up to 6 people per room.** Tap **Invite someone** in the room panel (or **Invite** under Details) for the same link, a QR code or the code. The first person you invite joins straight away. After that, everyone who uses the code shows up as *"wants to join"*, and the host taps **Let in** or **Deny**.
 - **Every pair of people gets its own encryption** and its own safety number, so messages between two people are readable only by them. Compare your number with each person.
 - **The host is in charge.** Only the host can share the invite, unless they switch on *Members can invite*. The host can also **remove** anyone.
 
@@ -82,7 +83,7 @@ Neither ever sees your messages, your keys or the full room code. The [Who can r
 No. Any current browser works: Chrome, Safari, Firefox or Edge, on a phone or a computer.
 
 **Can more than two people chat?**
-Yes, up to six. Use *Invite* in the session panel. The host lets each newcomer in, and every pair of people gets its own keys and safety number.
+Yes, up to six. Use *Invite someone* in the room panel. The host lets each newcomer in, and every pair of people gets its own keys and safety number.
 
 **It's stuck connecting. What now?**
 If it says the other person *isn't answering*, their phone may be locked or the browser closed in the background. Ask them to open Ghost Chat again, then tap *Try again*. If the room *isn't open*, ask for a fresh invite. *Check my network* (under Privacy → Customize) explains what your network allows.

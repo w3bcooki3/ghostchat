@@ -307,7 +307,7 @@ await test('a newcomer with the full, correct code waits for the host; Deny turn
 });
 
 await test('constant-rate mode: syncs to the peer and every frame on the wire is identical in size', async () => {
-  await S.A.click('#panelBtn'); await S.A.click('label:has(#optShape)'); await S.A.click('#panelClose');
+  await S.A.click('#panelBtn'); await S.A.click('[data-ptab="privacy"]'); await S.A.click('label:has(#optShape)'); await S.A.click('#panelClose');
   await S.B.waitForSelector('.sys.is-good >> text=constant-rate traffic', { timeout: 5000 });
   assert(await S.B.isChecked('#optShape'), 'peer toggle follows');
   await S.A.waitForTimeout(600);
@@ -335,14 +335,14 @@ await test('constant-rate mode: syncs to the peer and every frame on the wire is
   assert(await S.A.evaluate(() => window.__ghost.session.shaping) === true, 'A still shaping after the peer said off');
   assert(await S.A.isChecked('#optShape'), 'A: toggle still on');
   // B adds its own request; A withdrawing then leaves it on, because B still wants it.
-  await S.B.click('#panelBtn'); await S.B.click('label:has(#optShape)'); await S.B.click('#panelClose');
+  await S.B.click('#panelBtn'); await S.B.click('[data-ptab="privacy"]'); await S.B.click('label:has(#optShape)'); await S.B.click('#panelClose');
   await S.A.waitForTimeout(500);
-  await S.A.click('#panelBtn'); await S.A.click('label:has(#optShape)'); await S.A.click('#panelClose');
+  await S.A.click('#panelBtn'); await S.A.click('[data-ptab="privacy"]'); await S.A.click('label:has(#optShape)'); await S.A.click('#panelClose');
   await S.A.waitForSelector('.sys >> text=It stays on here because', { timeout: 5000 }).catch(() => {});
   await S.B.waitForSelector('.sys >> text=It stays on here because you turned it on', { timeout: 5000 });
   assert(await S.A.evaluate(() => window.__ghost.session.shaping) === true, 'A still shaping: B wants it');
   // Once B withdraws too, it's off for both.
-  await S.B.click('#panelBtn'); await S.B.click('label:has(#optShape)'); await S.B.click('#panelClose');
+  await S.B.click('#panelBtn'); await S.B.click('[data-ptab="privacy"]'); await S.B.click('label:has(#optShape)'); await S.B.click('#panelClose');
   await S.A.waitForSelector('.sys >> text=turned off constant-rate traffic.', { timeout: 5000 });
   await S.A.waitForFunction(() => window.__ghost.session.shaping === false, null, { timeout: 3000 });
   assert(await S.B.evaluate(() => window.__ghost.session.shaping) === false, 'B stopped shaping');
@@ -350,7 +350,7 @@ await test('constant-rate mode: syncs to the peer and every frame on the wire is
 });
 
 await test('disappearing messages vanish on both sides', async () => {
-  await S.A.click('#panelBtn');
+  await S.A.click('#panelBtn'); await S.A.click('[data-ptab="safety"]');
   await S.A.click('#timerOptions button[data-secs="10"]');
   await S.A.click('#panelClose');
   await S.B.waitForSelector('.sys >> text=disappear after 10 s', { timeout: 5000 });
@@ -360,12 +360,12 @@ await test('disappearing messages vanish on both sides', async () => {
   await S.B.waitForFunction(() => /⏱ \d/.test(document.querySelector('.msg.them:last-child .burn')?.textContent || ''), null, { timeout: 3000 });
   await S.B.waitForFunction(() => ![...document.querySelectorAll('.bubble')].some((b) => b.textContent === 'self-destructing'), null, { timeout: 15000 });
   await S.A.waitForFunction(() => ![...document.querySelectorAll('.bubble')].some((b) => b.textContent === 'self-destructing'), null, { timeout: 15000 });
-  await S.B.click('#panelBtn'); await S.B.click('#timerOptions button[data-secs="0"]'); await S.B.click('#panelClose');
+  await S.B.click('#panelBtn'); await S.B.click('[data-ptab="safety"]'); await S.B.click('#timerOptions button[data-secs="0"]'); await S.B.click('#panelClose');
   await S.A.waitForSelector('.sys >> text=turned off disappearing', { timeout: 5000 });
 });
 
 await test('ending the session notifies the peer and wipes local state', async () => {
-  await S.A.click('#panelBtn');
+  await S.A.click('#panelBtn'); await S.A.click('[data-ptab="safety"]');
   await S.A.click('#endBtn');
   await S.A.click('#dialogOk');
   await S.A.waitForSelector('#home.is-on');
@@ -467,6 +467,78 @@ await test('wide screen: docked panel collapses, one verify control at a time, i
   await s.A.context().close(); await s.B.context().close();
 });
 
+await test('chat layout: room rail, details tabs, timer menu, message layouts', async () => {
+  const s = await pair('Rhea', 'Sol', { width: 1400, height: 860 });
+  const { A, B } = s;
+  // Wide: the room rail is always there, with the code, people and connection.
+  assert(await B.isVisible('#rail') && await B.isHidden('#railBtn'), 'rail docked on wide screens');
+  assert((await B.textContent('#railCode')).replace(/\s/g, '') === s.code.replace(/-/g, ''), 'rail shows the room code');
+  assert(/2 of 6/.test(await B.textContent('#peoplesTitle')), 'people count in the rail');
+  assert(await B.isHidden('#railInvite') && await B.isVisible('#railInviteNote'), 'members see why they can\'t invite');
+  assert(await A.isVisible('#railInvite'), 'the host can invite from the rail');
+  assert(/Encrypted for Rhea only/.test(await B.textContent('#encFor')), 'composer says who it is encrypted for: ' + await B.textContent('#encFor'));
+  // Details: one tab at a time, arrow keys move between tabs.
+  assert(await B.isVisible('#pane-safety') && await B.isHidden('#pane-privacy'), 'safety tab first');
+  await B.click('[data-ptab="privacy"]');
+  assert(await B.isVisible('#optShape + .toggle-ui') && await B.isHidden('#pane-safety'), 'privacy tab shows');
+  await B.focus('[data-ptab="privacy"]'); await B.keyboard.press('ArrowRight');
+  assert(await B.isVisible('#pane-look'), 'arrow key moves to the next tab');
+  // The rail's appearance button opens the Theme tab; the verify chip opens Safety.
+  await B.click('[data-ptab="keys"]'); await B.click('#railLook');
+  assert(await B.isVisible('#pane-look'), 'appearance button opens the theme tab');
+  // Message layout: lines shows names (yours too) and avatars; bubbles hides your own name.
+  await say(A, 'layout check');
+  await B.waitForSelector('.msg.them >> text=layout check');
+  await say(B, 'and back');
+  await B.click('[data-ly="lines"]');
+  assert(await B.evaluate(() => document.documentElement.dataset.layout) === 'lines', 'lines layout applied');
+  assert(await B.locator('.msg.me .msg-who').first().isVisible(), 'lines: your own name shows');
+  assert(await B.locator('.msg.them .msg-av').first().isVisible(), 'lines: avatars show');
+  await B.click('[data-ly="bubbles"]');
+  assert(!(await B.locator('.msg.me .msg-who').first().isVisible()), 'bubbles: your own name hidden');
+  // The wire can be hidden.
+  await B.click('label:has(#optWire)');
+  assert(await B.isHidden('.ether'), 'wire hidden');
+  await B.click('label:has(#optWire)');
+  // Timer menu in the composer sets the timer for everyone, and the panel follows.
+  await B.click('#timerBtn');
+  await B.click('#timerMenu [data-secs="30"]');
+  await A.waitForSelector('.sys >> text=disappear after 30 s', { timeout: 5000 });
+  assert((await A.textContent('#railTimer')) === '30 s' && (await B.textContent('#timerBadge')) === '30 s', 'timer shown in rail and composer');
+  assert(await B.getAttribute('#timerOptions [data-secs="30"]', 'aria-checked') === 'true', 'panel segment follows');
+  await B.click('#timerBtn'); await B.keyboard.press('Escape');
+  assert(await B.isHidden('#timerMenu'), 'Escape closes the timer menu');
+  await B.click('#timerBtn'); await B.click('#timerMenu [data-secs="0"]');
+  // The rail's wipe works like the header's: a mouse click wipes at once.
+  await B.click('#railWipe');
+  await B.waitForURL(/google/, { timeout: 5000 });
+  await A.waitForSelector('#banner:not([hidden])', { timeout: 15000 });
+  await A.context().close(); await B.context().close();
+});
+
+await test('phone: the room rail opens as a sheet and closes with Escape', async () => {
+  const s = await pair('Pia', 'Quin', { width: 390, height: 844 });
+  const B = s.B;
+  assert(await B.isVisible('#railBtn'), 'menu button on phones');
+  const r0 = await B.locator('#rail').boundingBox();
+  assert(!r0 || r0.x + r0.width <= 1, 'rail off screen at first');
+  await B.click('#railBtn');
+  await B.waitForTimeout(400);
+  const r1 = await B.locator('#rail').boundingBox();
+  assert(r1 && r1.x >= 0 && r1.width > 250, 'rail slides in');
+  assert(await B.isVisible('#railScrim'), 'scrim behind it');
+  await B.keyboard.press('Escape');
+  await B.waitForTimeout(400);
+  assert(await B.isHidden('#railScrim') && await B.getAttribute('#railBtn', 'aria-expanded') === 'false', 'Escape closes the rail');
+  // The rail's theme button opens details on the Theme tab as a bottom sheet.
+  await B.click('#railBtn'); await B.waitForTimeout(350);
+  await B.click('#railLook'); await B.waitForTimeout(450);
+  assert(await B.isVisible('#pane-look') && await B.isHidden('#railScrim'), 'theme tab in the sheet, rail closed');
+  await B.click('#panelClose');
+  if (await B.evaluate(() => document.documentElement.scrollWidth > innerWidth)) throw new Error('page scrolls sideways');
+  await s.A.context().close(); await B.context().close();
+});
+
 await test('refuses to run inside a frame (click-jacking guard)', async () => {
   const ctx = await browser.newContext();
   const p = await ctx.newPage();
@@ -552,7 +624,7 @@ await test('groups: the host lets a third person in; every pair has its own end-
   const { A, B, C } = G3;
   await say(C, 'hi all');
   for (const p of [A, B]) await p.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent === 'hi all', null, { timeout: 8000 });
-  assert(await A.textContent('.msg.them:last-child .msg-name, .msg.them .msg-name >> nth=-1') === 'Cat', 'sender named');
+  assert(await A.textContent('.msg.them .msg-name .msg-who >> nth=-1') === 'Cat', 'sender named');
   await say(B, 'hello from ben');
   for (const p of [A, C]) await p.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent === 'hello from ben', null, { timeout: 8000 });
   assert(await A.textContent('#peerName') === 'Ben & Cat', 'header names the group: ' + await A.textContent('#peerName'));
@@ -739,7 +811,7 @@ await test('colour themes: every theme applies, Auto follows the device, nothing
   await P.click('#themeBtn');
   await P.waitForSelector('#themeSheet:not([hidden])');
   const ids = await P.$$eval('#themeSheet [data-theme-picker] button', (bs) => bs.map((b) => b.dataset.t));
-  assert(ids.length === 8 && ids[0] === 'auto', 'eight choices: ' + ids.join(','));
+  assert(ids.length === 11 && ids[0] === 'auto', 'eleven choices: ' + ids.join(','));
   const seen = new Set();
   for (const id of ids.slice(1)) {
     await P.click(`#themeSheet [data-theme-picker] button[data-t="${id}"]`);
@@ -748,7 +820,7 @@ await test('colour themes: every theme applies, Auto follows the device, nothing
     assert(r.meta && r.meta.startsWith('#'), 'browser bar colour follows ' + id);
     seen.add(r.bg);
   }
-  assert(seen.size === 7, 'each theme has its own background: ' + seen.size);
+  assert(seen.size === 10, 'each theme has its own background: ' + seen.size);
   await P.click('#themeSheet [data-theme-picker] button[data-t="auto"]');
   assert(!(await P.evaluate(() => document.documentElement.dataset.theme)), 'back to Auto');
   // Text style: separate from colour; Auto follows the theme; theme names fit their tiles.
