@@ -617,6 +617,7 @@ function onMemberLeft({ id, reason, isHost, wasReady }) {
   p.gone = true; p.ready = false; clearTimeout(p.announce); p.announce = null;
   typers.delete(id); renderTyping();
   lastLeft = name;
+  if (shapeWanted.delete(id) && !applyShape() && !session.ended) sys(`Constant-rate traffic is off: ${name}, who turned it on, left.`);   // their request leaves with them
   if (session.ended) return;
   const text = !wasReady ? `Couldn't connect to ${name}.`
     : reason === 'removed' ? (role === 'host' ? `You removed ${name} from the room.` : `The host removed ${name} from the room.`)
@@ -947,7 +948,7 @@ const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|\p{Emoji_Component}|‍|️|\s
 function newRecord(id, side, ts, extra = {}) {
   const el = h('div', 'msg ' + side + ' arrive');
   el.dataset.id = id;
-  const r = { id, side, ts, el, reacts: new Map(), delivered: side !== 'me', read: false, seen: false, ttl: 0, burnAt: 0, urls: [],
+  const r = { id, wid: id, side, ts, el, reacts: new Map(), delivered: side !== 'me', read: false, seen: false, ttl: 0, burnAt: 0, urls: [],
     from: null, to: new Set(side === 'me' && session ? session.memberIds() : []), deliveredTo: new Set(), readBy: new Set(), ...extra };
   msgs.set(id, r);
   // A flooding peer can't grow the page without bound: the oldest messages drop off.
@@ -1009,8 +1010,8 @@ function regroup() {
   }
 }
 
-function addText(side, { id, text, ts, ttl = 0, reply = null, from = null }) {
-  const r = newRecord(id, side, ts, { kind: 'text', text, ttl, from });
+function addText(side, { id, wid = id, text, ts, ttl = 0, reply = null, from = null }) {
+  const r = newRecord(id, side, ts, { kind: 'text', text, ttl, from, wid });
   const bubble = h('div', 'bubble');
   bubble.dir = 'auto';
   bubble.tabIndex = 0;
@@ -1050,7 +1051,7 @@ function applyEdit(r, text) {
   r.bubble.classList.remove('emoji-only');
   if (!r.editedEl) { r.editedEl = h('span', 'edited', 'edited'); r.bubble.append(r.editedEl); }
   flash(r.bubble, 'is-edited', 900);
-  if (replyTo?.mid === r.id) setReply(r);
+  if (replyTo?.key === r.id) setReply(r);
 }
 
 function jumpTo(mid) {
@@ -1101,7 +1102,7 @@ function removeRecord(r, animate = true) {
   const done = () => { r.el.remove(); r.urls.forEach(release); regroup(); };
   if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) { r.el.classList.add('dissolve'); setTimeout(done, 600); }
   else done();
-  if (replyTo?.mid === r.id) clearReply();
+  if (replyTo?.key === r.id) clearReply();
   if (editing === r) clearEdit();
 }
 
@@ -1147,7 +1148,7 @@ function markSeen() {
     if (r.side !== 'them' || r.seen) continue;
     r.seen = true;
     if (r.ttl) startBurn(r);
-    if (r.kind === 'text' && r.from) { if (!byAuthor.has(r.from)) byAuthor.set(r.from, []); byAuthor.get(r.from).push(r.id); }
+    if (r.kind === 'text' && r.from) { if (!byAuthor.has(r.from)) byAuthor.set(r.from, []); byAuthor.get(r.from).push(r.wid); }
   }
   // Each author is told only about their own messages.
   if (opts.receipts && session?.state === 'ready') for (const [id, ids] of byAuthor) session.sendTo(id, { t: 'read', ids: ids.slice(0, 200) });
@@ -1163,6 +1164,13 @@ window.addEventListener('blur', () => { if (opts.veil && $('chat').classList.con
 $('unveilBtn').onclick = () => { $('veil').hidden = true; markSeen(); $('input').focus(); };
 
 // ───────────────────────────── inbound ─────────────────────────────
+/** The record `from` authored under wire ID `mid`, wherever a clash put it; else null. */
+function authoredBy(from, mid) {
+  const r = msgs.get(mid);
+  if (r && r.side === 'them' && r.from === from) return r;
+  const alt = msgs.get(from + ':' + mid);
+  return alt && alt.side === 'them' && alt.from === from ? alt : null;
+}
 function onMessage(o) {
   const from = o.from;
   if (!from || !session) return;
@@ -1176,13 +1184,23 @@ function onMessage(o) {
       return;
     }
     case 'msg': {
-      if (typeof o.text !== 'string' || !o.text || !isMid(o.mid) || msgs.has(o.mid)) return;
+      if (typeof o.text !== 'string' || !o.text || !isMid(o.mid)) return;
+      // Everyone in a group receives the same message ID, so another member could reuse it to
+      // claim the slot before the real message arrives. A clash never replaces or hides a record:
+      // the newcomer is kept under a per-author key instead.
+      let key = o.mid;
+      const clash = msgs.get(o.mid);
+      if (clash) {
+        if (clash.side === 'them' && clash.from === from) return;   // a resend we already have
+        key = from + ':' + o.mid;
+        if (msgs.has(key)) return;
+      }
       const ttl = Number.isInteger(o.ttl) && o.ttl > 0 && o.ttl <= 86400 ? o.ttl : 0;
       // Quotes are resolved from our own copy of the conversation; the sender only names the message.
       const reply = o.reply && isMid(o.reply.mid) ? quoteFor(o.reply.mid) : null;
       const text = cleanText(o.text, LIMITS.maxText);
       if (!text.trim()) return;
-      addText('them', { id: o.mid, text, ts: Date.now(), ttl, reply, from });
+      addText('them', { id: key, wid: o.mid, text, ts: Date.now(), ttl, reply, from });
       typers.delete(from); renderTyping();
       notifyIncoming();
       return;
@@ -1202,7 +1220,7 @@ function onMessage(o) {
       renderTyping();
       return;
     case 'react': {
-      const r = msgs.get(o.target);
+      const r = isMid(o.target) && msgs.get(o.target);
       if (!r) return;
       r.reacts.set(from, REACTIONS.includes(o.emoji) ? o.emoji : null);
       renderReacts(r);
@@ -1211,16 +1229,16 @@ function onMessage(o) {
     case 'edit': {
       // Only the author can edit, only text, and the new text passes the same checks as a new message.
       if (!isMid(o.target) || typeof o.text !== 'string') return;
-      const r = msgs.get(o.target);
-      if (!r || r.side !== 'them' || r.from !== from || r.kind !== 'text') return;
+      const r = authoredBy(from, o.target);
+      if (!r || r.kind !== 'text') return;
       const text = cleanText(o.text, LIMITS.maxText);
       if (!text.trim() || text === r.text) return;
       applyEdit(r, text);
       return;
     }
     case 'unsend': {
-      const r = msgs.get(o.target);
-      if (r && r.side === 'them' && r.from === from) { removeRecord(r); sys(`${nameOf(from)} unsent a message.`); }
+      const r = isMid(o.target) && authoredBy(from, o.target);
+      if (r) { removeRecord(r); sys(`${nameOf(from)} unsent a message.`); }
       return;
     }
     case 'unsend-all': {
@@ -1237,7 +1255,7 @@ function onMessage(o) {
     }
     case 'shape': {
       const on = o.on === true;
-      if (on !== opts.shape) setShape(on, from);
+      if (on !== shapeWanted.has(from)) setShape(on, from);
       return;
     }
     case 'timer': {
@@ -1315,7 +1333,7 @@ function sendText() {
   const mid = uid();
   const o = { t: 'msg', mid, text, ttl: burnSecs || undefined };
   let reply = null;
-  if (replyTo) { reply = quoteFor(replyTo.mid); o.reply = { mid: replyTo.mid }; }
+  if (replyTo) { reply = quoteFor(replyTo.key); reply.mid = replyTo.key; o.reply = { mid: replyTo.mid }; }
   addText('me', { id: mid, text, ts: Date.now(), ttl: burnSecs, reply });
   session.send(o);
   input.value = ''; autosize(); $('sendBtn').disabled = true;
@@ -1325,7 +1343,7 @@ function sendText() {
 function setReply(r) {
   clearEdit();
   const text = r.kind === 'text' ? r.text : r.name;
-  replyTo = { mid: r.id, name: r.side === 'me' ? 'You' : nameOf(r.from), text: text.slice(0, 120) };
+  replyTo = { mid: r.wid, key: r.id, name: r.side === 'me' ? 'You' : nameOf(r.from), text: text.slice(0, 120) };
   $('replyName').textContent = replyTo.name;
   $('replyText').textContent = replyTo.text;
   $('replyBar').hidden = false;
@@ -1368,7 +1386,7 @@ function toggleReact(r, e) {
   const mine = r.reacts.get('me') === e ? null : e;
   r.reacts.set('me', mine);
   renderReacts(r);
-  session?.send({ t: 'react', target: r.id, emoji: mine });
+  session?.send({ t: 'react', target: r.wid, emoji: mine });
 }
 // Phones and small screens get bottom sheets instead of popovers.
 const sheetMode = () => matchMedia('(max-width: 640px), (pointer: coarse)').matches;
@@ -1674,17 +1692,38 @@ $('panelClose').onclick = () => openPanel(false);
 $('optReceipts').onchange = (e) => { opts.receipts = e.target.checked; };
 $('optTyping').onchange = (e) => { opts.typing = e.target.checked; if (!opts.typing) stopTyping(); };
 $('optVeil').onchange = (e) => { opts.veil = e.target.checked; };
-$('optShape').onchange = (e) => { setShape(e.target.checked, 'me'); session?.send({ t: 'shape', on: opts.shape }); };
+// The toggle shows whether it's on; clicking it adds or withdraws YOUR request.
+$('optShape').onchange = () => {
+  const want = !opts.shape;
+  setShape(want, 'me');
+  session?.send({ t: 'shape', on: want });
+  if (!want && shapeOn()) toast('It stays on while someone else in the room has it on');
+  else if (want) toast('Constant-rate traffic stays on until you turn it off');
+};
 
-// Constant-rate traffic: both sides send identical frames on a fixed clock (see SECURITY.md).
-function setShape(on, by) {
-  opts.shape = on;
+// Constant-rate traffic: identical frames on a fixed clock (see SECURITY.md). It is ON while
+// anyone in the room wants it, and each person can only withdraw their OWN request: someone
+// else turning it off never switches off protection you chose.
+const shapeWanted = new Set();   // member ids who asked for it
+const shapeOn = () => opts.shape || [...shapeWanted].some((id) => people.has(id) && !people.get(id).gone);
+function applyShape() {
+  const on = shapeOn();
   $('optShape').checked = on;
-  session?.setShaping(on);
-  if (by) {
-    const who = by === 'me' ? 'You' : nameOf(by);
-    sys(on ? `${who} turned on constant-rate traffic. Observers can no longer tell when ${inGroup() ? 'anyone here' : 'either of you'} is typing or sending.` : `${who} turned off constant-rate traffic.`, on ? 'is-good' : '');
-  }
+  if (session && !session.ended && session.shaping !== on) session.setShaping(on);
+  return on;
+}
+/** by: 'me' (my own toggle), null (privacy preset at start), or the member id who asked. */
+function setShape(on, by) {
+  const was = shapeOn();
+  if (!by || by === 'me') opts.shape = on;
+  else if (on) shapeWanted.add(by); else shapeWanted.delete(by);
+  const now = applyShape();
+  if (!by) return;
+  const who = by === 'me' ? 'You' : nameOf(by);
+  const scope = inGroup() ? 'anyone here' : 'either of you';
+  if (on && !was) sys(`${who} turned on constant-rate traffic. Observers can no longer tell when ${scope} is typing or sending.`, 'is-good');
+  else if (!on && !now) sys(`${who} turned off constant-rate traffic.`);
+  else if (!on && by !== 'me') sys(`${who} turned off constant-rate traffic on their side. It stays on here because ${opts.shape ? 'you turned it on' : 'someone else has it on'}.`);
 }
 
 // ───────────────────────────── privacy preset (home screen) ─────────────────────────────
@@ -1770,6 +1809,7 @@ function resetChat() {
   $('messages').replaceChildren();
   for (const p of people.values()) clearTimeout(p.announce);
   people.clear(); selPerson = null; lastLeft = '';
+  shapeWanted.clear();
   for (const t of typers.values()) clearTimeout(t);
   typers.clear(); knockCards.clear();
   $('peerName').textContent = 'Connecting'; $('peerAvatar').textContent = '👤';
@@ -1865,7 +1905,16 @@ document.addEventListener('keydown', (e) => {
 
 // Closing or reloading the tab: tell the other side immediately (our keys die with the page,
 // so a reconnection could never succeed), then wipe.
-window.addEventListener('pagehide', () => { try { session?.quickBye(); session?.destroy('local'); } catch {} });
+// The transcript is wiped from the page too: browsers keep a page that was navigated away from
+// in the back/forward cache, and pressing Back would otherwise bring the conversation back.
+window.addEventListener('pagehide', () => {
+  if (!session && !code) return;
+  try { session?.quickBye(); } catch {}
+  try { teardown(); } catch {}
+  show('home');
+});
+// Restored from the back/forward cache: start from a clean page rather than a frozen one.
+window.addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
 
 // Expose a tiny hook for automated tests only when explicitly served in test mode.
 

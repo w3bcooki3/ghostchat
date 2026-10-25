@@ -356,7 +356,8 @@ a.icon-btn { text-decoration: none; }
 .paste-btn { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 36px; padding: 0 4px; border: 0; background: none; color: var(--ecto); font-weight: 500; font-size: 14px; }
 .paste-btn .ico { width: 18px; height: 18px; }
 #joinForm .btn-xl { margin-top: 16px; }
-#joinBtn:not(.is-ready) { background: color-mix(in srgb, var(--ecto) calc(45% * var(--glow-k)), transparent); box-shadow: none; }
+/* Not ready yet: a quiet but legible button in every theme (light themes have no glow to dim). */
+#joinBtn:not(.is-ready) { background: var(--hull-3); color: var(--fog-2); box-shadow: inset 0 0 0 1px var(--line-2); }
 .join-or { display: flex; align-items: center; gap: 12px; margin-top: 6px; color: var(--mist); font-size: 13px; }
 .join-or::before, .join-or::after { content: ''; flex: 1; height: 1px; background: var(--line-2); }
 .create-card {
@@ -736,7 +737,7 @@ a.icon-btn { text-decoration: none; }
   @keyframes heroFloat { 50% { transform: translateY(-8px); } }
   .hero-word { margin-top: 6px; font: 400 clamp(46px, 15vw, 60px)/.9 var(--f-display); letter-spacing: .06em; color: var(--paper); text-shadow: 0 4px 30px color-mix(in srgb, var(--ink) 60%, transparent); }
   .hero-tag { margin: 0; font-size: 17px; color: var(--fog-2); }
-  .home-panel { padding: 0; gap: 12px; background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .home-panel { align-self: stretch; width: 100%; padding: 0; gap: 12px; background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
   .home-panel .chips { justify-content: space-between; margin-bottom: 4px; }
   .home-panel .chips .me-chip { flex: 0 1 auto; }
   .no-fog #home.is-on { background: radial-gradient(70% 40% at 50% 40%, color-mix(in srgb, var(--ecto) 16%, transparent), transparent 70%), var(--ink); }
@@ -928,8 +929,8 @@ html.booted .boot-fail { display: none; }
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); }
 .ether::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ecto) 45%, transparent), transparent); }
 .ether-row { display: flex; overflow: hidden; white-space: nowrap; font: 400 10.5px/1.1 var(--f-mono); letter-spacing: .12em; min-height: 12px; }
-.ether-row.out { color: color-mix(in srgb, var(--ecto) 62%, transparent); }
-.ether-row.in { justify-content: flex-end; color: color-mix(in srgb, var(--cool) 52%, transparent); }
+.ether-row.out { color: color-mix(in srgb, var(--ecto) 88%, var(--hull-2)); }
+.ether-row.in { justify-content: flex-end; color: color-mix(in srgb, var(--cool) 88%, var(--hull-2)); }
 .ether-txt.is-tick { animation: gc-tick .6s ease-out; }
 .ether-lock { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); border: 1px solid var(--ecto-line); }
 .ether-lock svg { width: 12px; height: 12px; fill: none; stroke: var(--ecto); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
@@ -1042,7 +1043,9 @@ html.dock .bubble { font-size: 16px; }
 }
 
 /* ── chat watermark ── */
-.chat-body .watermark { position: absolute; inset: 0; z-index: 0; display: grid; place-content: center; justify-items: center; gap: 6px; pointer-events: none; user-select: none; overflow: hidden; }
+.chat-body .watermark { position: absolute; inset: 0; z-index: 0; display: grid; place-content: center; justify-items: center; gap: 6px; pointer-events: none; user-select: none; overflow: hidden; transition: opacity .6s var(--ease); }
+/* The mark greets an empty conversation, then steps aside so it never sits behind text. */
+.chat-body:has(.msg) .watermark { opacity: 0; }
 .wm-word { font: 400 clamp(64px, 13vw, 200px)/.85 var(--f-display); letter-spacing: .06em; color: color-mix(in srgb, var(--paper) 2.8%, transparent); white-space: nowrap; }
 .wm-by { font: 500 clamp(11px, 1.1vw, 14px) var(--f-mono); letter-spacing: .4em; text-transform: uppercase; color: color-mix(in srgb, var(--ecto) 9%, transparent); }
 .chat-body .messages { position: relative; z-index: 1; }
@@ -1276,7 +1279,7 @@ body { background: var(--ink) radial-gradient(var(--grid) 1px, transparent 1.4px
 .ether-row::before { flex: none; font-weight: 600; letter-spacing: .12em; color: var(--signal); }
 .ether-row.out::before { content: 'TX'; }
 .ether-row.in::before { content: 'RX'; }
-.ether-row.out, .ether-row.in { justify-content: flex-start; color: color-mix(in srgb, var(--paper) 45%, transparent); }
+.ether-row.out, .ether-row.in { justify-content: flex-start; color: color-mix(in srgb, var(--paper) 66%, var(--hull-2)); }
 .verify-chip { min-height: 32px; padding: 0 12px 0 10px; border-radius: 8px; border-color: color-mix(in srgb, var(--amber) 55%, transparent); color: var(--amber); background: color-mix(in srgb, var(--amber) 7%, transparent); font: 600 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; }
 .verify-chip:not(.is-verified) svg { animation: blink 1.6s ease-in-out infinite; }
 .verify-chip.is-verified { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: color-mix(in srgb, var(--ok) 10%, transparent); }

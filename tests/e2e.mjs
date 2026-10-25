@@ -328,8 +328,25 @@ await test('constant-rate mode: syncs to the peer and every frame on the wire is
   assert(bytes === msgs * 4130, `all frames 4130 bytes (4096 padded + 34 overhead): ${bytes} / ${msgs}`);
   await S.B.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent.endsWith('split into fragments'), null, { timeout: 5000 });
   assert(await S.B.locator('.msg.them .bubble', { hasText: 'hidden in the stream' }).count() === 1, 'short message delivered');
+  // The peer can't switch off protection A chose: a forged "off" changes nothing.
+  assert(await S.B.isChecked('#optShape'), 'B: shows it on');
+  await S.B.evaluate(() => window.__ghost.session.send({ t: 'shape', on: false }));
+  await S.A.waitForTimeout(800);
+  assert(await S.A.evaluate(() => window.__ghost.session.shaping) === true, 'A still shaping after the peer said off');
+  assert(await S.A.isChecked('#optShape'), 'A: toggle still on');
+  // B adds its own request; A withdrawing then leaves it on, because B still wants it.
   await S.B.click('#panelBtn'); await S.B.click('label:has(#optShape)'); await S.B.click('#panelClose');
-  await S.A.waitForSelector('.sys >> text=turned off constant-rate', { timeout: 5000 });
+  await S.A.waitForTimeout(500);
+  await S.A.click('#panelBtn'); await S.A.click('label:has(#optShape)'); await S.A.click('#panelClose');
+  await S.A.waitForSelector('.sys >> text=It stays on here because', { timeout: 5000 }).catch(() => {});
+  await S.B.waitForSelector('.sys >> text=It stays on here because you turned it on', { timeout: 5000 });
+  assert(await S.A.evaluate(() => window.__ghost.session.shaping) === true, 'A still shaping: B wants it');
+  // Once B withdraws too, it's off for both.
+  await S.B.click('#panelBtn'); await S.B.click('label:has(#optShape)'); await S.B.click('#panelClose');
+  await S.A.waitForSelector('.sys >> text=turned off constant-rate traffic.', { timeout: 5000 });
+  await S.A.waitForFunction(() => window.__ghost.session.shaping === false, null, { timeout: 3000 });
+  assert(await S.B.evaluate(() => window.__ghost.session.shaping) === false, 'B stopped shaping');
+  assert(!(await S.B.isChecked('#optShape')) && !(await S.A.isChecked('#optShape')), 'toggles off');
 });
 
 await test('disappearing messages vanish on both sides', async () => {
@@ -356,6 +373,19 @@ await test('ending the session notifies the peer and wipes local state', async (
   await S.B.waitForSelector('.sys.is-bad >> text=ended the session', { timeout: 10000 });
   assert(await S.B.isDisabled('#input'), 'composer should be disabled');
   await S.A.context().close(); await S.B.context().close();
+});
+
+await test('navigating away and pressing Back does not bring the conversation back', async () => {
+  const { A, B } = await pair('Ann', 'Ben');
+  await say(A, 'back-cache secret');
+  await B.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent === 'back-cache secret', null, { timeout: 8000 });
+  await A.goto('https://www.google.com/');
+  await B.waitForSelector('.sys >> text=/ left|ended the session/', { timeout: 10000 });
+  await A.goBack();
+  await A.waitForSelector('#home.is-on', { timeout: 10000 });
+  assert(await A.locator('.msg').count() === 0, 'transcript restored from the back/forward cache');
+  assert(!(await A.content()).includes('back-cache secret'), 'message text still in the page');
+  await A.context().close(); await B.context().close();
 });
 
 await test('joining a room that does not exist explains what happened', async () => {
@@ -562,6 +592,32 @@ await test('groups: unsend all mine; only the host can clear the chat for everyo
   await A.click('#panelClose');
 });
 
+await test('groups: a member reusing someone else\'s message ID can\'t hide, replace or edit their message', async () => {
+  const { A, B, C } = G3;
+  const mid = 'abcdef0123456789';
+  const has = (p, t) => p.waitForFunction((x) => [...document.querySelectorAll('.msg.them .bubble span:not(.quote)')].some((b) => b.textContent === x), t, { timeout: 8000 });
+  const gone = (p, t) => p.waitForFunction((x) => ![...document.querySelectorAll('.msg.them .bubble span:not(.quote)')].some((b) => b.textContent === x), t, { timeout: 8000 });
+  // Cat claims the ID at Ann's first; then Ben's real message with the same ID arrives.
+  await C.evaluate((m) => { const s = window.__ghost.session; s.sendTo(s.hostId, { t: 'msg', mid: m, text: 'squatter' }); }, mid);
+  await has(A, 'squatter');
+  await B.evaluate((m) => window.__ghost.session.send({ t: 'msg', mid: m, text: 'the real one' }), mid);
+  await has(A, 'the real one');
+  assert(await A.locator('.msg.them .bubble', { hasText: 'squatter' }).count() === 1, 'both shown, each under its own author');
+  // An edit naming that ID changes only the sender's own message: Cat's edit hits Cat's.
+  await C.evaluate((m) => { const s = window.__ghost.session; s.sendTo(s.hostId, { t: 'edit', target: m, text: 'cat edited' }); }, mid);
+  await has(A, 'cat edited');
+  await has(A, 'the real one');
+  await B.evaluate((m) => window.__ghost.session.send({ t: 'edit', target: m, text: 'the real one, edited' }), mid);
+  await has(A, 'the real one, edited');
+  await has(A, 'cat edited');
+  // Each can unsend only their own.
+  await C.evaluate((m) => { const s = window.__ghost.session; s.sendTo(s.hostId, { t: 'unsend', target: m }); }, mid);
+  await gone(A, 'cat edited');
+  await has(A, 'the real one, edited');
+  await B.evaluate((m) => window.__ghost.session.send({ t: 'unsend', target: m }), mid);
+  await gone(A, 'the real one, edited');
+});
+
 await test('groups: the host decides who may invite, and can remove someone', async () => {
   const { A, B, C } = G3;
   await C.click('#panelBtn');
@@ -660,6 +716,9 @@ await test('phones: home, join, room and chat screens fit without scrolling or s
   for (const vp of [{ width: 360, height: 640 }, { width: 390, height: 664 }]) {
     const A = await page('Phone A', vp), B = await page('Phone B', vp);
     await check(A, 'home');
+    await setName(A, 'Lol');   // a short name must not shrink the buttons
+    const [cw, jw, vw] = await A.evaluate(() => [document.getElementById('createBtn').offsetWidth, document.getElementById('openJoinBtn').offsetWidth, innerWidth]);
+    assert(cw === jw && cw >= vw - 48, `home buttons shrank with a short name: ${cw}/${jw} of ${vw}`);
     const code = await host(A, 'Ana');
     await check(A, 'room screen');
     await B.goto(BASE + '#' + code.replace(/\s+/g, '-'));
@@ -712,7 +771,7 @@ await test('colour themes: every theme applies, Auto follows the device, nothing
 // ───────────────────────────── report ─────────────────────────────
 await browser.close();
 for (const p of procs) p.kill();
-const unexpected = problems.filter((p) => !/protocol violation/.test(p) && !/connect to 'blob:|cannot load blob:/.test(p) && !/page error: framed/.test(p));
+const unexpected = problems.filter((p) => !/protocol violation/.test(p) && !/connect(?:ing)? to 'blob:|cannot load blob:/i.test(p) && !/page error: framed/.test(p));
 console.log(`\n${passed} passed, ${failed} failed`);
 if (unexpected.length) { console.log('\nBrowser problems:'); for (const p of [...new Set(unexpected)]) console.log('  ' + p); }
 process.exit(failed || unexpected.length ? 1 : 0);

@@ -166,7 +166,8 @@ function renderMatrix() {
   const t = $('matrix');
   t.replaceChildren();
   const thead = el('thead'), hr = el('tr');
-  hr.append(el('th', null, ''));
+  const corner = el('th'); corner.scope = 'col'; corner.append(el('span', 'visually-hidden', 'What they see'));
+  hr.append(corner);
   for (const o of OBSERVERS) { const th = el('th', null, o.short); th.scope = 'col'; th.dataset.col = o.id; hr.append(th); }
   thead.append(hr);
   const tbody = el('tbody');

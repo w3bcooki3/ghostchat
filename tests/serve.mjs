@@ -15,7 +15,7 @@ http.createServer((req, res) => {
   let p = path.normalize(decodeURIComponent(url.pathname)).replace(/^([/\\])+/, '');
   if (!p || p.endsWith('/')) p += 'index.html';
   const file = path.join(root, p);
-  if (!file.startsWith(root)) { res.writeHead(403).end(); return; }
+  if (file !== root && !file.startsWith(root + path.sep)) { res.writeHead(403).end(); return; }
   fs.readFile(file, (err, buf) => {
     if (err) { res.writeHead(404).end('not found'); return; }
     let body = buf;

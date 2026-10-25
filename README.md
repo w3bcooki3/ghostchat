@@ -6,7 +6,7 @@
 
 **Say it once. Then it's gone.**
 
-Private, end-to-end encrypted chat between two browsers.
+Private, end-to-end encrypted chat between browsers, for two to six people.
 No account, no app to install, nothing stored. Close the tab and it's gone.
 
 [**Open Ghost Chat →**](https://w3bcooki3.github.io/ghostchat/)
@@ -19,7 +19,7 @@ No account, no app to install, nothing stored. Close the tab and it's gone.
 
 ## What it is
 
-Ghost Chat is a one-to-one conversation that lives only in two browser tabs: yours and the person you invite. Messages and files are encrypted on your device before they leave it, and only the other person's browser can decrypt them. There are no accounts, no phone numbers, no contact lists and no message history on any server. When either of you closes the tab, the conversation and its keys are gone.
+Ghost Chat is a conversation that lives only in browser tabs: yours and those of the people you let in (up to six in a room). Messages and files are encrypted on your device before they leave it, and only the recipients' browsers can decrypt them. There are no accounts, no phone numbers, no contact lists and no message history on any server. When you close the tab, your copy of the conversation and its keys are gone.
 
 It works on phones and computers, on home Wi-Fi, mobile data, office networks and VPNs.
 

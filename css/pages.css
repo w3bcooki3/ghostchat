@@ -9,7 +9,7 @@
 :root {
   --ink: #05080A; --hull: #0C1216; --hull-2: #121A1F; --hull-3: #1A242A;
   --line: rgba(160, 200, 210, .10); --line-2: rgba(160, 200, 210, .18);
-  --paper: #E4ECEE; --fog: #8A9BA3; --mist: #5A6A72;
+  --paper: #E4ECEE; --fog: #8A9BA3; --mist: #7E8F98;
   --ecto: #62F2B4; --ecto-dim: rgba(98, 242, 180, .12); --ecto-line: rgba(98, 242, 180, .32); --ecto-ink: #03140C;
   --cyan: #5BC8F2; --cyan-dim: rgba(91, 200, 242, .12);
   --amber: #F2B544; --amber-dim: rgba(242, 181, 68, .14);

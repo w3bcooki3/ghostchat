@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "test": "node --test tests/protocol.test.mjs tests/connectivity.test.mjs",
+    "test": "node --test tests/project.test.mjs tests/protocol.test.mjs tests/connectivity.test.mjs tests/session.test.mjs",
     "test:e2e": "node tests/e2e.mjs && node tests/e2e-connectivity.mjs",
     "serve": "node tests/serve.mjs",
     "serve:local": "node tests/run-local.mjs",

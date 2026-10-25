@@ -20,13 +20,13 @@ export const SIGNALING = {
 //   * Cloudflare Realtime TURN (1,000 GB/month free): deploy relay/turn-credentials.js and
 //     put its URL here, e.g. 'https://ghostchat-turn.<you>.workers.dev/'
 //   * Metered (free tier): 'https://<app>.metered.live/api/v1/turn/credentials?apiKey=<key>'
-// Then add the URL's origin to connect-src in index.html's Content-Security-Policy.
+// Then add the URL's origin to connect-src in index.html's Content-Security-Policy and _headers.
 export const TURN_ENDPOINT = null;
 
 // RELAY_URL: your Ghost Chat WebSocket relay (relay/ws-relay.js on Cloudflare Workers, free
 // plan, no card). The fallback that works on almost any network — VPNs, phones on mobile
 // data, strict NAT — because it's ordinary HTTPS on port 443. It only ever carries end-to-end
-// encrypted frames. Add its origin (wss://…) to connect-src in index.html's CSP.
+// encrypted frames. Add its origin (wss://…) to connect-src in index.html's CSP and in _headers.
 export const RELAY_URL = 'wss://ghostchat-relay.mrsaini281-678.workers.dev';
 // Joiners try a direct connection first and bring in the relay after this long (or at once
 // if the direct attempt fails, or in "Hide my IP" mode, where the relay is what hides it).

@@ -7,7 +7,7 @@ For developers and self-hosters. If you just want to chat, open [Ghost Chat](htt
 2. **Settings → Pages → Deploy from a branch**, then choose `main` and `/ (root)`.
 3. Deploy your own relay (see [relay/README.md](../relay/README.md)) and point `js/config.js` at it. Without a relay, people on VPNs and mobile data may not be able to connect.
 
-The site is static: `index.html`, `css/`, `js/`, `fonts/` and `vendor/`. It works on any static host. If your host reads `_headers` (Cloudflare Pages, Netlify), security headers are applied too.
+The site is static: `index.html`, `css/`, `js/`, `fonts/` and `vendor/`. It works on any static host. If your host reads `_headers` (Cloudflare Pages, Netlify), security headers are applied too. If you change the relay, signaling server or TURN endpoint, update `connect-src` in **both** `index.html` and `_headers`; `npm test` checks they match.
 
 ## Single-file build
 ```bash
@@ -23,7 +23,7 @@ npm run serve:local     # local signaling server, relay stand-in and the app
 
 ## Tests
 ```bash
-npm test                # protocol and connectivity unit tests
+npm test                # unit tests: protocol, session, connectivity, project integrity (imports, CSP vs _headers)
 npm run test:e2e        # real-browser tests: two Chromium windows chatting, plus network failure cases
 ```
 
@@ -40,5 +40,7 @@ npm run test:e2e        # real-browser tests: two Chromium windows chatting, plu
 | `fonts/` | Doto, Manrope and JetBrains Mono (SIL Open Font License) |
 | `tools/build.mjs` | The single-file build |
 | `tests/` | Unit and browser tests |
+| `_headers` | Security headers for Netlify / Cloudflare Pages |
+| `.github/workflows/ci.yml` | CI: unit tests, reproducible build check, browser tests |
 
 The protocol is specified in [SECURITY.md](../SECURITY.md), and review history is in [AUDIT.md](AUDIT.md).

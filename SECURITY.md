@@ -17,7 +17,7 @@ This document says exactly what Ghost Chat protects, how, and where its limits a
 | **Forward secrecy** | Fresh ephemeral keys for every connection. Within a connection, each direction uses a symmetric hash ratchet with a new key for every message, and old chain keys are overwritten. Handshake secrets are wiped when the handshake ends, whether it succeeds or fails. |
 | **Length hiding** | Plaintexts are padded to fixed buckets: 256 B, 1 KB, 4 KB, 16 KB or 64 KB. |
 | **Constant-rate traffic (optional)** | Exactly one 4 KB frame every 250 ms in each direction, real or filler. Longer messages are split into 4 KB fragments. Observers can't tell when, or how much, you talk. |
-| **No persistence** | Nothing is written to localStorage, IndexedDB, cookies or caches. State lives only in memory. |
+| **No persistence** | Nothing is written to localStorage, IndexedDB, cookies or caches. State lives only in memory. When the page is left (closed, reloaded or navigated away from), the session ends and the transcript is removed from the page, so the browser's back/forward cache can't bring it back; a page restored from that cache reloads from scratch. |
 | **Peer content can't run code** | Peer text is inserted with `textContent` only. Files are never rendered by MIME type: only PNG, JPEG, GIF and WebP identified by magic bytes display inline (as `<img>`), and everything else downloads as `application/octet-stream`. A strict Content-Security-Policy (`script-src 'self'`, `default-src 'none'`) is a second barrier. |
 
 ## What it does **not** protect against
@@ -86,7 +86,7 @@ kind   = 1 JSON message · 2 file chunk (fileId ‖ seq ‖ bytes) · 3 fragment
 The receiver accepts only `counter == expected`, because the WebRTC data channels here are reliable and ordered. Any deviation is an attack or a bug, and it closes the link.
 
 ### Constant-rate traffic
-- When either person turns it on, both sides send one frame padded to 4 KB every 250 ms. A frame carries the next queued message or a filler. That is 4,130 bytes on the wire per frame, about 59.5 MB per hour in each direction.
+- When anyone in the room turns it on, everyone sends one frame padded to 4 KB every 250 ms. It stays on while anyone wants it: each person can only withdraw their *own* request, so another member (or a forged `shape` message) can never switch off protection you chose. If the person who asked for it leaves, it turns off and the chat says so. A frame carries the next queued message or a filler. That is 4,130 bytes on the wire per frame, about 59.5 MB per hour in each direction.
 - JSON messages larger than one slot are split into up to 16 fragments.
 - The clock runs in a Web Worker, so browsers' background-tab timer throttling doesn't change the rhythm. Some browsers may still slow a hidden tab.
 - **Still visible:** file transfers (their chunks and control messages are sent directly, so a file's approximate size and timing show), the final goodbye when a session ends, and connection setup and teardown.
@@ -94,7 +94,7 @@ The receiver accepts only `counter == expected`, because the WebRTC data channel
 ### Delivery
 Messages carry a random 64-bit `mid`. The sender keeps each one in an outbox until it is acknowledged, and resends after a reconnect. The receiver de-duplicates by `mid`.
 
-Files stream in 60 KiB chunks with backpressure. Receivers enforce the declared size, chunk order, a 100 MB cap, and at most 4 concurrent transfers.
+Files stream in 60 KiB chunks with backpressure. Receivers enforce the declared size, chunk order, full 60 KiB chunks (only the last may be shorter), a 100 MB cap, and at most 4 concurrent transfers. Received files are always handled as opaque bytes (`application/octet-stream`).
 
 ## Verifying a release
 
@@ -107,7 +107,7 @@ git clone https://github.com/w3bcooki3/ghostchat && cd ghostchat && node tools/b
 ```
 
 ## Hosting recommendations
-- Serve over HTTPS with the headers in [`_headers`](./_headers). They add `frame-ancestors 'none'`, which a `<meta>` CSP cannot set; the app also refuses to run inside a frame. GitHub Pages can't set headers; the CSP `<meta>` still applies there.
+- Serve over HTTPS with the headers in [`_headers`](./_headers) (Netlify and Cloudflare Pages read it). They add `frame-ancestors 'none'`, which a `<meta>` CSP cannot set, and `Cache-Control: no-store` for the pages; the app also refuses to run inside a frame. Browsers enforce the header CSP and the `<meta>` CSP together, so keep them identical: `npm test` fails if they differ. GitHub Pages can't set headers; the CSP `<meta>` still applies there.
 - For privacy from the public signaling service, run your own signaling server (`npx peerjs --port 9000`) and your own TURN server (for example coturn). Then update `js/config.js` and the CSP `connect-src`.
 - Vendored code (no CDN in the trust path):
   - `vendor/peerjs-1.5.5.min.js`: npm `peerjs@1.5.5`, MIT.
@@ -129,6 +129,8 @@ A room can hold up to six browsers. It is built from the same two-party protocol
 **What the host could do.** The host chooses every pair code, so a malicious host could try to place itself in the middle of a pair it introduced. It cannot do so silently: the two members' safety number for each other would then differ. Verify each person you share sensitive things with. A host also sees who is in the room, and can remove people.
 
 **Identity.** A message's author is the pair session it arrived on, never a field in the message, so one member cannot pose as another. Only the author can edit or unsend a message. Room-control messages (introductions, settings, removals, "clear for everyone") are accepted only from the host's pair session.
+
+**Message IDs.** A message carries the same random ID to every member, so a member who has seen it could send their own message under that ID to someone the original hasn't reached yet. That can't hide or replace the original: a clash is stored separately, per author, and edits and unsends only ever apply to the sender's own message. Replies and reactions name only the ID, so under a deliberate clash they may attach to the impostor's copy; that affects context shown on screen, never authorship.
 
 **Removing someone.** The host tells every member to hang up on that person, then hangs up itself. Each member's browser closes its pair with them, so they receive nothing more. A modified client could ignore the instruction; a member who keeps talking to a removed person is choosing to.
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/51UcYAVCDMgBTJSL3dvQcmY+PnXKbGOzweMdOWJZ+Q=' 'sha256-s++ef6KVy/zs5OdzwBcS87EjfzgwNS8GwuuoFCwS3qI='; style-src 'sha256-6ptPp1Udvn6aodF90/I1iYX2DIf0evb2Cbh5iCuBmpo='; font-src data:; img-src blob: data:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com wss://ghostchat-relay.mrsaini281-678.workers.dev; worker-src blob:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/51UcYAVCDMgBTJSL3dvQcmY+PnXKbGOzweMdOWJZ+Q=' 'sha256-7CSWLgV80RvdL65uqlvC0O4KSpRenqAdO6dVVWGaYtM='; style-src 'sha256-cqwgvtH+youqtSO9sBI0CX19C9YjHDMxs2+OKjyfOdU='; font-src data:; img-src blob: data:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com wss://ghostchat-relay.mrsaini281-678.workers.dev; worker-src blob:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F1F0EC">
@@ -368,7 +368,8 @@ a.icon-btn { text-decoration: none; }
 .paste-btn { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 36px; padding: 0 4px; border: 0; background: none; color: var(--ecto); font-weight: 500; font-size: 14px; }
 .paste-btn .ico { width: 18px; height: 18px; }
 #joinForm .btn-xl { margin-top: 16px; }
-#joinBtn:not(.is-ready) { background: color-mix(in srgb, var(--ecto) calc(45% * var(--glow-k)), transparent); box-shadow: none; }
+/* Not ready yet: a quiet but legible button in every theme (light themes have no glow to dim). */
+#joinBtn:not(.is-ready) { background: var(--hull-3); color: var(--fog-2); box-shadow: inset 0 0 0 1px var(--line-2); }
 .join-or { display: flex; align-items: center; gap: 12px; margin-top: 6px; color: var(--mist); font-size: 13px; }
 .join-or::before, .join-or::after { content: ''; flex: 1; height: 1px; background: var(--line-2); }
 .create-card {
@@ -748,7 +749,7 @@ a.icon-btn { text-decoration: none; }
   @keyframes heroFloat { 50% { transform: translateY(-8px); } }
   .hero-word { margin-top: 6px; font: 400 clamp(46px, 15vw, 60px)/.9 var(--f-display); letter-spacing: .06em; color: var(--paper); text-shadow: 0 4px 30px color-mix(in srgb, var(--ink) 60%, transparent); }
   .hero-tag { margin: 0; font-size: 17px; color: var(--fog-2); }
-  .home-panel { padding: 0; gap: 12px; background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .home-panel { align-self: stretch; width: 100%; padding: 0; gap: 12px; background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
   .home-panel .chips { justify-content: space-between; margin-bottom: 4px; }
   .home-panel .chips .me-chip { flex: 0 1 auto; }
   .no-fog #home.is-on { background: radial-gradient(70% 40% at 50% 40%, color-mix(in srgb, var(--ecto) 16%, transparent), transparent 70%), var(--ink); }
@@ -940,8 +941,8 @@ html.booted .boot-fail { display: none; }
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); }
 .ether::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ecto) 45%, transparent), transparent); }
 .ether-row { display: flex; overflow: hidden; white-space: nowrap; font: 400 10.5px/1.1 var(--f-mono); letter-spacing: .12em; min-height: 12px; }
-.ether-row.out { color: color-mix(in srgb, var(--ecto) 62%, transparent); }
-.ether-row.in { justify-content: flex-end; color: color-mix(in srgb, var(--cool) 52%, transparent); }
+.ether-row.out { color: color-mix(in srgb, var(--ecto) 88%, var(--hull-2)); }
+.ether-row.in { justify-content: flex-end; color: color-mix(in srgb, var(--cool) 88%, var(--hull-2)); }
 .ether-txt.is-tick { animation: gc-tick .6s ease-out; }
 .ether-lock { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); border: 1px solid var(--ecto-line); }
 .ether-lock svg { width: 12px; height: 12px; fill: none; stroke: var(--ecto); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
@@ -1054,7 +1055,9 @@ html.dock .bubble { font-size: 16px; }
 }
 
 /* ── chat watermark ── */
-.chat-body .watermark { position: absolute; inset: 0; z-index: 0; display: grid; place-content: center; justify-items: center; gap: 6px; pointer-events: none; user-select: none; overflow: hidden; }
+.chat-body .watermark { position: absolute; inset: 0; z-index: 0; display: grid; place-content: center; justify-items: center; gap: 6px; pointer-events: none; user-select: none; overflow: hidden; transition: opacity .6s var(--ease); }
+/* The mark greets an empty conversation, then steps aside so it never sits behind text. */
+.chat-body:has(.msg) .watermark { opacity: 0; }
 .wm-word { font: 400 clamp(64px, 13vw, 200px)/.85 var(--f-display); letter-spacing: .06em; color: color-mix(in srgb, var(--paper) 2.8%, transparent); white-space: nowrap; }
 .wm-by { font: 500 clamp(11px, 1.1vw, 14px) var(--f-mono); letter-spacing: .4em; text-transform: uppercase; color: color-mix(in srgb, var(--ecto) 9%, transparent); }
 .chat-body .messages { position: relative; z-index: 1; }
@@ -1288,7 +1291,7 @@ body { background: var(--ink) radial-gradient(var(--grid) 1px, transparent 1.4px
 .ether-row::before { flex: none; font-weight: 600; letter-spacing: .12em; color: var(--signal); }
 .ether-row.out::before { content: 'TX'; }
 .ether-row.in::before { content: 'RX'; }
-.ether-row.out, .ether-row.in { justify-content: flex-start; color: color-mix(in srgb, var(--paper) 45%, transparent); }
+.ether-row.out, .ether-row.in { justify-content: flex-start; color: color-mix(in srgb, var(--paper) 66%, var(--hull-2)); }
 .verify-chip { min-height: 32px; padding: 0 12px 0 10px; border-radius: 8px; border-color: color-mix(in srgb, var(--amber) 55%, transparent); color: var(--amber); background: color-mix(in srgb, var(--amber) 7%, transparent); font: 600 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; }
 .verify-chip:not(.is-verified) svg { animation: blink 1.6s ease-in-out infinite; }
 .verify-chip.is-verified { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: color-mix(in srgb, var(--ok) 10%, transparent); }
@@ -1549,7 +1552,7 @@ html[data-type="mono"] :is(.qa-txt b, .pp-text b, .kn-text b, .sn-who) { font-we
   <section class="home-intro">
     <div class="status-pill" aria-hidden="true"><span class="sp-dot"></span><span id="statusPill">BROWSER TO BROWSER</span></div>
     <h2 class="headline"><span id="headLine" class="hl-1">Say it once.</span><span class="gone hl-2">Then it's gone.</span></h2>
-    <p class="lede">An encrypted conversation between two browsers. No accounts, nothing stored, and the room code is the only way in. Close the tab and every message, file and key is wiped.</p>
+    <p class="lede">An encrypted conversation between browsers, for two to six people. No accounts, nothing stored, and the room code is the only way in. Close the tab and every message, file and key is wiped.</p>
     <a class="trust-link" href="security.html"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>Who can read what, and what Ghost Chat can't protect</a>
     <div id="apparition" class="apparition" aria-hidden="true"></div>
   </section>
@@ -1588,7 +1591,7 @@ html[data-type="mono"] :is(.qa-txt b, .pp-text b, .kn-text b, .sn-who) { font-we
 
     <section class="join-main">
       <div class="join-key" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/></svg></div>
-      <h2 id="joinTitle" class="join-title">Join a private chat</h2>
+      <h1 id="joinTitle" class="join-title">Join a private chat</h1>
       <p id="joinSub" class="join-sub">Enter the code you were sent, or paste the invite link.</p>
       <form id="joinForm" autocomplete="off" novalidate>
         <div class="code" role="group" aria-label="Room code, 20 characters" aria-describedby="codeHelp">
@@ -1624,7 +1627,7 @@ html[data-type="mono"] :is(.qa-txt b, .pp-text b, .kn-text b, .sn-who) { font-we
 <!-- ───────────── Connecting ───────────── -->
 <main id="connect" class="screen" aria-labelledby="connectTitle">
   <div class="connect-wrap">
-    <h2 id="connectTitle" class="connect-title">Your room</h2>
+    <h1 id="connectTitle" class="connect-title">Your room</h1>
     <div id="keycard" class="keycard">
       <div id="codeGroups" class="code-groups" aria-live="polite"></div>
       <div id="shareRow" class="share-row">
@@ -2723,13 +2726,13 @@ const SIGNALING = {
 //   * Cloudflare Realtime TURN (1,000 GB/month free): deploy relay/turn-credentials.js and
 //     put its URL here, e.g. 'https://ghostchat-turn.<you>.workers.dev/'
 //   * Metered (free tier): 'https://<app>.metered.live/api/v1/turn/credentials?apiKey=<key>'
-// Then add the URL's origin to connect-src in index.html's Content-Security-Policy.
+// Then add the URL's origin to connect-src in index.html's Content-Security-Policy and _headers.
 const TURN_ENDPOINT = null;
 
 // RELAY_URL: your Ghost Chat WebSocket relay (relay/ws-relay.js on Cloudflare Workers, free
 // plan, no card). The fallback that works on almost any network — VPNs, phones on mobile
 // data, strict NAT — because it's ordinary HTTPS on port 443. It only ever carries end-to-end
-// encrypted frames. Add its origin (wss://…) to connect-src in index.html's CSP.
+// encrypted frames. Add its origin (wss://…) to connect-src in index.html's CSP and in _headers.
 const RELAY_URL = 'wss://ghostchat-relay.mrsaini281-678.workers.dev';
 // Joiners try a direct connection first and bring in the relay after this long (or at once
 // if the direct attempt fails, or in "Hide my IP" mode, where the relay is what hides it).
@@ -4350,7 +4353,12 @@ class Session extends Emitter {
     const rec = this.incoming.get(fid);
     if (!rec) return; // cancelled/aborted transfer — ignore trailing chunks
     const data = payload.slice(12);
-    if (seq !== rec.seq || rec.got + data.length > rec.size) return this.abortIncoming(rec, 'corrupt transfer');
+    // Every real chunk carries 1..FILE_CHUNK bytes. Empty chunks would let a peer grow the
+    // chunk list (and this tab's memory) forever without ever reaching the declared size.
+    // Senders send full chunks and one shorter final chunk; anything else (e.g. a stream of
+    // 1-byte chunks, each costing far more memory than its byte) aborts.
+    const last = rec.got + data.length === rec.size;
+    if (!data.length || data.length > FILE_CHUNK || (data.length < FILE_CHUNK && !last) || seq !== rec.seq || rec.got + data.length > rec.size) return this.abortIncoming(rec, 'corrupt transfer');
     rec.seq++; rec.got += data.length; rec.chunks.push(data);
     const now = performance.now();
     if (now - rec.lastEmit > 120 || rec.got === rec.size) { rec.lastEmit = now; this.emit('file-progress', { fid, dir: 'in', done: rec.got, size: rec.size }); }
@@ -6032,6 +6040,7 @@ function onMemberLeft({ id, reason, isHost, wasReady }) {
   p.gone = true; p.ready = false; clearTimeout(p.announce); p.announce = null;
   typers.delete(id); renderTyping();
   lastLeft = name;
+  if (shapeWanted.delete(id) && !applyShape() && !session.ended) sys(`Constant-rate traffic is off: ${name}, who turned it on, left.`);   // their request leaves with them
   if (session.ended) return;
   const text = !wasReady ? `Couldn't connect to ${name}.`
     : reason === 'removed' ? (role === 'host' ? `You removed ${name} from the room.` : `The host removed ${name} from the room.`)
@@ -6362,7 +6371,7 @@ const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|\p{Emoji_Component}|‍|️|\s
 function newRecord(id, side, ts, extra = {}) {
   const el = h('div', 'msg ' + side + ' arrive');
   el.dataset.id = id;
-  const r = { id, side, ts, el, reacts: new Map(), delivered: side !== 'me', read: false, seen: false, ttl: 0, burnAt: 0, urls: [],
+  const r = { id, wid: id, side, ts, el, reacts: new Map(), delivered: side !== 'me', read: false, seen: false, ttl: 0, burnAt: 0, urls: [],
     from: null, to: new Set(side === 'me' && session ? session.memberIds() : []), deliveredTo: new Set(), readBy: new Set(), ...extra };
   msgs.set(id, r);
   // A flooding peer can't grow the page without bound: the oldest messages drop off.
@@ -6424,8 +6433,8 @@ function regroup() {
   }
 }
 
-function addText(side, { id, text, ts, ttl = 0, reply = null, from = null }) {
-  const r = newRecord(id, side, ts, { kind: 'text', text, ttl, from });
+function addText(side, { id, wid = id, text, ts, ttl = 0, reply = null, from = null }) {
+  const r = newRecord(id, side, ts, { kind: 'text', text, ttl, from, wid });
   const bubble = h('div', 'bubble');
   bubble.dir = 'auto';
   bubble.tabIndex = 0;
@@ -6465,7 +6474,7 @@ function applyEdit(r, text) {
   r.bubble.classList.remove('emoji-only');
   if (!r.editedEl) { r.editedEl = h('span', 'edited', 'edited'); r.bubble.append(r.editedEl); }
   flash(r.bubble, 'is-edited', 900);
-  if (replyTo?.mid === r.id) setReply(r);
+  if (replyTo?.key === r.id) setReply(r);
 }
 
 function jumpTo(mid) {
@@ -6516,7 +6525,7 @@ function removeRecord(r, animate = true) {
   const done = () => { r.el.remove(); r.urls.forEach(release); regroup(); };
   if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) { r.el.classList.add('dissolve'); setTimeout(done, 600); }
   else done();
-  if (replyTo?.mid === r.id) clearReply();
+  if (replyTo?.key === r.id) clearReply();
   if (editing === r) clearEdit();
 }
 
@@ -6562,7 +6571,7 @@ function markSeen() {
     if (r.side !== 'them' || r.seen) continue;
     r.seen = true;
     if (r.ttl) startBurn(r);
-    if (r.kind === 'text' && r.from) { if (!byAuthor.has(r.from)) byAuthor.set(r.from, []); byAuthor.get(r.from).push(r.id); }
+    if (r.kind === 'text' && r.from) { if (!byAuthor.has(r.from)) byAuthor.set(r.from, []); byAuthor.get(r.from).push(r.wid); }
   }
   // Each author is told only about their own messages.
   if (opts.receipts && session?.state === 'ready') for (const [id, ids] of byAuthor) session.sendTo(id, { t: 'read', ids: ids.slice(0, 200) });
@@ -6578,6 +6587,13 @@ window.addEventListener('blur', () => { if (opts.veil && $('chat').classList.con
 $('unveilBtn').onclick = () => { $('veil').hidden = true; markSeen(); $('input').focus(); };
 
 // ───────────────────────────── inbound ─────────────────────────────
+/** The record `from` authored under wire ID `mid`, wherever a clash put it; else null. */
+function authoredBy(from, mid) {
+  const r = msgs.get(mid);
+  if (r && r.side === 'them' && r.from === from) return r;
+  const alt = msgs.get(from + ':' + mid);
+  return alt && alt.side === 'them' && alt.from === from ? alt : null;
+}
 function onMessage(o) {
   const from = o.from;
   if (!from || !session) return;
@@ -6591,13 +6607,23 @@ function onMessage(o) {
       return;
     }
     case 'msg': {
-      if (typeof o.text !== 'string' || !o.text || !isMid(o.mid) || msgs.has(o.mid)) return;
+      if (typeof o.text !== 'string' || !o.text || !isMid(o.mid)) return;
+      // Everyone in a group receives the same message ID, so another member could reuse it to
+      // claim the slot before the real message arrives. A clash never replaces or hides a record:
+      // the newcomer is kept under a per-author key instead.
+      let key = o.mid;
+      const clash = msgs.get(o.mid);
+      if (clash) {
+        if (clash.side === 'them' && clash.from === from) return;   // a resend we already have
+        key = from + ':' + o.mid;
+        if (msgs.has(key)) return;
+      }
       const ttl = Number.isInteger(o.ttl) && o.ttl > 0 && o.ttl <= 86400 ? o.ttl : 0;
       // Quotes are resolved from our own copy of the conversation; the sender only names the message.
       const reply = o.reply && isMid(o.reply.mid) ? quoteFor(o.reply.mid) : null;
       const text = cleanText(o.text, LIMITS.maxText);
       if (!text.trim()) return;
-      addText('them', { id: o.mid, text, ts: Date.now(), ttl, reply, from });
+      addText('them', { id: key, wid: o.mid, text, ts: Date.now(), ttl, reply, from });
       typers.delete(from); renderTyping();
       notifyIncoming();
       return;
@@ -6617,7 +6643,7 @@ function onMessage(o) {
       renderTyping();
       return;
     case 'react': {
-      const r = msgs.get(o.target);
+      const r = isMid(o.target) && msgs.get(o.target);
       if (!r) return;
       r.reacts.set(from, REACTIONS.includes(o.emoji) ? o.emoji : null);
       renderReacts(r);
@@ -6626,16 +6652,16 @@ function onMessage(o) {
     case 'edit': {
       // Only the author can edit, only text, and the new text passes the same checks as a new message.
       if (!isMid(o.target) || typeof o.text !== 'string') return;
-      const r = msgs.get(o.target);
-      if (!r || r.side !== 'them' || r.from !== from || r.kind !== 'text') return;
+      const r = authoredBy(from, o.target);
+      if (!r || r.kind !== 'text') return;
       const text = cleanText(o.text, LIMITS.maxText);
       if (!text.trim() || text === r.text) return;
       applyEdit(r, text);
       return;
     }
     case 'unsend': {
-      const r = msgs.get(o.target);
-      if (r && r.side === 'them' && r.from === from) { removeRecord(r); sys(`${nameOf(from)} unsent a message.`); }
+      const r = isMid(o.target) && authoredBy(from, o.target);
+      if (r) { removeRecord(r); sys(`${nameOf(from)} unsent a message.`); }
       return;
     }
     case 'unsend-all': {
@@ -6652,7 +6678,7 @@ function onMessage(o) {
     }
     case 'shape': {
       const on = o.on === true;
-      if (on !== opts.shape) setShape(on, from);
+      if (on !== shapeWanted.has(from)) setShape(on, from);
       return;
     }
     case 'timer': {
@@ -6730,7 +6756,7 @@ function sendText() {
   const mid = uid();
   const o = { t: 'msg', mid, text, ttl: burnSecs || undefined };
   let reply = null;
-  if (replyTo) { reply = quoteFor(replyTo.mid); o.reply = { mid: replyTo.mid }; }
+  if (replyTo) { reply = quoteFor(replyTo.key); reply.mid = replyTo.key; o.reply = { mid: replyTo.mid }; }
   addText('me', { id: mid, text, ts: Date.now(), ttl: burnSecs, reply });
   session.send(o);
   input.value = ''; autosize(); $('sendBtn').disabled = true;
@@ -6740,7 +6766,7 @@ function sendText() {
 function setReply(r) {
   clearEdit();
   const text = r.kind === 'text' ? r.text : r.name;
-  replyTo = { mid: r.id, name: r.side === 'me' ? 'You' : nameOf(r.from), text: text.slice(0, 120) };
+  replyTo = { mid: r.wid, key: r.id, name: r.side === 'me' ? 'You' : nameOf(r.from), text: text.slice(0, 120) };
   $('replyName').textContent = replyTo.name;
   $('replyText').textContent = replyTo.text;
   $('replyBar').hidden = false;
@@ -6783,7 +6809,7 @@ function toggleReact(r, e) {
   const mine = r.reacts.get('me') === e ? null : e;
   r.reacts.set('me', mine);
   renderReacts(r);
-  session?.send({ t: 'react', target: r.id, emoji: mine });
+  session?.send({ t: 'react', target: r.wid, emoji: mine });
 }
 // Phones and small screens get bottom sheets instead of popovers.
 const sheetMode = () => matchMedia('(max-width: 640px), (pointer: coarse)').matches;
@@ -7089,17 +7115,38 @@ $('panelClose').onclick = () => openPanel(false);
 $('optReceipts').onchange = (e) => { opts.receipts = e.target.checked; };
 $('optTyping').onchange = (e) => { opts.typing = e.target.checked; if (!opts.typing) stopTyping(); };
 $('optVeil').onchange = (e) => { opts.veil = e.target.checked; };
-$('optShape').onchange = (e) => { setShape(e.target.checked, 'me'); session?.send({ t: 'shape', on: opts.shape }); };
+// The toggle shows whether it's on; clicking it adds or withdraws YOUR request.
+$('optShape').onchange = () => {
+  const want = !opts.shape;
+  setShape(want, 'me');
+  session?.send({ t: 'shape', on: want });
+  if (!want && shapeOn()) toast('It stays on while someone else in the room has it on');
+  else if (want) toast('Constant-rate traffic stays on until you turn it off');
+};
 
-// Constant-rate traffic: both sides send identical frames on a fixed clock (see SECURITY.md).
-function setShape(on, by) {
-  opts.shape = on;
+// Constant-rate traffic: identical frames on a fixed clock (see SECURITY.md). It is ON while
+// anyone in the room wants it, and each person can only withdraw their OWN request: someone
+// else turning it off never switches off protection you chose.
+const shapeWanted = new Set();   // member ids who asked for it
+const shapeOn = () => opts.shape || [...shapeWanted].some((id) => people.has(id) && !people.get(id).gone);
+function applyShape() {
+  const on = shapeOn();
   $('optShape').checked = on;
-  session?.setShaping(on);
-  if (by) {
-    const who = by === 'me' ? 'You' : nameOf(by);
-    sys(on ? `${who} turned on constant-rate traffic. Observers can no longer tell when ${inGroup() ? 'anyone here' : 'either of you'} is typing or sending.` : `${who} turned off constant-rate traffic.`, on ? 'is-good' : '');
-  }
+  if (session && !session.ended && session.shaping !== on) session.setShaping(on);
+  return on;
+}
+/** by: 'me' (my own toggle), null (privacy preset at start), or the member id who asked. */
+function setShape(on, by) {
+  const was = shapeOn();
+  if (!by || by === 'me') opts.shape = on;
+  else if (on) shapeWanted.add(by); else shapeWanted.delete(by);
+  const now = applyShape();
+  if (!by) return;
+  const who = by === 'me' ? 'You' : nameOf(by);
+  const scope = inGroup() ? 'anyone here' : 'either of you';
+  if (on && !was) sys(`${who} turned on constant-rate traffic. Observers can no longer tell when ${scope} is typing or sending.`, 'is-good');
+  else if (!on && !now) sys(`${who} turned off constant-rate traffic.`);
+  else if (!on && by !== 'me') sys(`${who} turned off constant-rate traffic on their side. It stays on here because ${opts.shape ? 'you turned it on' : 'someone else has it on'}.`);
 }
 
 // ───────────────────────────── privacy preset (home screen) ─────────────────────────────
@@ -7185,6 +7232,7 @@ function resetChat() {
   $('messages').replaceChildren();
   for (const p of people.values()) clearTimeout(p.announce);
   people.clear(); selPerson = null; lastLeft = '';
+  shapeWanted.clear();
   for (const t of typers.values()) clearTimeout(t);
   typers.clear(); knockCards.clear();
   $('peerName').textContent = 'Connecting'; $('peerAvatar').textContent = '👤';
@@ -7280,7 +7328,16 @@ document.addEventListener('keydown', (e) => {
 
 // Closing or reloading the tab: tell the other side immediately (our keys die with the page,
 // so a reconnection could never succeed), then wipe.
-window.addEventListener('pagehide', () => { try { session?.quickBye(); session?.destroy('local'); } catch {} });
+// The transcript is wiped from the page too: browsers keep a page that was navigated away from
+// in the back/forward cache, and pressing Back would otherwise bring the conversation back.
+window.addEventListener('pagehide', () => {
+  if (!session && !code) return;
+  try { session?.quickBye(); } catch {}
+  try { teardown(); } catch {}
+  show('home');
+});
+// Restored from the back/forward cache: start from a clean page rather than a frozen one.
+window.addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
 
 // Expose a tiny hook for automated tests only when explicitly served in test mode.
 

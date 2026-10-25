@@ -774,7 +774,12 @@ export class Session extends Emitter {
     const rec = this.incoming.get(fid);
     if (!rec) return; // cancelled/aborted transfer — ignore trailing chunks
     const data = payload.slice(12);
-    if (seq !== rec.seq || rec.got + data.length > rec.size) return this.abortIncoming(rec, 'corrupt transfer');
+    // Every real chunk carries 1..FILE_CHUNK bytes. Empty chunks would let a peer grow the
+    // chunk list (and this tab's memory) forever without ever reaching the declared size.
+    // Senders send full chunks and one shorter final chunk; anything else (e.g. a stream of
+    // 1-byte chunks, each costing far more memory than its byte) aborts.
+    const last = rec.got + data.length === rec.size;
+    if (!data.length || data.length > FILE_CHUNK || (data.length < FILE_CHUNK && !last) || seq !== rec.seq || rec.got + data.length > rec.size) return this.abortIncoming(rec, 'corrupt transfer');
     rec.seq++; rec.got += data.length; rec.chunks.push(data);
     const now = performance.now();
     if (now - rec.lastEmit > 120 || rec.got === rec.size) { rec.lastEmit = now; this.emit('file-progress', { fid, dir: 'in', done: rec.got, size: rec.size }); }
