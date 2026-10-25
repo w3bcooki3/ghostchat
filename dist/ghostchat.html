@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/51UcYAVCDMgBTJSL3dvQcmY+PnXKbGOzweMdOWJZ+Q=' 'sha256-7CSWLgV80RvdL65uqlvC0O4KSpRenqAdO6dVVWGaYtM='; style-src 'sha256-cqwgvtH+youqtSO9sBI0CX19C9YjHDMxs2+OKjyfOdU='; font-src data:; img-src blob: data:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com wss://ghostchat-relay.mrsaini281-678.workers.dev; worker-src blob:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/51UcYAVCDMgBTJSL3dvQcmY+PnXKbGOzweMdOWJZ+Q=' 'sha256-7CSWLgV80RvdL65uqlvC0O4KSpRenqAdO6dVVWGaYtM='; style-src 'sha256-ZXM8QpJ26bKu4Y/v6IRoc2y7bolUniYMZrGWMF/JP7s='; font-src data:; img-src blob: data:; media-src 'none'; connect-src https://0.peerjs.com wss://0.peerjs.com wss://ghostchat-relay.mrsaini281-678.workers.dev; worker-src blob:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F1F0EC">
@@ -1529,6 +1529,59 @@ html[data-type="mono"] { --f-ui: 'JetBrains Mono', ui-monospace, monospace; --f-
 html[data-type="mono"] :is(.peer-name, .pid-name, .brand, .headline, .hero-word, .wm-word, .code-group, .code-sep, .safety-number, .sn-card-grid) { font-weight: 500 !important; letter-spacing: -.01em !important; }
 html[data-type="mono"] :is(.headline, .hero-word) { letter-spacing: -.03em !important; }
 html[data-type="mono"] :is(.qa-txt b, .pp-text b, .kn-text b, .sn-who) { font-weight: 500; }
+
+/* ───────── v3.1 polish: the original layout, measured and tidied ─────────
+   Nothing new is introduced here; these rules fix rhythm, alignment, hierarchy and a few
+   rough edges found when the home, join and room screens were reviewed side by side. */
+
+/* home, desktop: centre the copy block against the ghost instead of pinning it to the top */
+@media (min-width: 861px) and (min-height: 561px) {
+  #home.is-on {
+    grid-template-rows: auto minmax(0, 1fr) auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "top top" ". stage" "intro stage" "panel stage" ". stage" "ticker ticker";
+    row-gap: 0;
+  }
+  .home-top { padding-bottom: 0; }
+  .home-intro { gap: 24px; }
+  .home-panel { margin-top: 36px; gap: 16px 12px; }
+  .home-panel .dock-foot { display: none; }          /* repeated the lede word for word */
+}
+/* one consistent button pair: same height, same radius, no rotating border on a resting button */
+@media (min-width: 641px) {
+  .home-panel .btn-xl { min-width: 248px; min-height: 58px; border-radius: 14px; font-size: 16.5px; }
+  #openJoinBtn { border: 1px solid var(--line-2); overflow: visible; }
+  #openJoinBtn::before { display: none; }
+  #openJoinBtn:hover { border-color: var(--ecto-line); transform: translateY(-2px); }
+  .home-panel .chips .chip { min-height: 44px; }
+}
+/* the security link reads as a link, not a fourth box competing with the buttons */
+.home-intro .trust-link { padding: 0; border: 0; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; color: var(--fog-2); font-size: 15px; gap: 8px; }
+.home-intro .trust-link:hover { color: var(--paper); text-decoration: underline; text-underline-offset: 4px; }
+.home-intro .trust-link svg { stroke: var(--ecto); }
+/* footer links: aligned to the button edge, no orphaned separator dots */
+.home-links { justify-content: flex-start; gap: 4px 22px; margin-top: 6px; font-size: 14px; }
+.home-panel .home-links { grid-column: 1 / -1; }
+.home-links a { padding: 6px 0; border-radius: 0; color: var(--fog); }
+.home-links a:hover { background: none; color: var(--paper); text-decoration: underline; text-underline-offset: 4px; }
+.home-links a + a::before { content: none; }
+@media (max-width: 640px) { .home-links { justify-content: center; gap: 4px 18px; } }
+
+/* room: a real heading, readable hint text */
+@media (min-width: 641px) {
+  .connect-title { font: 600 clamp(24px, 2.4vw, 30px)/1.15 var(--f-ui); letter-spacing: -.02em; color: var(--paper); text-transform: none; }
+  .share-hint { font-size: 14px; line-height: 1.5; color: var(--fog-2); }
+  .hs-name { font-size: 15px; font-weight: 600; color: var(--paper); }
+}
+
+/* join: keep "joining as" with the form instead of stranded at the bottom of the window */
+@media (min-width: 641px) and (min-height: 561px) {
+  .join-wrap { width: min(500px, 100%); }
+  .join-top { margin-bottom: auto; }
+  .join-main { flex: 0 0 auto; padding: 40px 0 0; }
+  .join-bottom { margin-bottom: auto; padding-top: 20px; }
+  .join-sub { font-size: 16px; color: var(--fog-2); }
+}
+.join-main .help { font-size: 13px; color: var(--fog); }
 </style>
 
 </head>
