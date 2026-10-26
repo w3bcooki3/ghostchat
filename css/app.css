@@ -1463,8 +1463,8 @@ html[data-type="mono"] :is(.qa-txt b, .pp-text b, .kn-text b, .sn-who) { font-we
 @media (min-width: 641px) and (min-height: 561px) {
   .join-wrap { width: min(500px, 100%); }
   .join-top { margin-bottom: auto; }
-  .join-main { flex: 0 0 auto; padding: 40px 0 0; }
-  .join-bottom { margin-bottom: auto; padding-top: 20px; }
+  /* the form sits in the middle of the window, not pushed to the bottom */
+  .join-main { flex: 0 0 auto; margin-bottom: auto; padding: 24px 0 68px; }
   .join-sub { font-size: 16px; color: var(--fog-2); }
 }
 .join-main .help { font-size: 13px; color: var(--fog); }
@@ -1623,6 +1623,19 @@ html #chat .tm-h { margin: 4px 10px 6px; font: 600 11.5px var(--f-ui); color: va
 html #chat .tm-item { display: flex; align-items: center; justify-content: space-between; min-height: 38px; padding: 0 12px; border: 0; border-radius: 9px; background: none; color: var(--paper); font: 500 14px var(--f-ui); text-align: left; cursor: pointer; }
 html #chat .tm-item:hover, html #chat .tm-item:focus-visible { background: var(--hull-2); }
 html #chat .tm-item[aria-checked="true"]::after { content: '✓'; color: var(--ecto); font-weight: 800; }
+/* custom disappearing timer: a number, a unit and Set */
+.tm-custom { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto; gap: 6px; padding: 6px 4px 4px; }
+.tm-custom[hidden] { display: none; }
+.tm-custom .tm-num, .tm-custom .tm-unit { min-width: 0; height: 36px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--line-2); background: var(--hull-2); color: var(--paper); font: 500 14px var(--f-ui); }
+.tm-custom .tm-num:focus-visible, .tm-custom .tm-unit:focus-visible { outline: 2px solid var(--ecto); outline-offset: 1px; }
+.tm-custom .tm-set { height: 36px; padding: 0 14px; border-radius: 9px; border: 0; background: var(--paper); color: var(--ink); font: 700 13px var(--f-ui); cursor: pointer; }
+.tm-custom .tm-note { grid-column: 1 / -1; margin: 0; font: 500 12px/1.4 var(--f-ui); color: var(--fog); }
+.tm-custom .tm-note.is-bad { color: var(--signal); }
+html #chat .tm-custom-btn[aria-checked="true"] { color: var(--paper); }
+.timer-options-wrap { display: grid; gap: 6px; }
+.timer-options-wrap .seg { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.timer-options-wrap .seg-custom { justify-self: stretch; }
+.timer-options-wrap .seg-custom[aria-checked="true"] { background: var(--paper); color: var(--ink); }
 html #chat .composer-hint { display: flex; justify-content: space-between; gap: 12px; margin: 7px 4px 0; font: 500 12px var(--f-ui); color: var(--fog); }
 html #chat .enc-for { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 html #chat .enc-for > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1775,3 +1788,9 @@ html #chat .verify-chip:not(.is-verified) svg path:last-child { display: none; }
 .join-me-top .priv-chip { min-height: 32px; padding: 0 10px; font-size: 13px; }
 .join-me-top .priv-chip::before { content: 'Privacy:'; margin-right: 2px; font-weight: 500; color: var(--fog); }
 @media (max-width: 640px) and (max-height: 700px) { .join-key { display: none; } .join-me { gap: 8px; padding: 10px 12px; margin: 2px 0 8px; } .join-av, .join-name .input { height: 44px; } .join-av { width: 44px; } }
+/* join on short laptop windows: drop the key badge and tighten so nothing scrolls */
+@media (min-width: 641px) and (max-height: 800px) {
+  .join-key { display: none; }
+  .join-main { gap: 12px; padding: 12px 0 44px; }
+  .join-me { margin: 2px 0 8px; }
+}
