@@ -15,6 +15,17 @@ class_name = "Room"
 tag = "v1"
 new_sqlite_classes = ["Room"]
 
+# Per-IP limit on new connections: 60 a minute per Cloudflare location (a busy group behind
+# one office NAT stays well under it). Needs Wrangler 4.36+. If a deploy ever reports that
+# rate limiting isn't available on your plan, delete this block: the relay still works,
+# relying on its per-connection limits alone.
+[[ratelimits]]
+name = "UPGRADES"
+namespace_id = "7001"
+  [ratelimits.simple]
+  limit = 60
+  period = 60
+
 # The relay keeps no logs: its code logs nothing, and Workers Logs stay off.
 [observability]
 enabled = false

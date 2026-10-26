@@ -32,7 +32,7 @@ It works on phones and computers, on home Wi-Fi, mobile data, office networks an
 
 That's it. Chat, send files, and close the tab when you're done.
 
-> **Unused codes expire after 10 minutes** (you can extend to an hour). If a link says *"This room isn't open"*, the person who made it has left or ended the chat, so ask for a new invite.
+> **Each invite code works once.** After someone is let in, the room moves to a new code (the host's invite button always shows the current one). A brand-new room's first code expires after 10 minutes if nobody uses it (you can extend it to an hour). If a link says *"This room isn't open with this code"*, ask for a new invite.
 
 ## What you can do
 

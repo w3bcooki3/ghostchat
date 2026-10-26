@@ -13,7 +13,7 @@ const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 const REPO = 'https://github.com/w3bcooki3/ghostchat';
 
 // CSS with fonts as data: URIs
-let css = read('css/app.css').replace(/url\(\.\.\/fonts\/([^)]+)\)/g, (_, f) =>
+let css = (read('css/themes.css') + '\n' + read('css/app.css')).replace(/url\(\.\.\/fonts\/([^)]+)\)/g, (_, f) =>
   `url(data:font/woff2;base64,${fs.readFileSync(path.join(root, 'fonts', f)).toString('base64')})`);
 
 // --test-signal=PORT produces dist/ghostchat.test.html wired to a local PeerJS server (for CI only).
@@ -89,6 +89,7 @@ html = html
   .replace(cspOld, csp)
   .replace('<link rel="icon" href="icon.svg" type="image/svg+xml">', `<link rel="icon" href="${icon}" type="image/svg+xml">`)
   .replace('<link rel="manifest" href="manifest.webmanifest">\n', '')
+  .replace('<link rel="stylesheet" href="css/themes.css">\n', '')
   .replace('<link rel="stylesheet" href="css/app.css">', () => `<style>${css}</style>`)
   .replace('<script src="vendor/peerjs-1.5.5.min.js" defer></script>\n', '')
   .replace('<script src="js/app.js" type="module"></script>', '')
@@ -108,16 +109,19 @@ if (!testPort) {
   const sums = [`${digest}  ghostchat.html`];
   const PAGES = [['security.html', 'css/security.css', 'js/security.js'], ['guide.html', 'css/pages.css', 'js/pages.js'], ['legal.html', 'css/pages.css', 'js/pages.js']];
   for (const [file, cssFile, jsFile] of PAGES) {
-    const pcss = read(cssFile).replace(/url\(\.\.\/fonts\/([^)]+)\)/g, (_, f) =>
+    // Each page = the shared themes + its own styles, and the shared theme picker + its own script.
+    const pcss = (read('css/themes.css') + '\n' + read(cssFile)).replace(/url\(\.\.\/fonts\/([^)]+)\)/g, (_, f) =>
       `url(data:font/woff2;base64,${fs.readFileSync(path.join(root, 'fonts', f)).toString('base64')})`);
-    const pjs = read(jsFile);
+    const pjs = read('js/pagetheme.js') + '\n' + read(jsFile);
     let pg = read(file);
     const cspOld = pg.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/)[1];
     const pcsp = ["default-src 'none'", `script-src ${sha(pjs)}`, `style-src ${sha(pcss)}`, 'font-src data:', 'img-src data:', "base-uri 'none'", "form-action 'none'"].join('; ');
     pg = pg
       .replace(cspOld, pcsp)
       .replace('<link rel="icon" href="icon.svg" type="image/svg+xml">', `<link rel="icon" href="${icon}" type="image/svg+xml">`)
+      .replace('<link rel="stylesheet" href="css/themes.css">\n', '')
       .replace(`<link rel="stylesheet" href="${cssFile}">`, () => `<style>${pcss}</style>`)
+      .replace('<script src="js/pagetheme.js" defer></script>\n', '')
       .replace(`<script src="${jsFile}" defer></script>\n`, '')
       .replaceAll('href="index.html"', 'href="ghostchat.html"')
       .replaceAll('href="SECURITY.md"', `href="${REPO}/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer"`)

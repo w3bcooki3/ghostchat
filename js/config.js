@@ -32,9 +32,11 @@ export const RELAY_URL = 'wss://ghostchat-relay.mrsaini281-678.workers.dev';
 // if the direct attempt fails, or in "Hide my IP" mode, where the relay is what hides it).
 export const RELAY_AFTER_MS = 2500;
 
-// PUBLIC_RELAY: also use the free, shared Open Relay project as a fallback (no signup;
-// best-effort, limited monthly capacity shared by everyone using it).
-export const PUBLIC_RELAY = true;
+// PUBLIC_RELAY: also use the free, shared Open Relay TURN servers (metered.ca) as a WebRTC
+// fallback. Off by default: RELAY_URL above already covers networks that block direct
+// connections, and every TURN server you add is another company that sees users' IP
+// addresses and traffic timing. If you turn it on, list Open Relay (Metered) in legal.html.
+export const PUBLIC_RELAY = false;
 
 // ICE_SERVERS: `null` uses Cloudflare + Google STUN. Or list your own, e.g.
 // [{ urls: 'stun:stun.example.org:3478' },

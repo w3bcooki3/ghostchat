@@ -6,11 +6,13 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#05080A">
+<meta name="theme-color" content="#F1F0EC">
 <meta name="description" content="Ghost Chat's privacy policy, terms of use, acceptable use, disclaimers and open-source licenses.">
 <title>Privacy and Terms</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/themes.css">
 <link rel="stylesheet" href="css/pages.css">
+<script src="js/pagetheme.js" defer></script>
 <script src="js/pages.js" defer></script>
 </head>
 <body>
@@ -84,7 +86,7 @@
               <tr><td>GitHub Pages</td><td>Hosts the web page</td><td>Your IP address and the page you request, under GitHub's privacy statement. Never your room code: invite links keep it after the <code>#</code>, which browsers don't send.</td></tr>
               <tr><td>PeerJS cloud server</td><td>Introduces the two browsers (signaling)</td><td>IP addresses, the room name, and connection details needed to set up WebRTC. Never keys or messages.</td></tr>
               <tr><td>Public STUN servers</td><td>Cloudflare and Google STUN help each browser learn its public address</td><td>Your IP address, for a single lookup.</td></tr>
-              <tr><td>Cloudflare Workers</td><td>Runs Ghost Chat's relay, used when a direct link fails or for Maximum privacy</td><td>IP addresses, a hashed room identifier, timing and sizes of sealed packets, under Cloudflare's privacy policy. Never content.</td></tr>
+              <tr><td>Cloudflare Workers</td><td>Runs Ghost Chat's relay, used when a direct link fails or for Maximum privacy</td><td>IP addresses (also used, briefly, as the key of a counter that limits how many connections one address can open), a hashed room identifier, which connection opened a room and how many are waiting in it, and timing and sizes of sealed packets, under Cloudflare's privacy policy. Never content.</td></tr>
             </tbody>
           </table>
         </div>

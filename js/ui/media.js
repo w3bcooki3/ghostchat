@@ -24,7 +24,7 @@ export async function presentReceived(r, f, ctx) {
   const imgType = sniffImage(head);
   const kind = sniffKind(head);
   const name = safeFilename(f.name);
-  const risk = fileRisk(f.name, head);
+  const risk = fileRisk(name, head);   // judged on the exact name that will be saved
 
   r.sub.replaceChildren(`${KIND_LABEL[kind]} · ${fmtSize(f.size)}`);
   if (risk.risky) { r.sub.append(' · '); r.sub.append(h('span', 'risk', 'can run code')); }
@@ -51,13 +51,17 @@ export async function presentReceived(r, f, ctx) {
   const url = ctx.track(URL.createObjectURL(new Blob([f.blob], { type: 'application/octet-stream' })));
   r.urls.push(url);
   const save = h('a', 'file-act', 'Save');
-  save.href = url; save.download = name; save.rel = 'noopener';
+  save.download = name; save.rel = 'noopener';
+  // A risky file has no address until the person confirms, so a middle-click, drag or
+  // "open in new tab" can't skip the warning.
+  if (!risk.risky) save.href = url;
+  else { save.setAttribute('role', 'button'); save.tabIndex = 0; save.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); save.click(); } }); }
   save.addEventListener('click', async (e) => {
     if (!risk.risky || save.dataset.ok === '1') { delete save.dataset.ok; return; }
     e.preventDefault();
     const go = await confirmDialog('This file could harm your device',
       `${risk.reason} Only open it if you trust the sender and were expecting this exact file.`, 'Save anyway', { detail: name });
-    if (go) { save.dataset.ok = '1'; save.click(); }
+    if (go) { save.href = url; save.dataset.ok = '1'; save.click(); save.removeAttribute('href'); }
   });
   row.append(save);
 

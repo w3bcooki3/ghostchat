@@ -352,3 +352,14 @@ test('decodeJSON and unpad reject malformed input', () => {
   assert.throws(() => P.unpad(b), (x) => x.code === 'bad-padding');
   assert.throws(() => P.unpad(new Uint8Array(300)), (x) => x.code === 'bad-padding');
 });
+
+test('JSON nested deeper than any real message is refused before parsing', () => {
+  const enc = (s) => new TextEncoder().encode(s);
+  const deep = '{"t":"ping","k":' + '['.repeat(30000) + ']'.repeat(30000) + '}';
+  assert.throws(() => P.decodeJSON(enc(deep)), /nested too deeply/);
+  // brackets inside strings don't count, and real messages pass
+  assert.equal(P.decodeJSON(enc('{"t":"msg","text":"[[[[[[[[[[[[{{{{{{{{\\"]]]"}')).t, 'msg');
+  assert.equal(P.decodeJSON(enc('{"t":"room","a":{"b":[{"c":[1]}]}}')).t, 'room');
+  assert.ok(P.jsonTooDeep('[[[[[[[[[]]]]]]]]]'));
+  assert.ok(!P.jsonTooDeep('[[[[[[[[]]]]]]]]'));
+});

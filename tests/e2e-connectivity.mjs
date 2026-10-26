@@ -117,7 +117,9 @@ T('a third browser with the right code waits for the host, then joins the group 
   const a = await fresh(), b = await fresh(), c = await fresh();
   const { A, B, code } = await pair(a, b, live.url);
   const C = await page(c);
-  await join(C, live.url, code);
+  // Invites are single-use: once B is in, the room has moved to a new code.
+  await A.waitForFunction((old) => window.__ghost.session.inviteCode && window.__ghost.session.inviteCode !== old, code, { timeout: 10000 });
+  await join(C, live.url, await A.evaluate(() => window.__ghost.session.inviteCode));
   await C.waitForFunction(() => window.__ghost.session.state === 'knocking', null, { timeout: 20000 });
   await A.waitForSelector('.knock-card', { timeout: 10000 });
   assert(await C.locator('#chat.is-on').count() === 0, 'nobody gets in without the host');

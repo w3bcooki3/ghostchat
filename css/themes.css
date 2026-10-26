@@ -1,0 +1,166 @@
+/* Ghost Chat colour themes: shared by the app (index.html) and the info pages.
+   Every colour in the interface comes from these variables. No data-theme attribute = Auto:
+   Signal in light mode, Phosphor in dark mode. Derived tokens are computed from them. */
+:root {
+  --ecto-dim: color-mix(in srgb, var(--ecto) 12%, transparent);
+  --ecto-line: color-mix(in srgb, var(--ecto) 34%, transparent);
+  --amber-dim: color-mix(in srgb, var(--amber) 13%, transparent);
+  --red-dim: color-mix(in srgb, var(--red) 12%, transparent);
+  --them-bg: var(--hull); --them-line: var(--line-2); --them-text: var(--paper); --wall: none;
+}
+/* Signal — engineering paper, black ink, signal red */
+:root, :root[data-theme="signal"] {
+  color-scheme: light;
+  --ink: #F1F0EC; --hull: #FFFFFF; --hull-2: #F4F3EF; --hull-3: #E8E6E0;
+  --line: rgba(17, 18, 20, .09); --line-2: rgba(17, 18, 20, .17);
+  --paper: #111214; --fog: #55585F; --fog-2: #33363C; --mist: #6B6E75;
+  --ecto: #111214; --ecto-ink: #FFFFFF; --ok: #12A150; --signal: #FF3B1F;
+  --amber: #C2410C; --red: #E5251B; --red-text: #B91C1C; --red-ink: #FFFFFF; --cool: #4F5BD5;
+  --me-bg: #111214; --me-border: transparent; --me-text: #FFFFFF;
+  --ghost: #111214; --ghost-eye: #F1F0EC;
+  --shade: #2A2622; --shade-k: .35; --glow-k: 0;
+  --grid: rgba(17, 18, 20, .13); --chrome: #F1F0EC;
+}
+/* Phosphor — the same system as a dark terminal */
+:root[data-theme="phosphor"] {
+  color-scheme: dark;
+  --ink: #0A0B0C; --hull: #101214; --hull-2: #171A1C; --hull-3: #1F2427;
+  --line: rgba(98, 242, 180, .10); --line-2: rgba(98, 242, 180, .19);
+  --paper: #E6ECE8; --fog: #8E9A94; --fog-2: #B9C6C0; --mist: #6E7A75;
+  --ecto: #62F2B4; --ecto-ink: #04140C; --ok: #62F2B4; --signal: #62F2B4;
+  --amber: #FFB84D; --red: #FF4D3A; --red-text: #FF9C90; --red-ink: #1A0503; --cool: #7FC8E0;
+  --me-bg: rgba(98, 242, 180, .10); --me-border: rgba(98, 242, 180, .4); --me-text: #E3FFF2;
+  --ghost: #62F2B4; --ghost-eye: #0A0B0C;
+  --shade: #000000; --shade-k: 1; --glow-k: 1;
+  --grid: rgba(98, 242, 180, .085); --chrome: #0A0B0C;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --ink: #0A0B0C; --hull: #101214; --hull-2: #171A1C; --hull-3: #1F2427;
+    --line: rgba(98, 242, 180, .10); --line-2: rgba(98, 242, 180, .19);
+    --paper: #E6ECE8; --fog: #8E9A94; --fog-2: #B9C6C0; --mist: #6E7A75;
+    --ecto: #62F2B4; --ecto-ink: #04140C; --ok: #62F2B4; --signal: #62F2B4;
+    --amber: #FFB84D; --red: #FF4D3A; --red-text: #FF9C90; --red-ink: #1A0503; --cool: #7FC8E0;
+    --me-bg: rgba(98, 242, 180, .10); --me-border: rgba(98, 242, 180, .4); --me-text: #E3FFF2;
+    --ghost: #62F2B4; --ghost-eye: #0A0B0C;
+    --shade: #000000; --shade-k: 1; --glow-k: 1;
+    --grid: rgba(98, 242, 180, .085); --chrome: #0A0B0C;
+  }
+}
+/* Aurora — violet night */
+:root[data-theme="aurora"] {
+  color-scheme: dark;
+  --ink: #0B0820; --hull: #140F33; --hull-2: #1C1642; --hull-3: #272055;
+  --line: rgba(190, 170, 255, .12); --line-2: rgba(190, 170, 255, .22);
+  --paper: #F1EEFF; --fog: #BDB5E6; --fog-2: #D9D3F5; --mist: #9289C4;
+  --ecto: #A78BFA; --ecto-ink: #140B33; --ok: #4ADE80; --signal: #F472B6;
+  --amber: #FCD34D; --red: #FB7185; --red-text: #FDA4AF; --red-ink: #2A0510; --cool: #67E8F9;
+  --me-bg: #6D4AFF; --me-border: transparent; --me-text: #FFFFFF;
+  --ghost: #C4B5FD; --ghost-eye: #0B0820;
+  --shade: #000000; --shade-k: 1; --glow-k: .9;
+  --grid: rgba(190, 170, 255, .08); --chrome: #0B0820;
+}
+/* Daylight — warm paper, black type */
+:root[data-theme="daylight"] {
+  color-scheme: light;
+  --ink: #F6F1EA; --hull: #FFFFFF; --hull-2: #FBF8F3; --hull-3: #EEE8DF;
+  --line: rgba(20, 21, 26, .08); --line-2: rgba(20, 21, 26, .15);
+  --paper: #14151A; --fog: #5B5E68; --fog-2: #34363D; --mist: #6E717A;
+  --ecto: #14151A; --ecto-ink: #FFFFFF; --ok: #047857; --signal: #E8590C;
+  --amber: #B45309; --red: #BE123C; --red-text: #BE123C; --red-ink: #FFFFFF; --cool: #6D5BD0;
+  --me-bg: #14151A; --me-border: transparent; --me-text: #FFFFFF;
+  --ghost: #14151A; --ghost-eye: #F6F1EA;
+  --shade: #3A3026; --shade-k: .35; --glow-k: 0;
+  --grid: rgba(20, 21, 26, .07); --chrome: #F6F1EA;
+}
+/* Graphite — calm neutral, one mint accent */
+:root[data-theme="graphite"] {
+  color-scheme: dark;
+  --ink: #0E1012; --hull: #15181B; --hull-2: #1B1F23; --hull-3: #23282D;
+  --line: rgba(255, 255, 255, .07); --line-2: rgba(255, 255, 255, .13);
+  --paper: #E8EAED; --fog: #9AA1A9; --fog-2: #C3C8CE; --mist: #7A828B;
+  --ecto: #45D69A; --ecto-ink: #06140D; --ok: #45D69A; --signal: #45D69A;
+  --amber: #E5A93B; --red: #FF6B6B; --red-text: #FF9A9A; --red-ink: #1A0505; --cool: #8AB4F8;
+  --me-bg: #45D69A; --me-border: transparent; --me-text: #06140D;
+  --ghost: #E8EAED; --ghost-eye: #0E1012;
+  --shade: #000000; --shade-k: 1; --glow-k: .3;
+  --grid: rgba(255, 255, 255, .05); --chrome: #0E1012;
+}
+/* Ledger — warm dark, sage ink */
+:root[data-theme="ledger"] {
+  color-scheme: dark;
+  --ink: #13110F; --hull: #1A1816; --hull-2: #211E1B; --hull-3: #2A2622;
+  --line: rgba(236, 231, 223, .09); --line-2: rgba(236, 231, 223, .16);
+  --paper: #ECE7DF; --fog: #A8A095; --fog-2: #CFC8BC; --mist: #8A8378;
+  --ecto: #8CC7B0; --ecto-ink: #0D1A15; --ok: #8CC7B0; --signal: #E0A458;
+  --amber: #E0A458; --red: #F08A7E; --red-text: #F5B0A7; --red-ink: #1F0805; --cool: #A9B8D8;
+  --me-bg: rgba(140, 199, 176, .12); --me-border: rgba(140, 199, 176, .35); --me-text: #ECE7DF;
+  --ghost: #ECE7DF; --ghost-eye: #13110F;
+  --shade: #000000; --shade-k: 1; --glow-k: .2;
+  --grid: rgba(236, 231, 223, .06); --chrome: #13110F;
+}
+/* Vault — blue-black, steel blue */
+:root[data-theme="vault"] {
+  color-scheme: dark;
+  --ink: #0A0C10; --hull: #11141A; --hull-2: #151922; --hull-3: #1C212A;
+  --line: rgba(148, 163, 184, .10); --line-2: rgba(148, 163, 184, .19);
+  --paper: #E6E9EF; --fog: #98A2B3; --fog-2: #C3CAD6; --mist: #747E8F;
+  --ecto: #7AA2FF; --ecto-ink: #06102A; --ok: #62F2B4; --signal: #7AA2FF;
+  --amber: #F2B544; --red: #FF8F8F; --red-text: #FFB4B4; --red-ink: #200606; --cool: #62F2B4;
+  --me-bg: #E6E9EF; --me-border: transparent; --me-text: #0A0C10;
+  --ghost: #E6E9EF; --ghost-eye: #0A0C10;
+  --shade: #000000; --shade-k: 1; --glow-k: .5;
+  --grid: rgba(148, 163, 184, .07); --chrome: #0A0C10;
+}
+/* Apple — Messages-style: white page, blue and grey bubbles, the system typeface */
+:root[data-theme="apple"] {
+  color-scheme: light;
+  --f-theme: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
+  --r-bubble: 20px;
+  --ink: #FFFFFF; --hull: #F5F5F7; --hull-2: #EDEDF0; --hull-3: #E3E3E7;
+  --line: rgba(0, 0, 0, .08); --line-2: rgba(0, 0, 0, .14);
+  --paper: #1D1D1F; --fog: #636366; --fog-2: #424245; --mist: #636366;
+  --ecto: #0A6CF0; --ecto-ink: #FFFFFF; --ok: #1F7A35; --signal: #0A6CF0;
+  --amber: #A34A00; --red: #D70015; --red-text: #C00013; --red-ink: #FFFFFF; --cool: #5E5CE6;
+  --me-bg: #0A6CF0; --me-border: transparent; --me-text: #FFFFFF;
+  --them-bg: #E9E9EB; --them-line: transparent; --them-text: #1D1D1F;
+  --ghost: #1D1D1F; --ghost-eye: #FFFFFF;
+  --shade: #000000; --shade-k: .25; --glow-k: 0;
+  --grid: rgba(0, 0, 0, 0); --chrome: #F5F5F7;
+}
+/* Haven — calm teal on soft stone */
+:root[data-theme="haven"] {
+  color-scheme: light;
+  --r-bubble: 16px;
+  --ink: #F3F3F0; --hull: #FFFFFF; --hull-2: #F8F8F5; --hull-3: #ECECE7;
+  --line: rgba(23, 35, 33, .08); --line-2: rgba(23, 35, 33, .15);
+  --paper: #172321; --fog: #56625F; --fog-2: #33403D; --mist: #5F6B68;
+  --ecto: #0B6B6B; --ecto-ink: #FFFFFF; --ok: #0B6B6B; --signal: #0B6B6B;
+  --amber: #9A4A06; --red: #C2261C; --red-text: #B42318; --red-ink: #FFFFFF; --cool: #4F6BD5;
+  --me-bg: #0B6B6B; --me-border: transparent; --me-text: #FFFFFF;
+  --them-bg: #FFFFFF; --them-line: rgba(23, 35, 33, .10); --them-text: #172321;
+  --ghost: #0B6B6B; --ghost-eye: #F3F3F0;
+  --shade: #1B2B28; --shade-k: .25; --glow-k: 0;
+  --grid: rgba(23, 35, 33, .05); --chrome: #F3F3F0;
+}
+/* Telegram — patterned wallpaper, white and pale-green bubbles */
+:root[data-theme="telegram"] {
+  color-scheme: light;
+  --f-theme: 'Roboto', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --r-bubble: 14px;
+  --ink: #EEF1F4; --hull: #FFFFFF; --hull-2: #F4F5F7; --hull-3: #E8EBEF;
+  --line: rgba(0, 0, 0, .08); --line-2: rgba(0, 0, 0, .13);
+  --paper: #0F1419; --fog: #5F6670; --fog-2: #3A4048; --mist: #6A717A;
+  --ecto: #1F74C0; --ecto-ink: #FFFFFF; --ok: #2E8B3A; --signal: #1F74C0;
+  --amber: #A35200; --red: #D93F3F; --red-text: #C42F2F; --red-ink: #FFFFFF; --cool: #6C5BD5;
+  --me-bg: #E3FBD0; --me-border: rgba(70, 140, 60, .16); --me-text: #0F1419;
+  --them-bg: #FFFFFF; --them-line: transparent; --them-text: #0F1419;
+  --wall: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, .22) 0 2px, transparent 3px) 0 0 / 46px 46px,
+          radial-gradient(circle at 70% 70%, rgba(60, 110, 40, .10) 0 3px, transparent 4px) 0 0 / 62px 62px,
+          linear-gradient(160deg, #C4DBA8 0%, #DEE6B4 45%, #B9D3B0 100%);
+  --ghost: #1F74C0; --ghost-eye: #FFFFFF;
+  --shade: #000000; --shade-k: .2; --glow-k: 0;
+  --grid: rgba(0, 0, 0, 0); --chrome: #FFFFFF;
+}
+

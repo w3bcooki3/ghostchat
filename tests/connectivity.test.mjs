@@ -103,14 +103,16 @@ test('ICE servers from an endpoint are sanitized', () => {
   assert.deepEqual(out, [{ urls: ['turn:a.example:3478'], username: 'u', credential: 'p' }, { urls: ['stun:c.example:3478'] }]);
 });
 
-test('default ICE includes STUN and the public TLS relay on 443', async () => {
+test('default ICE is STUN only: no third-party TURN unless configured', async () => {
   const ice = await resolveIce();
   const urls = ice.flatMap((s) => [].concat(s.urls));
   assert.ok(urls.some((u) => u.startsWith('stun:')));
-  assert.ok(urls.includes('turns:staticauth.openrelay.metered.ca:443?transport=tcp'));
+  assert.ok(!urls.some((u) => /^turns?:/.test(u)), 'no TURN by default: ' + urls.join(' '));
+  const custom = { urls: 'turns:relay.example:443?transport=tcp', username: 'u', credential: 'p' };
+  assert.ok((await resolveIce([custom])).includes(custom), 'a relay the person adds is still used');
 });
 
-import { cleanLabel, cleanText, fileRisk, safeFilename, parseLink, sniffKind } from '../js/ui/sanitize.js';
+import { cleanLabel, cleanName, cleanText, fileRisk, safeFilename, parseLink, sniffKind } from '../js/ui/sanitize.js';
 
 test('text and names lose bidi overrides and control characters', () => {
   assert.equal(cleanLabel('photo‮gpj.exe', 60), 'photogpj.exe');
@@ -144,4 +146,22 @@ test('only http(s) links are links, and hosts come out in ASCII', () => {
   assert.equal(parseLink('javascript:alert(1)'), null);
   assert.equal(parseLink('data:text/html,x'), null);
   assert.equal(parseLink('https://exämple.com/').hostname, 'xn--exmple-cua.com');
+});
+
+test('the risk check judges the name that will be saved: trailing dots and spaces can\'t hide .bat', () => {
+  for (const n of ['invoice.pdf.bat.', 'x.exe. . .', 'run.ps1.', 'a.hta..', 'setup.EXE ']) {
+    assert.ok(fileRisk(safeFilename(n)).risky, n + ' (saved name)');
+    assert.ok(fileRisk(n).risky, n + ' (raw name)');
+  }
+  for (const n of ['notes.chm', 'tool.py', 'add.xll', 'app.jnlp', 'x.desktop', 'doc.one']) assert.ok(fileRisk(n).risky, n);
+  assert.ok(!fileRisk('holiday.jpg').risky);
+});
+
+test('names from others: no posing as you or the host, no blank or invisible names', () => {
+  for (const n of ['You', 'you', ' YOU ', 'Ｙｏｕ', 'The host', 'host', 'Ghost Chat', 'Someone', 'You (host)']) assert.equal(cleanName(n), '', n);
+  for (const n of ['\u3164', '\u2800\u2800', '\u00ad', '\u2060\u2061', '\u{E0041}\u{E0042}', '...', '  ']) assert.equal(cleanName(n), '', JSON.stringify(n));
+  assert.equal(cleanName('Bob\u2060by'), 'Bobby');
+  assert.equal(cleanName('Mira'), 'Mira');
+  assert.equal(cleanName('Yousef'), 'Yousef');
+  assert.equal(cleanName('Ann ❤'), 'Ann ❤');
 });

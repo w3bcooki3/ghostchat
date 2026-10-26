@@ -69,3 +69,55 @@ test('file offers are validated: size cap, id format, duplicate ids, concurrent 
   s.onFileOffer({ t: 'file', fid: '0000000000000000', name: 'y', size: 1 });
   assert.equal(s.incoming.get('0000000000000000').name, 'x', 'an existing transfer is never replaced');
 });
+
+// ── two real Sessions over an in-memory link (frames can be dropped on purpose) ──
+function memConn() {
+  const c = { local: true, serialization: 'raw', open: false, closed: false, bufferSize: 0, _h: {},
+    on(e, f) { (this._h[e] ||= []).push(f); return this; },
+    emit(e, d) { for (const f of this._h[e] || []) f(d); },
+    send(b) { if (this.closed || this.drop?.(b)) return; const copy = new Uint8Array(b).slice(); setTimeout(() => this.peer && !this.peer.closed && this.peer.emit('data', copy.buffer), 1); },
+    close() { if (this.closed) return; this.closed = true; this.emit('close'); this.peer && setTimeout(() => this.peer.close(), 1); } };
+  return c;
+}
+async function twoSessions() {
+  const code = P.generateCode();
+  const host = new Session({ code, role: 'host', sameDevice: false });
+  const joiner = new Session({ code, role: 'joiner', sameDevice: false });
+  host.roomKey = await P.deriveRoomKey(code); joiner.roomKey = await P.deriveRoomKey(code);
+  return { host, joiner };
+}
+function link(host, joiner, dropFromJoiner) {
+  const hc = memConn(), jc = memConn(); hc.peer = jc; jc.peer = hc; jc.drop = dropFromJoiner;
+  host.accept(hc);
+  joiner.hub = { dial: () => jc }; joiner.dialLocal(); joiner.hub = null;
+  setTimeout(() => { hc.open = jc.open = true; hc.emit('open'); jc.emit('open'); }, 1);
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+test('a lost CONFIRM on the first join still ends with matching safety numbers', async (t) => {
+  const { host, joiner } = await twoSessions();
+  t.after(() => { host.destroy('local'); joiner.destroy('local'); });
+  link(host, joiner, (b) => b[1] === P.T_CONFIRM);          // the network eats the joiner's CONFIRM
+  await sleep(300);
+  assert.ok(joiner.safetyNumber && !host.everReady, 'joiner finished, host did not');
+  joiner.active?.close('test'); for (const l of host.pending) l.close('test');
+  await sleep(100);
+  link(host, joiner);                                       // the joiner resumes
+  await sleep(400);
+  assert.ok(host.everReady);
+  assert.equal(host.safetyNumber, joiner.safetyNumber, 'both sides show the same number');
+});
+
+test('a deeply nested message closes the link instead of silently freezing it', async (t) => {
+  const { host, joiner } = await twoSessions();
+  t.after(() => { host.destroy('local'); joiner.destroy('local'); });
+  const got = [];
+  host.on('message', (o) => got.push(o.t));
+  link(host, joiner);
+  await sleep(300);
+  const closed = [];
+  host.active.close = ((orig) => function (r) { closed.push(r); return orig.call(this, r); })(host.active.close);
+  await joiner.active.sendFrame(P.KIND_JSON, new TextEncoder().encode('{"t":"ping","k":' + '['.repeat(20000) + ']'.repeat(20000) + '}'));
+  await sleep(100);
+  assert.equal(closed[0], 'protocol');
+});

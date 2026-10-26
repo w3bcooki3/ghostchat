@@ -10,6 +10,12 @@
 //     one for host <-> newcomer, and one for each existing member <-> newcomer. Every pair then
 //     runs its own Session (own keys, own safety number, own reconnection) on its own code.
 //
+//  4. Invites are single-use: once someone is let in and nobody else is waiting, the host's
+//     lobby moves to a fresh random code and the old one stops working. Only the host, and
+//     members the host lets invite, ever learn the new code. So a member who left or was
+//     removed (they still know the code they joined with) can't stand in for the host and
+//     greet the next newcomer, even while the host is offline.
+//
 // What that gives: messages between two members are encrypted end to end between them; the
 // host's browser never relays or decrypts them. The host does learn each pair code (it's the
 // introducer), so a malicious host could try to sit in the middle of a pair — the two people's
@@ -19,6 +25,8 @@ import { generateCode, normalizeCode } from './protocol.js';
 
 export const MAX_MEMBERS = 6;                 // including yourself
 const ADMIT_TIMEOUT_MS = 3 * 60_000;          // a knock nobody answers is turned away
+const MAX_WAITING = 4;                        // people waiting to be let in at once
+const MAX_INCOMING_BYTES = 300 * 1024 * 1024; // files being received at once, from everyone together
 const PAIR_RETRIES = 10;                      // a pair's host may register a moment after we dial
 const ID = /^[0-9a-f]{16}$/;
 
@@ -35,6 +43,7 @@ const ID = /^[0-9a-f]{16}$/;
  *  member-state {id, state}
  *  member-left {id, reason, isHost}
  *  settings {canInvite}
+ *  invite-code {code}       the code to share now changed (host: rotated; member: host sent it)
  *  kicked {}                the host removed you
  *  message {from, …}        app messages; `from` is the pair the message arrived on (unforgeable)
  */
@@ -51,11 +60,13 @@ export class Room extends Emitter {
     this.knocks = new Map();         // host: kid → { kid, link, name, avatar, timer }
     this.canInvite = false;
     this.joined = false; this.ended = false; this.everAdmitted = false;
+    this.inviteCode = this.isHost ? c : null;   // what to share to bring someone in (members: only if allowed)
+    this.needRotate = false;
     this.state = 'idle'; this.shaping = false;
     this.profile = { name: '', avatar: '' };
     this.outFiles = new Map();       // afid → { size, per: Map<memberId, {fid, done, st}> }
     this.outFid = new Map();         // `${memberId}:${fid}` → afid
-    this.inFiles = new Map();        // fid → memberId
+    this.inFiles = new Map();        // fid → { from: memberId, size }
     this.lobby = new Session({ code: c, role, relayOnly, extraIce, sameDevice, lobby: this.isHost });
     this.wireLobby();
   }
@@ -88,21 +99,25 @@ export class Room extends Emitter {
   // ── the lobby: the room code's front door ──
   wireLobby() {
     const L = this.lobby;
+    const current = () => this.lobby === L;
     const pre = (ev) => L.on(ev, (d) => { if (!this.joined || ev === 'rejected') this.emit(ev, d); });
     for (const ev of ['link-open', 'hs-frame', 'signaling-down', 'relay-up', 'rejected']) pre(ev);
     L.on('wire', (d) => { if (!this.joined) this.emit('wire', d); });
     L.on('state', ({ state }) => { if (!this.joined && state !== 'ready') this.setState(state); });
-    L.on('failed', (d) => { if (!this.joined && !this.lobbyDone) { this.setState('failed'); this.emit('failed', d); } });
+    L.on('failed', (d) => {
+      if (!this.joined && !this.lobbyDone) { this.setState('failed'); this.emit('failed', d); }
+      else if (this.isHost && current()) this.emit('invite-failed', d);   // a rotated lobby couldn't open
+    });
     L.on('ended', ({ reason }) => {
       if (this.lobbyDone || this.ended) return;
       if (!this.joined && !this.members.size) this.destroy(reason === 'peer-left' ? 'host-left' : reason);
     });
     if (this.isHost) {
-      L.on('knock', ({ link }) => this.onKnock(link));
+      L.on('knock', ({ link }) => { if (current()) this.onKnock(link); else link.close('superseded'); });
       L.on('lobby-message', ({ link, o }) => this.onLobbyMessage(link, o));
       L.on('knock-gone', ({ link }) => {
         const k = link.kid && this.knocks.get(link.kid);
-        if (k && !k.admitted) { clearTimeout(k.timer); this.knocks.delete(k.kid); this.emit('knock-gone', { kid: k.kid }); }
+        if (k && !k.admitted) { clearTimeout(k.timer); this.knocks.delete(k.kid); this.emit('knock-gone', { kid: k.kid }); this.maybeRotate(); }
       });
     } else {
       L.on('ready', () => {
@@ -115,6 +130,12 @@ export class Room extends Emitter {
 
   // host
   onKnock(link) {
+    // However many people hold the code, only a few can wait at once (no knock floods).
+    if ([...this.knocks.values()].filter((k) => !k.admitted).length >= MAX_WAITING) {
+      link.sendJSON({ t: 'deny', reason: 'full' }).catch(() => {});
+      setTimeout(() => link.close('denied'), 400);
+      return;
+    }
     const kid = uid();
     link.kid = kid;
     const k = { kid, link, name: '', avatar: '', admitted: false };
@@ -166,6 +187,40 @@ export class Room extends Emitter {
     k.link.sendJSON({ t: 'deny', reason }).catch(() => {});
     setTimeout(() => k.link.close('denied'), 400);
     this.emit('knock-gone', { kid, reason });
+    this.maybeRotate();
+  }
+
+  /**
+   * Host: once an invite has been used and nobody is still waiting, move the lobby to a fresh
+   * code. The old code stops working; members only get the new one if they may invite.
+   */
+  maybeRotate() {
+    if (!this.isHost || this.ended || !this.needRotate || this.knocks.size || !this.lobby) return;
+    this.needRotate = false;
+    const old = this.lobby;
+    const code = generateCode();
+    this.code = code; this.inviteCode = code;
+    this.lobby = new Session({ code, role: 'host', ...this.pairOpts, lobby: true });
+    this.lobby.lobbyUsed();                         // an already-used room has no invite expiry
+    this.syncLock();
+    this.wireLobby();
+    this.lobby.start().catch((e) => console.warn('[ghost] lobby restart', e));
+    try { old._h.clear(); old.destroy('local'); } catch {}
+    this.shareInvite();
+    this.emit('invite-code', { code });
+  }
+  /** Host: retire the current code now and make a new one (e.g. it was shared too widely). */
+  newInvite() {
+    if (!this.isHost || this.ended) return false;
+    for (const k of [...this.knocks.values()]) if (!k.admitted) this.deny(k.kid, 'denied');
+    this.needRotate = true;
+    this.maybeRotate();
+    return !this.knocks.size;
+  }
+  /** Host: give the current code to members who may invite (and nobody else). */
+  shareInvite() {
+    if (!this.isHost) return;
+    for (const m of this.members.values()) m.s.send({ t: 'room', op: 'invite', code: this.canInvite ? this.code : null });
   }
   /** Host: remove someone from the room. Everyone else hangs up on them too. */
   remove(id) {
@@ -174,12 +229,18 @@ export class Room extends Emitter {
     for (const o of this.members.values()) if (o !== m) o.s.send({ t: 'room', op: 'remove', id });
     m.s.sendVolatile({ t: 'room', op: 'kicked' });
     this.dropMember(id, 'removed', true);
+    // They may have known the current invite code (if members could invite): retire it.
+    this.needRotate = true; this.maybeRotate();
   }
   setCanInvite(on) {
     if (!this.isHost) return;
+    const was = this.canInvite;
     this.canInvite = !!on;
     for (const m of this.members.values()) m.s.send({ t: 'room', op: 'settings', canInvite: this.canInvite });
     this.emit('settings', { canInvite: this.canInvite });
+    if (this.canInvite) this.shareInvite();
+    // Turning it off: members already know the current code, so retire it.
+    else if (was) { this.needRotate = true; this.maybeRotate(); }
   }
   syncLock() { if (this.isHost && this.lobby) this.lobby.locked = this.members.size + 1 >= MAX_MEMBERS; }
 
@@ -211,7 +272,14 @@ export class Room extends Emitter {
       this.recalc();
       // Joiner: connected to the host, so the lobby link has done its job.
       if (!this.isHost && isHost) this.closeLobby();
-      if (this.isHost && m.knockKid) { const k = this.knocks.get(m.knockKid); if (k) { this.knocks.delete(m.knockKid); setTimeout(() => k.link.close('admitted'), 300); } m.knockKid = null; }
+      if (this.isHost && m.knockKid) {
+        const k = this.knocks.get(m.knockKid);
+        if (k) { this.knocks.delete(m.knockKid); setTimeout(() => k.link.close('admitted'), 300); }
+        m.knockKid = null;
+        // The invite has done its job: retire the code once the admit has been delivered.
+        this.needRotate = true;
+        setTimeout(() => this.maybeRotate(), 500);
+      }
       if (first) this.emit('joined', {});
       this.emit('member-ready', { id, ...d, first });
     });
@@ -238,7 +306,15 @@ export class Room extends Emitter {
     s.on('latency', (d) => this.emit('latency', { ...d, from: id }));
     s.on('wire', (d) => this.emit('wire', d));
     s.on('rejected', (d) => this.emit('rejected', { ...d, pair: true }));
-    s.on('file-in', (d) => { this.inFiles.set(d.fid, id); this.emit('file-in', { ...d, from: id }); });
+    s.on('file-in', (d) => {
+      // Each pair limits its own transfers; this caps the room as a whole, so several people
+      // can't together fill this tab's memory.
+      let busy = 0;
+      for (const [, f] of this.inFiles) busy += f.size || 0;
+      if (busy + (d.size || 0) > MAX_INCOMING_BYTES) { s.cancelFile(d.fid); return; }
+      this.inFiles.set(d.fid, { from: id, size: d.size || 0 });
+      this.emit('file-in', { ...d, from: id });
+    });
     s.on('file-received', (d) => { this.inFiles.delete(d.fid); this.emit('file-received', { ...d, from: id }); });
     s.on('file-progress', (d) => (d.dir === 'out' ? this.outProgress(id, d) : this.emit('file-progress', { ...d, from: id })));
     s.on('file-sent', ({ fid }) => this.outSettled(id, fid, 'sent'));
@@ -259,8 +335,8 @@ export class Room extends Emitter {
     this.members.delete(id);
     if (destroy && !m.s.ended) { m.s._h?.clear?.(); if (reason === 'removed' || reason === 'local') m.s.end(); else m.s.destroy('local'); }
     for (const [afid, j] of this.outFiles) if (j.per.has(id) && j.per.get(id).st === 'sending') this.outSettled(id, j.per.get(id).fid, 'failed', 'they left');
-    for (const [fid, from] of this.inFiles) if (from === id) { this.inFiles.delete(fid); this.emit('file-failed', { fid, dir: 'in', reason: 'they left', from: id }); }
-    if (m.knockKid) this.knocks.delete(m.knockKid);
+    for (const [fid, f] of this.inFiles) if (f.from === id) { this.inFiles.delete(fid); this.emit('file-failed', { fid, dir: 'in', reason: 'they left', from: id }); }
+    if (m.knockKid) { this.knocks.delete(m.knockKid); this.maybeRotate(); }
     this.syncLock();
     if (this.ended || this.leaving) return;
     if (this.isHost && !this.joined && !this.members.size) this.everAdmitted = false;   // the first invitee never arrived
@@ -296,8 +372,16 @@ export class Room extends Emitter {
         }
         case 'settings':
           this.canInvite = o.canInvite === true;
+          if (!this.canInvite) this.inviteCode = null;
           this.emit('settings', { canInvite: this.canInvite });
           return;
+        case 'invite': {
+          const code = o.code === null ? null : normalizeCode(o.code);
+          if (o.code !== null && !code) return;
+          this.inviteCode = this.canInvite ? code : null;
+          this.emit('invite-code', { code: this.inviteCode });
+          return;
+        }
         case 'remove':
           if (ID.test(o.id) && this.members.has(o.id)) this.dropMember(o.id, 'removed', true);
           return;
@@ -344,7 +428,7 @@ export class Room extends Emitter {
     const job = { size: file.size, per: new Map() };
     this.outFiles.set(afid, job);
     for (const m of ready) {
-      const fid = m.s.sendFile(file, meta);
+      const fid = m.s.sendFile(file, meta, afid);   // same id on every pair: replies to it resolve everywhere
       job.per.set(m.id, { fid, done: 0, st: 'sending' });
       this.outFid.set(m.id + ':' + fid, afid);
     }
@@ -353,7 +437,7 @@ export class Room extends Emitter {
   cancelFile(id) {
     const job = this.outFiles.get(id);
     if (job) { for (const [mid, p] of job.per) this.members.get(mid)?.s.cancelFile(p.fid); return; }
-    const from = this.inFiles.get(id);
+    const from = this.inFiles.get(id)?.from;
     if (from) this.members.get(from)?.s.cancelFile(id);
   }
   outProgress(memberId, { fid, done, size }) {

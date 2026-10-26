@@ -3,14 +3,15 @@
 //
 // Summary (SECURITY.md has the full specification and threat model):
 //   * Room code: 20 random base32 characters (100 bits). The first 5 name the signaling
-//     room; the full code is a pre-shared secret that never leaves the two browsers.
+//     room; the full code is a pre-shared secret that is never sent anywhere.
 //   * Handshake: hybrid key exchange — ephemeral ECDH P-384 + ML-KEM-1024 (FIPS 203) —
 //     both secrets fed to HKDF-SHA-384 salted with the room key, then two-way key
 //     confirmation with HMAC-SHA-384. Breaking it requires breaking BOTH primitives and
 //     knowing the room code.
-//   * Room lock + resumption: the first handshake yields a resumption secret known only to
-//     the two original browsers. After that the room only accepts reconnects that prove it,
-//     so a code that leaks later is useless.
+//   * Pair lock + resumption: the first handshake yields a resumption secret known only to
+//     the two original browsers. After that the pair only accepts reconnects that prove it,
+//     so its pair code alone no longer gets anyone in. (A room's invite code is a separate,
+//     single-use lobby code: see room.js.)
 //   * Messages: AES-256-GCM with a fresh key per message from a per-direction HMAC-SHA-384
 //     hash ratchet; strict counters bound as AAD (replay/reorder/drop/tamper → teardown);
 //     plaintext padded to fixed buckets.
@@ -293,6 +294,10 @@ export class Handshake {
           // only be used while the room is unlocked, and never counts as continuity.
           if (!chosen.continuity && pol.locked) throw new ProtocolError('auth-failed', 'Unknown resumption secret');
           this.continuity = !!chosen.continuity;
+          // Resuming a first join whose CONFIRM never reached us: the joiner already shows the
+          // safety number of that first handshake, so we show the same one (what we would have
+          // shown had the CONFIRM arrived), not this handshake's.
+          this.priorSn = !chosen.continuity && typeof chosen.sn === 'string' ? chosen.sn : null;
           salt = await resumeSalt(this.roomKey, chosen.secret);
         }
       } finally { for (const o of offered) wipe(o.secret); }
@@ -311,6 +316,7 @@ export class Handshake {
       // continuity only if this handshake itself proved continuity.
       this.candidate = this.keys.resume.slice();
       this.candidateContinuity = mode === 1 && this.continuity;
+      this.candidateSn = this.priorSn || this.sn;
       const macH = await hmac(this.keys.macH, concat([0x48], this.keys.th));
       this.state = 'sent-hello';
       return { send: concat([MAGIC, T_HELLO, 0x48], nonceH, this.eph.pub, enc.cipherText, macH) };
@@ -346,6 +352,7 @@ export class Handshake {
       }
       this.state = 'done';
       const done = finish(this.keys, 'host', this.sn, this.mode === 1 && this.continuity);
+      if (this.priorSn) done.firstSafetyNumber = this.priorSn;
       this.forget();
       return { done };
     }
@@ -454,9 +461,25 @@ export class SecureChannel {
 }
 
 /** Strict JSON decode for inner payloads: must be a plain object with a string `t`. */
+const MAX_JSON_DEPTH = 8;   // no Ghost Chat message nests deeper than 4
+/** True if the JSON text nests objects/arrays deeper than `max` (strings are skipped). */
+export function jsonTooDeep(text, max = MAX_JSON_DEPTH) {
+  let depth = 0, inStr = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (inStr) { if (c === 92) i++; else if (c === 34) inStr = false; continue; }   // \  and "
+    if (c === 34) inStr = true;
+    else if (c === 123 || c === 91) { if (++depth > max) return true; }            // { [
+    else if (c === 125 || c === 93) depth--;                                        // } ]
+  }
+  return false;
+}
 export function decodeJSON(payload) {
   let o;
-  try { o = JSON.parse(td.decode(payload)); } catch { throw new ProtocolError('bad-json', 'Malformed JSON'); }
+  const text = td.decode(payload);
+  // Deep nesting is never legitimate and can make later JSON.stringify calls throw.
+  if (jsonTooDeep(text)) throw new ProtocolError('bad-json', 'JSON nested too deeply');
+  try { o = JSON.parse(text); } catch { throw new ProtocolError('bad-json', 'Malformed JSON'); }
   if (!o || typeof o !== 'object' || Array.isArray(o) || typeof o.t !== 'string') throw new ProtocolError('bad-json', 'Malformed message');
   return o;
 }

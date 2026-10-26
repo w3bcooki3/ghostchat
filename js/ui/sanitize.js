@@ -11,12 +11,24 @@
 //     magic bytes and decoded only when the person chooses to view them; everything else is
 //     saved as opaque bytes, with a warning for types that can run code.
 
-// C0/C1 controls, zero-width & bidi marks/overrides/isolates, BOM.
-const LABEL_STRIP = /[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩﻿]/g;
+// C0/C1 controls, zero-width & bidi marks/overrides/isolates, BOM, every other
+// default-ignorable code point (soft hyphen, word joiners, tag characters, variation
+// selectors…) and the blank-looking fillers (Hangul fillers, braille blank).
+const LABEL_STRIP = /[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩﻿\u115f\u1160\u3164\uffa0\u2800]|\p{Default_Ignorable_Code_Point}/gu;
 // In message text, keep tabs/newlines and ordinary marks; drop the explicit overrides/isolates.
 const TEXT_STRIP = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f‪-‮⁦-⁩]/g;
 
 export const cleanLabel = (s, max) => String(s ?? '').replace(LABEL_STRIP, '').trim().slice(0, max);
+// Names that would let someone pose as you, the host or the app itself.
+const RESERVED_NAMES = new Set(['you', 'me', 'host', 'the host', 'ghost chat', 'ghostchat', 'someone', 'system', 'admin', 'moderator']);
+/** A display name from someone else: cleaned, must contain a letter or digit, never a reserved word. */
+export function cleanName(s, max = 24) {
+  const n = cleanLabel(String(s ?? '').normalize('NFKC'), max);
+  if (!/[\p{L}\p{N}]/u.test(n)) return '';
+  const key = n.toLowerCase().replace(/[\s._\-()[\]]+/g, ' ').trim();
+  if (RESERVED_NAMES.has(key) || /^(you|host)\b/.test(key)) return '';
+  return n;
+}
 export const cleanText = (s, max) => String(s ?? '').replace(TEXT_STRIP, '').slice(0, max);
 export const isMid = (s) => typeof s === 'string' && /^[0-9a-f]{16}$/.test(s);
 
@@ -42,14 +54,17 @@ export function sniffKind(b) {
 const RISKY_EXT = new Set(('exe msi msp com scr pif bat cmd ps1 psm1 vbs vbe js jse mjs wsf wsh hta cpl msc jar ' +
   'apk aab xapk ipa app dmg pkg deb rpm run sh bash zsh command bin elf so dll sys drv ocx lnk url scf reg inf ' +
   'html htm xhtml shtml mht mhtml svg svgz xml xsl swf docm dotm xlsm xltm xlam pptm potm ppam sldm iso img vhd vhdx ' +
-  'appx msix appinstaller library-ms settingcontent-ms gadget workflow action terminal').split(' '));
+  'appx msix appinstaller library-ms settingcontent-ms gadget workflow action terminal ' +
+  'chm hlp xll jnlp desktop appref-ms application xbap py pyw pyc pyz one iqy slk wsc sct msh ps1xml psc1 psd1 vb ins isp').split(' '));
 
 /**
  * Risk assessment for saving a received file.
  * @returns {{ risky: boolean, reason: string }}
  */
 export function fileRisk(name, head = new Uint8Array(0)) {
-  const n = String(name || '').toLowerCase();
+  // Judge the name the way it will be saved: trailing dots and spaces are dropped on save
+  // (and by Windows), so "invoice.pdf.bat." must count as a .bat.
+  const n = String(name || '').toLowerCase().replace(/[.\s]+$/, '');
   const parts = n.split('.');
   const ext = parts.length > 1 ? parts.pop() : '';
   if (RISKY_EXT.has(ext)) return { risky: true, reason: `.${ext} files can run code on your device when opened.` };

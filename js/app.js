@@ -7,7 +7,7 @@ import { Room, MAX_MEMBERS } from './room.js';
 import { checkNetwork, explain } from './netcheck.js';
 import { LIMITS } from './config.js';
 import { scramble, scrambleOverlay, loopScramble, cycleText, followEyes, EtherLine, renderQR, flash, wait, reducedMotion } from './fx.js';
-import { cleanLabel, cleanText, isMid, sniffImage, parseLink } from './ui/sanitize.js';
+import { cleanLabel, cleanName, cleanText, isMid, sniffImage, parseLink } from './ui/sanitize.js';
 import { $, h, fmtSize, fmtTime, fmtSecs, fmtLeft, toast, copy, confirmDialog, closeDialog, dialogOpen, initDialog } from './ui/dom.js';
 import { HandshakeStage } from './ui/handshake.js';
 import { presentReceived } from './ui/media.js';
@@ -50,7 +50,7 @@ const objectUrls = new Set();
 const testHook = document.documentElement.dataset.test === '1' ? (window.__ghost = { get session() { return session; }, msgs, people, files: {} }) : null;
 
 // ───────────────────────────── helpers ─────────────────────────────
-const inviteLink = () => location.href.split('#')[0] + '#' + code;
+const inviteLink = (c = shareCode() || code) => location.href.split('#')[0] + '#' + c;
 
 // ── people ──
 function person(id) {
@@ -63,8 +63,17 @@ const nameOf = (id) => people.get(id)?.name || (isHostId(id) ? 'The host' : 'Som
 const present = () => [...people.values()].filter((p) => !p.gone);
 const inGroup = () => present().length > 1 || (!!session && session.count() > 2);
 const allVerified = () => { const ps = present().filter((p) => p.sn); return ps.length > 0 && ps.every((p) => p.verified); };
-const canInviteNow = () => !!session && !session.ended && (role === 'host' || session.canInvite);
+const canInviteNow = () => !!session && !session.ended && (role === 'host' || (session.canInvite && !!session.inviteCode));
+/** The code to share right now: the host's current one, or the one the host gave a member who may invite. */
+const shareCode = () => (role === 'host' ? session?.inviteCode || code : session?.inviteCode) || null;
 
+/** Someone else's name, numbered if it matches yours or another person's ("Bob (2)"). */
+function distinctName(name, id) {
+  const taken = new Set([me.name, ...[...people.values()].filter((p) => p.id !== id && !p.gone).map((p) => p.name)].filter(Boolean).map((n) => n.toLowerCase()));
+  for (const k of knockCards.values()) taken.add(k.name.toLowerCase());
+  if (!taken.has(name.toLowerCase())) return name;
+  for (let i = 2; ; i++) { const n = `${name.slice(0, 19)} (${i})`; if (!taken.has(n.toLowerCase())) return n; }
+}
 function show(id) {
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('is-on', s.id === id);
 }
@@ -89,6 +98,7 @@ function renderIdentity() {
   const name = cleanLabel($('nameInput').value, 24) || 'Anonymous ghost';
   for (const el of document.querySelectorAll('[data-avatar]')) el.textContent = me.avatar;
   for (const el of document.querySelectorAll('[data-name]')) el.textContent = name;
+  if (document.activeElement !== $('joinName')) $('joinName').value = $('nameInput').value;
 }
 function buildAvatars() {
   const g = $('avatarGrid');
@@ -104,6 +114,8 @@ function buildAvatars() {
 buildAvatars();
 renderIdentity();
 $('nameInput').addEventListener('input', renderIdentity);
+// The join screen's own name field: the same name as "Your ghost", right where people join.
+$('joinName').addEventListener('input', () => { $('nameInput').value = $('joinName').value; renderIdentity(); });
 $('nameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); closeSheet(); } });
 
 function readName() {
@@ -161,6 +173,11 @@ function applyTheme(t) {
   const chrome = getComputedStyle(document.documentElement).getPropertyValue('--chrome').trim();
   for (const m of document.querySelectorAll('meta[name="theme-color"]')) m.content = chrome;
   for (const b of document.querySelectorAll('[data-theme-picker] button')) b.setAttribute('aria-checked', String(b.dataset.t === theme));
+  // Links to the info pages carry the theme in the fragment (never sent to a server).
+  for (const a of document.querySelectorAll('a[href]')) {
+    const m = /^(guide|security|legal)\.html(#theme=[a-z]+)?$/.exec(a.getAttribute('href'));
+    if (m) a.setAttribute('href', `${m[1]}.html${theme === 'auto' ? '' : '#theme=' + theme}`);
+  }
   applyType(typeStyle);
 }
 // ── text style: separate from colour. Auto picks what suits the theme (dot-matrix for the
@@ -295,14 +312,14 @@ function openJoin({ code: c = null } = {}) {
   closeSheet(true);
   invited = !!c;
   $('joinTitle').textContent = invited ? 'You\'re invited to a private chat' : 'Join a private chat';
-  $('joinSub').textContent = invited ? 'Check your name and privacy below, then join.' : 'Enter the code you were sent, or paste the invite link.';
+  $('joinSub').textContent = invited ? 'Choose how you\'ll appear, then join.' : 'Enter the code you were sent, or paste the invite link.';
   $('joinOr').textContent = invited ? 'Not expecting this?' : 'No code?';
   if (c) setCode(c, false);
   else { boxes.forEach((b) => { b.value = ''; }); codeHelp(); syncBoxes(); }
   const wasHome = $('home').classList.contains('is-on');
   show('joinScreen');
   if (wasHome) history.pushState({ gc: 'join' }, '');
-  setTimeout(() => (invited ? $('joinBtn') : boxes[0]).focus({ preventScroll: true }), 50);
+  setTimeout(() => (invited ? ($('joinName').value.trim() ? $('joinBtn') : $('joinName')) : boxes[0]).focus({ preventScroll: true }), 50);
 }
 function leaveJoin() {
   if (!$('joinScreen').classList.contains('is-on')) return;
@@ -329,6 +346,9 @@ $('joinForm').addEventListener('submit', (e) => {
 
 // Invite links carry the code in the fragment (never sent to any server). Read it, then erase it.
 function readInvite() {
+  // Coming back from an info page: it passes the theme along (never a code).
+  const tm = /^#theme=([a-z]+)$/.exec(location.hash);
+  if (tm) { history.replaceState(history.state, '', location.pathname + location.search); applyTheme(tm[1]); return; }
   if (location.hash === '#new') {
     history.replaceState(history.state, '', location.pathname + location.search);
     // After the rest of the page has initialised (this runs while the module is loading).
@@ -374,7 +394,7 @@ function showConnectError(text, canRetry, canCheck = false, retryLabel = 'Try ag
 function timeoutAdvice(d) {
   if (!d) return '';
   if (d.noRelayConfigured) return '"Hide my IP" needs a relay server, and none is configured. Add one under Privacy → Customize, or switch to Standard.';
-  if (d.relayOnly && !d.relay) return '"Hide my IP" needs a relay server, and none answered from your network. Add your own relay under Privacy → Customize, or switch to Standard.';
+  if (d.relayOnly && !d.relay && !d.relayTried) return '"Hide my IP" needs a relay server, and none answered from your network. Add your own relay under Privacy → Customize, or switch to Standard.';
   if (!d.relay && !d.srflx && !d.host) return 'WebRTC found no network paths at all. A browser setting, an extension or a firewall is blocking it.';
   if (d.relayTried) return 'Your network blocks direct connections, and the Ghost Chat relay couldn\'t reach the other person either. Check that both of you are online and the relay is deployed (see relay/README.md), then try again.';
   if (!d.relay) return 'Your network blocks direct connections (strict NAT, a VPN or a firewall), and no relay server was reachable. Fixes: add a TURN relay under Privacy → Customize; try without the VPN or on another network; or, to test on one computer, open both windows in the same browser profile (two incognito windows work), which connects without the network.';
@@ -404,7 +424,7 @@ async function runNetCheck(outEl, btn) {
 $('netCheckBtn').onclick = () => runNetCheck($('netResult'), $('netCheckBtn'));
 
 const FAIL_TEXT = {
-  'not-found': 'This room isn\'t open. The person who made it may have ended the chat or closed Ghost Chat, or the code expired. Check the code, or ask them for a new invite.',
+  'not-found': 'This room isn\'t open with this code. Each invite code works once: after someone is let in, the room moves to a new one. The code may also have expired, or the person who made the room ended it. Ask them for a new invite.',
   'host-away': 'The room exists, but the person who made it isn\'t answering. Their phone may be locked, or Ghost Chat was closed or put in the background. Ask them to open it again, then try again.',
   'auth-failed': 'A room exists, but it didn\'t accept this code. Check every character. If you\'re certain it\'s right, something may be interfering with the connection — don\'t continue.',
   signaling: 'Couldn\'t reach the introduction server. Check your internet connection, or whether a firewall or content blocker is stopping it.',
@@ -547,6 +567,13 @@ function wire(s) {
   s.on('member-left', onMemberLeft);
   s.on('knock', onKnock);
   s.on('knock-gone', ({ kid, reason }) => { if (s === session) knockGone(kid, reason); });
+  s.on('invite-code', ({ code: c }) => {
+    if (s !== session) return;
+    if (role === 'host' && c) code = c;
+    renderRoomCode(); renderHead();
+    if (!$('inviteSheet').hidden) fillInvite();
+  });
+  s.on('invite-failed', () => { if (s === session) toast('Couldn\'t open the new invite. Use "Retire this code" in the invite to try again.', true); });
   s.on('settings', ({ canInvite }) => {
     if (s !== session) return;
     $('optCanInvite').checked = canInvite;
@@ -587,8 +614,7 @@ async function onJoined() {
   etherOut.clear(); etherIn.clear();
   $('kvRoom').textContent = roomIdFromCode(code).replace(/^ghostchat-v\d+-/, '').toUpperCase();
   $('phRoom').textContent = '· ' + $('kvRoom').textContent;
-  $('railCode').replaceChildren(...code.split('-').map((g) => h('span', null, g)));
-  $('railCode').setAttribute('aria-label', 'Room code ' + code);
+  renderRoomCode();
   sys(role === 'host'
     ? 'End-to-end encrypted with post-quantum protection. Only someone holding the room code could have joined, and anyone else who uses it has to wait for you to let them in.'
     : 'End-to-end encrypted with post-quantum protection. Only someone holding the room code could have joined. Every pair of people in this room has its own keys.', 'is-good');
@@ -657,18 +683,28 @@ let lastLeft = '';
 function onAlone() {
   if (!$('chat').classList.contains('is-on')) return;
   setLink('is-down', 'Alone');
-  $('sendBtn').disabled = true; $('attachBtn').disabled = true;
+  lockComposer('Nobody else is here', 'You can send messages again when someone joins');
   showBanner('Everyone else has left. The room is still open: anyone with the code can ask to join, and you decide who comes in.', false, 'Leave');
 }
 function enableComposer() {
-  $('input').disabled = false; $('attachBtn').disabled = false;
+  $('chat').classList.remove('composer-locked');
+  $('input').disabled = false; $('attachBtn').disabled = false; $('timerBtn').disabled = false;
   $('sendBtn').disabled = !$('input').value.trim();
+  renderHead();   // restores the placeholder and the "encrypted for" line
+}
+/** Greys out the message box and says why nothing can be sent or received. */
+function lockComposer(why, detail = 'Messages can\'t be sent or received') {
+  $('chat').classList.add('composer-locked');
+  clearReply(); clearEdit(); closeTimerMenu(); stopTyping();
+  $('input').disabled = true; $('attachBtn').disabled = true; $('sendBtn').disabled = true; $('timerBtn').disabled = true;
+  $('input').placeholder = why;
+  $('encFor').textContent = detail;
 }
 
 // ── knocks (host): someone with the code wants in ──
 const knockCards = new Map();
 function onKnock({ kid, name, avatar }) {
-  const n = cleanLabel(name, 24) || 'Someone';
+  const n = distinctName(cleanName(name, 24) || 'Guest', null);
   const av = AVATARS.includes(avatar) ? avatar : '👤';
   const stick = atBottom();
   const card = h('div', 'knock-card');
@@ -735,7 +771,6 @@ function onEnded(s, reason) {
     return;
   }
   setLink('is-down', 'Ended');
-  $('sendBtn').disabled = true; $('input').disabled = true; $('attachBtn').disabled = true;
   typers.clear(); renderTyping();
   for (const k of [...knockCards.keys()]) knockGone(k, 'admitted');
   const text = reason === 'kicked' ? 'The host removed you from this room.'
@@ -746,6 +781,8 @@ function onEnded(s, reason) {
   sys(text, 'is-bad');
   showBanner(text + ' Messages stay on screen until you leave.', true, 'Leave');
   renderHead();
+  $('input').value = ''; autosize();
+  lockComposer('This chat has ended', 'Messages can\'t be sent or received any more');
 }
 
 // ───────────────────────────── chat rendering ─────────────────────────────
@@ -771,12 +808,25 @@ function hideBanner() { $('banner').hidden = true; }
 function atBottom() { const m = $('messages'); return m.scrollHeight - m.scrollTop - m.clientHeight < 80; }
 function scrollDown(force) { const m = $('messages'); if (force || atBottom()) requestAnimationFrame(() => { m.scrollTop = m.scrollHeight; }); }
 
+const MAX_SYS = 300;   // system notices kept on screen; older ones drop off
 function sys(text, cls = '') {
   const stick = atBottom();
   const el = h('div', 'sys ' + cls, text);
   $('messages').append(el);
+  const all = $('messages').querySelectorAll('.sys');
+  for (let i = 0; i < all.length - MAX_SYS; i++) all[i].remove();
   scrollDown(stick);
   return el;
+}
+// Actions from others that change the room or post a notice (unsend all, clear, timer,
+// constant-rate) are limited per person, so nobody can flood the screen or the CPU.
+const noticeLog = new Map();   // member id → recent timestamps
+function withinBudget(from, max = 12, perMs = 10_000) {
+  const now = Date.now();
+  const t = (noticeLog.get(from) || []).filter((x) => now - x < perMs);
+  if (t.length >= max) { noticeLog.set(from, t); return false; }
+  t.push(now); noticeLog.set(from, t);
+  return true;
 }
 function sysSafety(id) {
   const p = people.get(id);
@@ -796,6 +846,13 @@ function sysSafety(id) {
   scrollDown(stick);
 }
 
+/** The room rail's code: shown only to people who may share it. */
+function renderRoomCode() {
+  const c = canInviteNow() ? shareCode() : null;
+  $('railCode').replaceChildren(...(c ? c.split('-').map((g) => h('span', null, g)) : []));
+  $('railCode').setAttribute('aria-label', c ? 'Room code ' + c : '');
+  $('railCode').closest('.room-code').hidden = !c;
+}
 /** Opens the details panel on someone's safety number. */
 function showSafetyFor(id) {
   if (id) { selPerson = id; renderSafety(); refreshRoute(); }
@@ -832,8 +889,14 @@ function applyVerified() {
   const all = allVerified();
   const label = all ? 'Verified' : list.length > 1 && nV ? `${nV} of ${list.length} verified` : 'Not verified';
   $('verifyText').textContent = label;
-  $('verifyChip').setAttribute('aria-label', all ? 'Safety numbers verified' : 'Safety number not verified');
+  // The header control is an action, worded as one: what to do, not a status to decode.
+  const left = list.length - nV;
+  $('verifyText').textContent = all ? 'Verified' : list.length > 1 ? `Verify ${left} ${left === 1 ? 'person' : 'people'}` : 'Verify identity';
+  $('verifyChip').title = all ? 'You compared safety numbers: nobody is in the middle'
+    : 'Compare safety numbers by voice to make sure nobody is listening in between';
+  $('verifyChip').setAttribute('aria-label', all ? 'Verified: safety numbers match' : $('verifyText').textContent + ': compare safety numbers');
   $('verifyChip').classList.toggle('is-verified', all);
+  syncHead();
   $('pidTrust').textContent = label;
   $('pidTrust').classList.toggle('is-verified', all);
   $('qaVerify').classList.toggle('is-done', all);
@@ -868,12 +931,14 @@ function renderHead() {
   $('headCount').textContent = list.length > 1 ? `${list.length + 1} people` : '';
   $('chat').classList.toggle('is-group', list.length > 1);
   $('railInvite').hidden = !canInviteNow();
-  $('railInviteNote').hidden = canInviteNow() || !session || session.ended;
+  renderRoomCode();
+  $('railInviteNote').hidden = canInviteNow() || !session;
+  $('railInviteNote').textContent = session?.ended ? 'This chat has ended.' : 'Only the host can invite people to this room.';
   $('railMeSub').textContent = role === 'host' ? 'You · host' : 'You';
-  $('encFor').textContent = !list.length ? 'End-to-end encrypted'
+  if (!$('chat').classList.contains('composer-locked')) $('encFor').textContent = !list.length ? 'End-to-end encrypted'
     : list.length <= 3 ? `Encrypted for ${list.length === 1 ? names[0] : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]} only`
     : `Encrypted for the ${list.length} people here only`;
-  $('input').placeholder = list.length === 1 ? `Message ${names[0]}` : list.length ? 'Message everyone' : 'Message';
+  if (!$('chat').classList.contains('composer-locked')) $('input').placeholder = list.length === 1 ? `Message ${names[0]}` : list.length ? 'Message everyone' : 'Message';
   $('canInviteRow').hidden = role !== 'host';
   $('clearAllBtn').hidden = role !== 'host';
   $('kvAccess').textContent = role === 'host' ? 'Anyone else with the code waits for you to let them in' : 'Newcomers wait for the host to let them in';
@@ -917,14 +982,14 @@ function renderPeople() {
   };
   row(me.avatar, me.name + ' (you)', role === 'host' ? 'Host' : '', 'This browser', 'is-me');
   for (const p of present()) {
-    const sub = !p.ready ? (p.state === 'reconnecting' ? 'Reconnecting…' : 'Connecting…') : p.verified ? 'Verified' : 'Not verified';
+    const sub = session?.ended ? 'Disconnected' : !p.ready ? (p.state === 'reconnecting' ? 'Reconnecting…' : 'Connecting…') : p.verified ? 'Verified' : 'Not verified';
     const r = row(p.avatar, p.name || '…', isHostId(p.id) ? 'Host' : '', sub, p.verified ? 'is-verified' : p.ready ? 'is-unverified' : '');
-    if (p.sn) {
+    if (p.sn && !session?.ended) {
       const b = iconBtn('pp-btn', `Safety number with ${p.name || 'them'}`, '<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/>');
       b.onclick = () => showSafetyFor(p.id);
       r.append(b);
     }
-    if (role === 'host') {
+    if (role === 'host' && !session?.ended) {
       const b = iconBtn('pp-btn is-danger', `Remove ${p.name || 'them'}`, '<circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 11h6"/>');
       b.onclick = async () => {
         if (!(await confirmDialog(`Remove ${p.name || 'them'}?`, 'Everyone disconnects from them at once. They can only come back if they ask again with the code and you let them in.', 'Remove', { danger: true }))) return;
@@ -968,7 +1033,9 @@ $('verifyChip').onclick = () => {
 // One verify control on screen at a time: the header chip only shows while the panel is hidden.
 function syncHead() {
   const panelShown = !$('panel').hidden;
-  $('verifyChip').hidden = panelShown;
+  // Nothing to verify when nobody is here (or the chat has ended).
+  const nobody = !present().some((p) => p.sn) || !session || session.ended;
+  $('verifyChip').hidden = panelShown || nobody;
   $('chat').classList.toggle('panel-shown', panelShown);
 }
 
@@ -983,6 +1050,9 @@ function fillText(el, text) {
     if (u) {
       const a = h('a', null, url); a.href = u.href; a.target = '_blank'; a.rel = 'noopener noreferrer nofollow';
       a.addEventListener('click', (e) => { e.preventDefault(); openLink(u); });
+      // Middle-click and dragging out would open it without the check: route them through it too.
+      a.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); openLink(u); } });
+      a.draggable = false; a.addEventListener('dragstart', (e) => e.preventDefault());
       el.append(a);
     } else el.append(url);
     last = m.index + url.length;
@@ -997,9 +1067,13 @@ function fillText(el, text) {
 async function openLink(u) {
   const host = u.hostname;
   const lookalike = host.split('.').some((p) => p.startsWith('xn--'));
+  // "https://bank.example@evil.example/" goes to evil.example: the part before @ is a disguise.
+  const disguised = !!(u.username || u.password);
   const ok = await confirmDialog('Open this link?',
+    `It goes to ${host}. ` +
+    (disguised ? 'Careful: the address puts other text before an @ sign to look like a different site; it really goes to ' + host + '. ' : '') +
     (lookalike ? 'Careful: this address uses look-alike characters and may imitate another site. ' : '') +
-    'It opens in a new tab outside Ghost Chat, and that site will see your IP address.', 'Open link', { danger: lookalike, detail: u.href });
+    'It opens in a new tab outside Ghost Chat, and that site will see your IP address.', 'Open link', { danger: lookalike || disguised, detail: u.href });
   if (ok) window.open(u.href, '_blank', 'noopener,noreferrer');
 }
 const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|\p{Emoji_Component}|‍|️|\s){1,12}$/u;
@@ -1083,9 +1157,15 @@ function addText(side, { id, wid = id, text, ts, ttl = 0, reply = null, from = n
   bubble.dir = 'auto';
   bubble.tabIndex = 0;
   if (reply) {
-    const q = h('span', 'quote');
-    q.append(h('b', null, reply.name), document.createTextNode(reply.text));
-    q.onclick = () => jumpTo(reply.mid);
+    const q = h('span', 'quote' + (reply.gone ? ' is-gone' : '') + (reply.file ? ' is-file' : ''));
+    if (reply.name) q.append(h('span', 'q-name', reply.name));
+    q.append(h('span', 'q-text', reply.text));
+    if (!reply.gone) {
+      q.setAttribute('role', 'button'); q.tabIndex = 0;
+      q.setAttribute('aria-label', `Go to the message from ${reply.name}: ${reply.text}`);
+      q.onclick = (e) => { e.stopPropagation(); jumpTo(reply.key ?? reply.mid); };
+      q.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); jumpTo(reply.key ?? reply.mid); } };
+    }
     bubble.append(q);
   }
   if (!reply && EMOJI_ONLY.test(text) && !/^[\s\d#*]+$/.test(text)) bubble.classList.add('emoji-only');
@@ -1105,10 +1185,18 @@ function addText(side, { id, wid = id, text, ts, ttl = 0, reply = null, from = n
 }
 let lastDecryptAt = 0;
 
-function quoteFor(mid) {
+/** What a reply quotes: resolved from our own copy of the conversation, by wire id. */
+function findByWire(mid) {
   const r = msgs.get(mid);
-  if (!r) return { mid, name: '', text: 'Message unavailable' };
-  return { mid, name: r.side === 'me' ? 'You' : nameOf(r.from), text: (r.kind === 'text' ? r.text : r.name).slice(0, 120) };
+  if (r && r.wid === mid) return r;
+  for (const x of msgs.values()) if (x.wid === mid) return x;
+  return null;
+}
+const fileLabel = (r) => (r.isImage ? 'Photo' : 'File') + (r.name ? ' · ' + r.name : '');
+function quoteFor(mid) {
+  const r = findByWire(mid) || msgs.get(mid);
+  if (!r) return { mid, key: null, name: '', text: 'Original message is no longer here', gone: true };
+  return { mid, key: r.id, name: r.side === 'me' ? 'You' : nameOf(r.from), text: (r.kind === 'text' ? r.text : fileLabel(r)).slice(0, 120), file: r.kind !== 'text' };
 }
 
 function applyEdit(r, text) {
@@ -1121,12 +1209,13 @@ function applyEdit(r, text) {
   if (replyTo?.key === r.id) setReply(r);
 }
 
-function jumpTo(mid) {
-  const r = msgs.get(mid);
-  if (!r) return toast('That message is gone');
-  r.el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+function jumpTo(id) {
+  const r = msgs.get(id) || findByWire(id);
+  if (!r) return toast('That message is no longer here');
+  r.el.scrollIntoView({ block: 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
+  r.el.classList.remove('flash'); void r.el.offsetWidth;   // restart the highlight if it's already running
   r.el.classList.add('flash');
-  setTimeout(() => r.el.classList.remove('flash'), 1200);
+  clearTimeout(r.flashT); r.flashT = setTimeout(() => r.el.classList.remove('flash'), 1800);
 }
 
 function updateStatus(r) {
@@ -1171,6 +1260,9 @@ function removeRecord(r, animate = true) {
   else done();
   if (replyTo?.key === r.id) clearReply();
   if (editing === r) clearEdit();
+  // Nothing removed may stay on screen: an open image viewer or message menu goes with it.
+  if (!$('viewer').hidden && r.urls.includes($('viewerImg').getAttribute('src'))) closeViewer();
+  if (menuFor === r) closeMenu();
 }
 
 // ───────────────────────────── disappearing messages ─────────────────────────────
@@ -1260,7 +1352,11 @@ function onMessage(o) {
   switch (o.t) {
     case 'profile': {
       const p = person(from);
-      p.name = cleanLabel(o.name, 24) || 'Someone';
+      // A name is set once per person and never changes afterwards: the app has no way to
+      // rename mid-chat, so a later "profile" could only be someone relabelling their past
+      // messages or posing as another member.
+      if (p.name) return;
+      p.name = distinctName(cleanName(o.name, 24) || 'Guest', from);
       p.avatar = AVATARS.includes(o.avatar) ? o.avatar : '👤';
       renderHead(); renderSafety();
       if (p.announce) announce(p);
@@ -1321,10 +1417,11 @@ function onMessage(o) {
     }
     case 'unsend': {
       const r = isMid(o.target) && authoredBy(from, o.target);
-      if (r) { removeRecord(r); sys(`${nameOf(from)} unsent a message.`); }
+      if (r) { removeRecord(r); if (withinBudget(from, 30)) sys(`${nameOf(from)} unsent a message.`); }
       return;
     }
     case 'unsend-all': {
+      if (!withinBudget(from)) return;
       let n = 0;
       for (const r of [...msgs.values()]) if (r.side === 'them' && r.from === from) { removeRecord(r); n++; }
       sys(`${nameOf(from)} unsent all their messages${n ? '' : ' (there were none here)'}.`);
@@ -1332,18 +1429,19 @@ function onMessage(o) {
     }
     case 'clear-all': {
       if (!isHostId(from)) return;   // only the host can clear everyone's screens
+      if (!withinBudget(from)) return;
       clearAll();
       sys(`${nameOf(from)} (the host) cleared the chat for everyone.`, 'is-warn');
       return;
     }
     case 'shape': {
       const on = o.on === true;
-      if (on !== shapeWanted.has(from)) setShape(on, from);
+      if (on !== shapeWanted.has(from) && withinBudget(from)) setShape(on, from);
       return;
     }
     case 'timer': {
       const secs = Number(o.secs);
-      if (TIMERS.some(([t]) => t === secs) && secs !== burnSecs) setTimer(secs, from);
+      if (TIMERS.some(([t]) => t === secs) && secs !== burnSecs && withinBudget(from)) setTimer(secs, from);
       return;
     }
   }
@@ -1425,8 +1523,8 @@ function sendText() {
 
 function setReply(r) {
   clearEdit();
-  const text = r.kind === 'text' ? r.text : r.name;
-  replyTo = { mid: r.wid, key: r.id, name: r.side === 'me' ? 'You' : nameOf(r.from), text: text.slice(0, 120) };
+  const text = r.kind === 'text' ? r.text : fileLabel(r);
+  replyTo = { mid: r.wid, key: r.id, name: r.side === 'me' ? 'yourself' : nameOf(r.from), text: text.slice(0, 120) };
   $('replyName').textContent = replyTo.name;
   $('replyText').textContent = replyTo.text;
   $('replyBar').hidden = false;
@@ -1582,6 +1680,7 @@ async function sendFiles(files) {
     const fid = session.sendFile(f, { ttl: burnSecs || undefined });
     const r = newRecord(fid, 'me', Date.now(), { kind: 'file', name, size: f.size, ttl: burnSecs });
     const imgType = await imageTypeOf(f);
+    r.isImage = !!imgType;
     let body;
     if (imgType) {
       body = h('button', 'img-wrap');
@@ -1642,6 +1741,7 @@ async function onFileReceived({ fid, name, size, blob }) {
     openViewer,
     onSeen: () => { if (r.ttl && !document.hidden) markSeenSoon(); },
   });
+  r.isImage = !!r.card?.classList.contains('kind-image');
   scrollDown();
 }
 
@@ -1753,8 +1853,8 @@ $('railClose').onclick = () => { closeRail(); $('railBtn').focus({ preventScroll
 $('railScrim').onclick = closeRail;
 railMQ.addEventListener?.('change', closeRail);
 $('railLook').onclick = () => { closeRail(); openPanel(true, 'look'); };
-$('railCopy').onclick = () => code && copy(code, 'Room code');
-$('railInvite').onclick = () => { closeRail(); openInvite(); };
+$('railCopy').onclick = () => { const c = shareCode(); if (c) copy(c, 'Room code'); };
+$('railInvite').onclick = () => { closeRail(); openInvite(railMQ.matches ? $('railInvite') : $('railBtn')); };
 $('qaVerify').onclick = () => {
   // Jump to the first person not yet verified.
   const next = present().find((p) => p.sn && !p.verified);
@@ -1764,19 +1864,30 @@ $('qaVerify').onclick = () => {
 };
 
 // ── invite: same room, same code; the host lets each newcomer in ──
-function openInvite() {
+function openInvite(opener = $('qaInvite')) {
   if (!canInviteNow()) return toast('Only the host can invite people to this room', true);
   if (session.count() >= MAX_MEMBERS) return toast(`The room is full (${MAX_MEMBERS} people)`, true);
-  $('invCode').textContent = code;
+  fillInvite();
+  openSheet('inviteSheet', opener);
+}
+function fillInvite() {
+  const c = shareCode();
+  $('invCode').textContent = c || '';
   $('invNote').textContent = role === 'host'
     ? `Anyone who opens it asks to join, and you decide who comes in. Up to ${MAX_MEMBERS} people; ${MAX_MEMBERS - session.count()} more can join.`
     : `Whoever opens it asks to join, and ${nameOf(session.hostId)} (the host) decides who comes in.`;
+  $('invNew').hidden = role !== 'host';
   $('invQr').hidden = true; $('invQr').replaceChildren(); $('invQrBtn').textContent = 'Show QR';
-  openSheet('inviteSheet', $('qaInvite'));
 }
 $('qaInvite').onclick = openInvite;
 $('invCopy').onclick = () => copy(inviteLink(), 'Invite link');
-$('invCopyCode').onclick = () => copy(code, 'Room code');
+$('invCopyCode').onclick = () => copy(shareCode() || '', 'Room code');
+$('invNew').onclick = async () => {
+  if (role !== 'host' || !session || session.ended) return;
+  const waiting = knockCards.size;
+  if (!(await confirmDialog('Make a new code?', 'The current code stops working at once' + (waiting ? `, and the ${waiting === 1 ? 'person' : waiting + ' people'} waiting to be let in ${waiting === 1 ? 'is' : 'are'} turned away` : '') + '. Share the new one instead.', 'New code'))) return;
+  if (session.newInvite()) toast('New code ready. The old one no longer works.');
+};
 $('invShare').hidden = !(navigator.share && matchMedia('(pointer: coarse)').matches);
 $('invShare').onclick = async () => {
   try { await navigator.share({ title: 'Ghost Chat invite', text: 'Join my private Ghost Chat room:', url: inviteLink() }); }
@@ -1950,6 +2061,16 @@ function resetChat() {
   $('timerBtn').classList.remove('is-on'); $('timerBtn').setAttribute('aria-label', 'Disappearing messages: off'); closeTimerMenu();
   for (const b of $('timerMenu').querySelectorAll('[data-secs]')) b.setAttribute('aria-checked', String(b.dataset.secs === '0'));
   $('chat').classList.remove('is-group'); closeRail(); showTab('safety');
+  // Leave no names behind from the last room, even in hidden markup.
+  noticeLog.clear();
+  $('chat').classList.remove('composer-locked'); $('timerBtn').disabled = false;
+  $('hsThemName').textContent = 'Waiting…'; $('hsSn').textContent = ''; $('hsSn').classList.remove('is-on');
+  $('kvLive').textContent = '—'; $('kvKeys').textContent = '0'; $('kvAccess').textContent = '—';
+  $('invCode').textContent = ''; $('invNote').textContent = ''; $('invQr').replaceChildren(); $('invQr').hidden = true;
+  $('peopleList').replaceChildren(); $('peoplesTitle').textContent = 'People'; $('headCount').textContent = '';
+  $('encFor').textContent = 'End-to-end encrypted'; $('input').placeholder = 'Message';
+  $('railInvite').hidden = false; $('railInviteNote').hidden = true; $('railMeSub').textContent = 'You';
+  $('pidSub').textContent = 'Nothing stored on this device'; $('verifyText').textContent = 'Not verified'; $('verifyChip').classList.remove('is-verified');
   setLink('', 'Connecting');
   closeMenu(); closeViewer();
 }

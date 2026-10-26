@@ -6,11 +6,13 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#05080A">
+<meta name="theme-color" content="#F1F0EC">
 <meta name="description" content="What Ghost Chat protects, who can see what, and what it can't protect against.">
 <title>Who Can Read Ghost Chat</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/themes.css">
 <link rel="stylesheet" href="css/security.css">
+<script src="js/pagetheme.js" defer></script>
 <script src="js/security.js" defer></script>
 </head>
 <body>
@@ -100,7 +102,7 @@
   <section class="lock wrap" aria-labelledby="lockTitle">
     <h2 id="lockTitle">Once you're both in, the code stops working</h2>
     <p>The first conversation leaves both browsers with a second secret that never travels anywhere. A dropped connection can only come back by proving it has that secret. If your code leaks after the conversation starts, someone with it can only ask to join: they wait until the host lets them in, and every member then sees them and gets a new safety number with them.</p>
-    <p>That's also why the safety number stays the same when the connection drops and comes back: the returning browser has proved it's the same one. If someone reloads the page, their browser loses the secret. The person who created the room can then unlock it once, and Ghost Chat shows a new safety number to compare.</p>
+    <p>That's also why the safety number stays the same when the connection drops and comes back: the returning browser has proved it's the same one. If someone reloads the page, their browser loses the secret. They ask to join again with a new invite, the host lets them in, and Ghost Chat shows a new safety number to compare.</p>
   </section>
 
   <section class="verify wrap" aria-labelledby="verifyTitle">
@@ -132,7 +134,8 @@
       <div><dt>Key exchange</dt><dd>Hybrid: ECDH P-384 + ML-KEM-1024 (FIPS 203), new keys for every connection</dd></div>
       <div><dt>Authentication</dt><dd>HKDF-SHA-384 salted with the room code, HMAC-SHA-384 proofs both ways</dd></div>
       <div><dt>Encryption</dt><dd>AES-256-GCM with a new key for every message (HMAC-SHA-384 ratchet)</dd></div>
-      <div><dt>Room lock</dt><dd>After the first join, only reconnects that prove a 384-bit resumption secret get in</dd></div>
+      <div><dt>Pair lock</dt><dd>Once two people are connected, only reconnects that prove a 384-bit resumption secret get back in</dd></div>
+        <div><dt>Single-use invites</dt><dd>After someone is let in, the room moves to a new code; the old one stops working</dd></div>
       <div><dt>Traffic shaping</dt><dd>Optional: one 4 KB packet every 250 ms, real or filler, in both directions</dd></div>
       <div><dt>Forward secrecy</dt><dd>Each message key is derived and then discarded; old keys can't be recomputed</dd></div>
       <div><dt>Tampering</dt><dd>Any altered, replayed, dropped or reordered message closes the connection</dd></div>

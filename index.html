@@ -11,6 +11,7 @@
 <title>Ghost Chat</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/themes.css">
 <link rel="stylesheet" href="css/app.css">
 <script src="vendor/peerjs-1.5.5.min.js" defer></script>
 <script src="js/app.js" type="module"></script>
@@ -87,6 +88,13 @@
           <span id="codeHelp" class="help" aria-live="polite">Letters and digits 2–9</span>
           <button id="pasteBtn" class="paste-btn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="4" width="8" height="4" rx="1"/><path d="M8 6H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2"/></svg>Paste</button>
         </div>
+        <div class="join-me">
+          <div class="join-me-top"><span class="join-me-h">How you'll appear</span><button class="chip priv-chip" type="button" data-sheet="privSheet" aria-label="Privacy level"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/></svg><span class="lbl" data-priv-label>Standard</span><svg class="ico caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>
+          <div class="join-me-row">
+            <button class="join-av me-chip" type="button" data-sheet="meSheet" aria-label="Choose your avatar"><span data-avatar>👻</span></button>
+            <label class="join-name"><span class="sr">Your name</span><input id="joinName" class="input" maxlength="24" autocomplete="off" spellcheck="false" placeholder="Your name (others see this)" enterkeyhint="go"></label>
+          </div>
+        </div>
         <button id="joinBtn" class="btn btn-primary btn-xl" type="submit">Join</button>
       </form>
 
@@ -98,12 +106,6 @@
       </button>
     </section>
 
-    <footer class="join-bottom">
-      <div class="chips">
-        <button class="chip me-chip" type="button" data-sheet="meSheet" aria-label="Change your name and avatar"><span class="av" data-avatar>👻</span><span class="lbl" data-name>Anonymous ghost</span><svg class="ico caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-        <button class="chip priv-chip" type="button" data-sheet="privSheet" aria-label="Privacy level"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/></svg><span class="lbl" data-priv-label>Standard</span><svg class="ico caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-      </div>
-    </footer>
   </div>
 </main>
 
@@ -242,11 +244,13 @@
 
   <footer class="composer">
     <div id="replyBar" class="reply-bar" hidden>
-      <div class="reply-bar-body"><span id="replyName" class="reply-name"></span><span id="replyText" class="reply-text"></span></div>
+      <svg class="rb-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 8L5 12l5 4"/><path d="M5 12h9a5 5 0 0 1 5 5v1"/></svg>
+      <div class="reply-bar-body"><span class="rb-label">Replying to <b id="replyName" class="reply-name"></b></span><span id="replyText" class="reply-text"></span></div>
       <button id="replyCancel" class="icon-btn icon-sm" type="button" aria-label="Cancel reply"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div id="editBar" class="reply-bar edit-bar" hidden>
-      <div class="reply-bar-body"><span class="reply-name">Editing message</span><span id="editText" class="reply-text"></span></div>
+      <svg class="rb-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>
+      <div class="reply-bar-body"><span class="rb-label">Editing your message</span><span id="editText" class="reply-text"></span></div>
       <button id="editCancel" class="icon-btn icon-sm" type="button" aria-label="Cancel editing"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div class="composer-row">
@@ -407,7 +411,8 @@
     <button id="invQrBtn" class="btn btn-ghost" type="button">Show QR</button>
   </div>
   <div id="invQr" class="qr-box inv-qr" hidden></div>
-  <p class="help">Send it over something you trust. The link holds the full code after the <span class="mono">#</span>, which never reaches any server.</p>
+  <p class="help">Send it over something you trust. The link holds the full code after the <span class="mono">#</span>, which never reaches any server. Each code works for one visit: once someone is let in, the room moves to a new code.</p>
+  <button id="invNew" class="btn btn-text" type="button" hidden>Retire this code and make a new one</button>
   <button class="btn btn-text btn-xl" type="button" data-close-sheet>Done</button>
 </section>
 

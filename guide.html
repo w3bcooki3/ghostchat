@@ -6,11 +6,13 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#05080A">
+<meta name="theme-color" content="#F1F0EC">
 <meta name="description" content="How Ghost Chat works: the technology, how two browsers find each other, the handshake, the encryption of every message, and the code behind it.">
 <title>How Ghost Chat Works</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/themes.css">
 <link rel="stylesheet" href="css/pages.css">
+<script src="js/pagetheme.js" defer></script>
 <script src="js/pages.js" defer></script>
 </head>
 <body>
@@ -230,8 +232,8 @@
         <title id="hsT">Handshake sequence</title>
         <desc id="hsD">The joiner sends a hello with one-time elliptic-curve and post-quantum public keys. The host replies with its own one-time key, a post-quantum ciphertext and a proof. The joiner replies with its proof. Both now share session keys, a resume secret and a safety number.</desc>
         <defs>
-          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#62F2B4"/></marker>
-          <marker id="ahc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5BC8F2"/></marker>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="t-ecto" d="M0 0L10 5L0 10z"/></marker>
+          <marker id="ahc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="t-cool" d="M0 0L10 5L0 10z"/></marker>
         </defs>
         <!-- heads -->
         <rect class="d-box-hi" x="90" y="16" width="180" height="56" rx="14"/><text class="d-t" x="180" y="40" text-anchor="middle">Joiner</text><text class="d-s" x="180" y="59" text-anchor="middle">typed the code</text>
@@ -261,7 +263,7 @@
         <text class="d-m" x="500" y="432" text-anchor="middle">the joiner's HMAC proof · host checks it</text>
         <!-- result -->
         <rect class="d-box-hi" x="20" y="470" width="960" height="96" rx="16"/>
-        <g transform="translate(46 488)"><rect x="0" y="14" width="28" height="22" rx="4" fill="none" stroke="#62F2B4" stroke-width="2"/><path d="M6 14V9a8 8 0 0 1 16 0v5" fill="none" stroke="#62F2B4" stroke-width="2"/></g>
+        <g transform="translate(46 488)"><rect x="0" y="14" width="28" height="22" rx="4" class="t-ecto-line" fill="none" stroke-width="2"/><path d="M6 14V9a8 8 0 0 1 16 0v5" class="t-ecto-line" fill="none" stroke-width="2"/></g>
         <text class="d-t" x="94" y="500">Both browsers now hold, and nobody else does:</text>
         <text class="d-s" x="94" y="524">· two message-key chains, one per direction · a resume secret that locks the room</text>
         <text class="d-s" x="94" y="546">· a 60-digit safety number, from a SHA-512 of the whole exchange</text>
@@ -292,7 +294,7 @@
       <svg viewBox="0 0 1000 230" role="img" aria-labelledby="rtT rtD">
         <title id="rtT">Hash ratchet</title>
         <desc id="rtD">A chain key is hashed forward with HMAC-SHA-384. Each step yields a one-time message key and the next chain key. Old keys are deleted, so they cannot be recomputed.</desc>
-        <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#62F2B4"/></marker></defs>
+        <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="t-ecto" d="M0 0L10 5L0 10z"/></marker></defs>
         <g opacity=".38">
           <rect class="d-box" x="20" y="30" width="150" height="52" rx="12"/><text class="d-t" x="95" y="62" text-anchor="middle">chain key 40</text>
           <line class="d-arrow" x1="95" y1="82" x2="95" y2="140" marker-end="url(#ah2)"/>
@@ -312,7 +314,7 @@
         <rect class="d-box-hi" x="520" y="30" width="150" height="52" rx="12"/><text class="d-t" x="595" y="62" text-anchor="middle">chain key 42</text>
         <line class="d-arrow" x1="595" y1="82" x2="595" y2="140" marker-end="url(#ah2)"/>
         <rect class="d-box-hi" x="530" y="146" width="130" height="44" rx="10"/><text class="d-mono" x="595" y="173" text-anchor="middle">msg key 42</text>
-        <text class="d-m" x="595" y="214" text-anchor="middle" fill="#62F2B4">SEALS “meet at ten”</text>
+        <text class="d-m t-ecto" x="595" y="214" text-anchor="middle">SEALS “meet at ten”</text>
         <line class="d-arrow" x1="670" y1="56" x2="762" y2="56" marker-end="url(#ah2)" stroke-dasharray="4 5"/>
         <text class="d-m" x="716" y="46" text-anchor="middle">next</text>
         <rect class="d-box-sig" x="770" y="30" width="200" height="52" rx="12"/><text class="d-s" x="870" y="62" text-anchor="middle">chain key 43 …</text>
@@ -363,7 +365,7 @@
       <div class="layer l-ui"><div class="layer-name"><b>Interface</b><small>what you see</small></div><div class="mods">
         <div class="mod"><code>js/app.js</code><span>Screens, conversation, menus, settings, panic.</span></div>
         <div class="mod"><code>js/ui/*.js</code><span>Input cleaning, file handling, the handshake animation, shared DOM helpers.</span></div>
-        <div class="mod"><code>js/fx.js</code><span>Motion and effects, respecting reduced-motion. Seven colour themes share one stylesheet.</span></div>
+        <div class="mod"><code>js/fx.js</code><span>Motion and effects, respecting reduced-motion. Ten colour themes, shared with these pages, live in <code>css/themes.css</code>.</span></div>
       </div></div>
       <div class="layer"><div class="layer-name"><b>Session</b><small>the conversation engine</small></div><div class="mods">
         <div class="mod"><code>js/session.js</code><span>Runs the handshake over whichever pipe opens first, delivery and receipts, reconnects, file chunks, goodbye.</span></div>

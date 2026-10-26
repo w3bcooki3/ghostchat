@@ -94,3 +94,41 @@ A full pass over the code, the deployment files and the documentation, with the 
 ## Chat layout (October 2026)
 
 The chat screen became three columns: room, conversation, details. No protocol, crypto or session code changed. The UI work stays inside the existing rules: peer names and avatars still go into the page as text only, and the new icon buttons are built from fixed SVG paths in `js/app.js`, never from message content. The rail's **Wipe** button runs the same panic routine as the header button, so it's instant with a mouse and needs a hold on touch screens. Theme, message layout and the wire toggle last for the tab only and are never stored. axe-core reports no colour-contrast or ARIA violations on the chat screen in any of the ten themes, in either message layout, on any of the four details tabs.
+
+## Full re-audit (October 2026)
+
+Three independent reviews (crypto and protocol; interface and page security; relay and supply chain) plus automated checks. Each finding was confirmed against the code, or by reproducing it, before it was fixed. Every fix has a test.
+
+**Checks that found nothing:**
+- **Vendored code:**
+  - `uqr` is byte-identical to the npm package.
+  - `peerjs` is byte-identical except for its source-map comment.
+  - The ML-KEM bundle produces identical output to npm `@noble/post-quantum@0.7.1` on 200 random seeds, covering key generation, encapsulation, decapsulation and the rejection of tampered ciphertexts.
+- **Dependencies:** `npm audit` reports 0 vulnerabilities.
+- **Shipped code:** no HTML sinks, `eval` or storage APIs.
+- **Content Security Policy:** none of the pages allows `unsafe-inline` or `unsafe-eval`.
+- **Test hook:** it cannot appear in a production build.
+
+| Severity | Finding | Fix |
+|---|---|---|
+| Medium | **Anyone holding the room code could pose as the host to newcomers.** Every member, including one who had been removed, knew the code. While the host's connection was down, such a person could take over the room's lobby, admit the next newcomer themselves and sit in the middle. | **Invites are single-use.** Once someone is let in and nobody else is waiting, the host's browser moves the lobby to a fresh code. Removing someone, or turning off *members can invite*, also retires the code. Only the host, and members it allows to invite, learn the new one. E2E test: a removed member's code no longer reaches the room. |
+| Medium | **The relay's Origin check was its only gate.** Scripts can send any Origin, so the relay could be used as an open pipe to burn through the free daily allowance. | Added a per-IP connection limit (rate-limit binding), a per-connection byte budget, and rate limits that count text frames too. Text frames are capped by size and accepted only from the host. Joiners are dropped if the host never accepts them within 20 s. Nothing reaches the host before it accepts. Comments and the README are corrected. `tests/relay-worker.test.mjs` runs the real Worker against a stand-in for the Cloudflare runtime. |
+| Medium | **The third-party Open Relay TURN service (metered.ca) was on by default and not disclosed.** It saw users' IP addresses, and in Maximum mode it could carry the conversation. | Off by default. Ghost Chat's own relay already covers those networks. |
+| Medium | **The "can run code" warning could be skipped with trailing dots.** `invoice.pdf.bat.` was judged as having no extension, then saved as `invoice.pdf.bat`. | The check now judges the exact name that will be saved, and ignores trailing dots and spaces itself. More dangerous file types are on the list. |
+| Medium | **A peer could call itself "You", or copy another member's name and avatar.** It could also rename itself later, which relabelled its earlier messages. | A name is set once per person and never changes. Reserved names are refused, and duplicates are numbered. Names must contain a letter or digit. Invisible and blank-looking characters are stripped. |
+| Medium/Low | **A lost CONFIRM on the first join left the two sides with different safety numbers for good.** A relay could cause this on purpose. | The host keeps that join's safety number with its candidate secret and shows it when the joiner resumes. Unit test with two real sessions. |
+| Low | **Deeply nested JSON could freeze a link.** A `JSON.stringify` RangeError while echoing a ping left the link's receive queue rejected. | JSON nested deeper than 8 levels is refused. Ping values are echoed only if they are plain integers. Any error while handling a frame now closes the link instead of leaving it silently frozen. |
+| Low | **Handshake secrets weren't wiped when a link closed mid-handshake.** | `Link.close()` now calls `forget()`. |
+| Low | **Floods.** Unlimited system notices (unsend-all, timer, shape) and unlimited waiting knocks were possible, and incoming files were capped only per pair. | Room-wide actions are rate-limited per person, and the page keeps at most 300 notices. At most 4 people can wait to be let in, and 8 lobby links can be open at once. Incoming files are capped at 300 MB across the whole room. |
+| Low | **Links and Save could be opened without their confirmation.** A middle-click or a drag skipped it, and a disguised address like `https://bank.example@evil.example` wasn't flagged. | Middle-clicks go through the confirmation, and links can't be dragged out. A risky file has no download address until you confirm. The link dialog names the real site and warns about anything before an `@`. |
+| Low | **An unsent or expired image could stay open in the viewer**, and the message menu could still copy a removed message. | Both now close along with the message. |
+| Low | **Peer names stayed in hidden markup after a session ended.** | Cleared on teardown. E2E test: the other person's name is nowhere in the page afterwards. |
+| Low | **A reused joiner id on the relay could get a newcomer dropped**, and the relay could announce that the host left twice. | Ids held by sockets that are still closing aren't reused. A leave is announced only if no live joiner has that id, and each socket's teardown runs once. |
+| Low | **`.gitignore` didn't cover Wrangler's local secrets file.** The TURN credential worker had no rate limit and sent `Access-Control-Allow-Origin: null`. | Now ignored. Added an optional per-IP limit and a 2-hour credential lifetime, and the header is left out on refusals. |
+| Docs | **Several claims in SECURITY.md and security.html were wrong:** "room lock refuses the full code", "the host can unlock once", "75 bits never leave the browsers", the 15-second window, and "wiped whether it succeeds or fails". | Corrected to match the code. |
+
+**Known and accepted:**
+- **Members trusted to invite.** A member the host allows to invite knows the current code, so the host is trusting them with it. Safety numbers still reveal anyone in the middle.
+- **Lobby traffic isn't constant-rate.** It is a few small messages while someone waits to be let in.
+- **A forged `LOCKED` frame from the relay** can make a first-time joiner fail with "room is full". This is denial of service only, and the relay can drop traffic anyway.
+- **Quotes in replies** keep up to 120 characters of the original message, so a quote can outlive a disappearing message.

@@ -14,9 +14,19 @@
 //   4. In Ghost Chat's js/config.js set TURN_ENDPOINT to the worker URL, and add the worker's
 //      origin (https://<name>.<you>.workers.dev) to connect-src in index.html's CSP.
 //
-// Optional hardening: Workers → your worker → Settings → add a Rate Limiting rule.
+//   5. Strongly recommended: add a per-IP limit so nobody can mint credentials in a loop and run
+//      up TURN traffic on your account. In wrangler.toml for this worker:
+//        [[ratelimits]]
+//        name = "MINT"
+//        namespace_id = "7002"
+//          [ratelimits.simple]
+//          limit = 10
+//          period = 60
+//
+// The Origin check only stops other websites from calling this in a browser; scripts can send
+// any Origin. The MINT limit and the short credential lifetime are what bound abuse.
 
-const TTL_SECONDS = 6 * 3600;
+const TTL_SECONDS = 2 * 3600;   // long enough for a long chat; renewals fetch new ones
 
 export default {
   async fetch(request, env) {
@@ -24,7 +34,7 @@ export default {
     const allowed = (env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
     const ok = allowed.includes(origin);
     const cors = {
-      'Access-Control-Allow-Origin': ok ? origin : 'null',
+      ...(ok ? { 'Access-Control-Allow-Origin': origin } : {}),
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Max-Age': '86400',
       'Vary': 'Origin',
@@ -34,6 +44,10 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: ok ? 204 : 403, headers: cors });
     if (request.method !== 'GET') return new Response('method not allowed', { status: 405, headers: cors });
     if (!ok) return new Response('origin not allowed', { status: 403, headers: cors });
+    if (env.MINT) {
+      const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+      try { const { success } = await env.MINT.limit({ key: 'mint:' + ip }); if (!success) return new Response('slow down', { status: 429, headers: cors }); } catch {}
+    }
 
     const r = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${env.TURN_KEY_ID}/credentials/generate-ice-servers`, {
       method: 'POST',

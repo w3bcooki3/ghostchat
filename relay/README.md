@@ -41,7 +41,14 @@ The relay also helps Ghost Chat tell you what's going on instead of leaving you 
 
 The relay is a [Cloudflare Worker](https://workers.cloudflare.com/) that runs on Cloudflare's **free plan, with no payment card needed**. The code is [`ws-relay.js`](ws-relay.js), and you can read it in a few minutes.
 
-**What it enforces:** only the sites you list may use it; each room is limited to one creator and up to eight joiners at once (in a group room, every pair of people gets its own relay room); frames over 66 KB are rejected; each connection is rate-limited. A creator whose page has gone silent for over two minutes is removed.
+**What it enforces:**
+- Only the sites you list may use it *from a browser*. This does not stop scripts or other non-browser clients, which can send any `Origin`; the limits below are what bound abuse.
+- New connections per IP address: 60 a minute per Cloudflare location, through the `UPGRADES` rate-limit binding in `wrangler.toml` (needs Wrangler 4.36 or later). If your plan doesn't offer rate limiting, delete that block; the relay works without it, relying on the per-connection limits alone.
+- Each room: one creator and up to eight joiners at once (in a group room, every pair of people gets its own relay room). A joiner the creator's page doesn't accept within 20 seconds is dropped, so nobody can sit in a room's slots.
+- Each connection: at most 4,000 messages per 10 seconds, text included, and 2 GB per hour; frames over 66 KB are rejected; only the creator may send control messages, and only short ones. Nothing a joiner sends reaches the creator before the creator's page accepts it.
+- A creator whose page has gone silent for over two minutes is removed.
+
+A determined attacker with many IP addresses can still use up a free plan's daily request allowance; then the relay stops until the next day, and direct connections keep working. `tests/relay-worker.test.mjs` runs this file against a stand-in for the Cloudflare runtime and checks every limit above.
 
 ### Deploy it from GitHub (recommended)
 1. Sign in at [dash.cloudflare.com](https://dash.cloudflare.com) and go to **Workers & Pages → Create → Import a repository**.
